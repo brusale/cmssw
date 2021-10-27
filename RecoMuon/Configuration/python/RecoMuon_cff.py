@@ -82,5 +82,6 @@ fastSim.toModify(muonReducedTrackExtras, outputClusters = False)
 from Configuration.Eras.Modifier_phase2_tracker_cff import phase2_tracker
 phase2_tracker.toModify(muonReducedTrackExtras, outputClusters = False)
 
-muonshighlevelrecoTask = cms.Task(muonPFIsolationTask,muons,muonReducedTrackExtras)
+#muonshighlevelrecoTask = cms.Task(muonPFIsolationTask,muons,muonReducedTrackExtras)
+muonshighlevelrecoTask = cms.Task(muonPFIsolationTask,muons)
 muonshighlevelreco = cms.Sequence(muonshighlevelrecoTask)

@@ -7,7 +7,7 @@
 #include <iomanip>
 
 #include "DataFormats/SiStripCluster/interface/SiStripCluster.h"
-
+class SiStripCluster;
 class SiStripApproximateCluster {
 public:
   SiStripApproximateCluster() {}
@@ -18,11 +18,7 @@ public:
     avgCharge_ = avgCharge;
   }
 
-  explicit SiStripApproximateCluster(const SiStripCluster& cluster) {
-    barycenter_ = cluster.barycenter();
-    width_ = cluster.size();
-    avgCharge_ = cluster.charge() / cluster.size();
-  }
+  explicit SiStripApproximateCluster(const SiStripCluster& cluster); 
 
   float barycenter() const { return barycenter_; }
   uint8_t width() const { return width_; }

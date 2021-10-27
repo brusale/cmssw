@@ -1,6 +1,6 @@
 
 #include "DataFormats/SiStripCluster/interface/SiStripCluster.h"
-
+#include <iostream>
 SiStripCluster::SiStripCluster(const SiStripDigiRange& range) : firstStrip_(range.first->strip()), error_x(-99999.9) {
   std::vector<uint8_t> v;
   v.reserve(range.second - range.first);
@@ -22,7 +22,20 @@ SiStripCluster::SiStripCluster(const SiStripDigiRange& range) : firstStrip_(rang
   amplitudes_ = v;
 }
 
+SiStripCluster::SiStripCluster(SiStripApproximateCluster cluster ) : error_x(-99999.9) {
+  barycenter_ = cluster.barycenter();
+  charge_ = cluster.width() * cluster.avgCharge();
+}
+
+int SiStripCluster::charge() const { 
+    if( barycenter_ > 0 ) return charge_;
+    return std::accumulate(begin(), end(), int(0)); 
+}
+
 float SiStripCluster::barycenter() const {
+  //std::cout << barycenter_ << " " << std::endl;
+  if( barycenter_ > 0 ) return barycenter_;
+
   int sumx = 0;
   int suma = 0;
   auto asize = size();
@@ -30,6 +43,8 @@ float SiStripCluster::barycenter() const {
     sumx += i * amplitudes_[i];
     suma += amplitudes_[i];
   }
+
+  //std::cout << float((firstStrip_ & stripIndexMask)) + float(sumx) / float(suma) + 0.5f << std::endl;
 
   // strip centers are offcet by half pitch w.r.t. strip numbers,
   // so one has to add 0.5 to get the correct barycenter position.
