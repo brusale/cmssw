@@ -5,6 +5,9 @@ SiStripCluster::SiStripCluster(const SiStripDigiRange& range) : firstStrip_(rang
   std::vector<uint8_t> v;
   v.reserve(range.second - range.first);
 
+  //barycenter_ = 0;
+  //charge_ = 0;
+  
   uint16_t lastStrip = 0;
   bool firstInloop = true;
   for (SiStripDigiIter i = range.first; i != range.second; i++) {
@@ -22,7 +25,21 @@ SiStripCluster::SiStripCluster(const SiStripDigiRange& range) : firstStrip_(rang
   amplitudes_ = v;
 }
 
+SiStripCluster::SiStripCluster( SiStripApproximateCluster cluster ) : error_x(-99999.9) {
+  barycenter_ = cluster.barycenter();
+  charge_ = cluster.width() * cluster.avgCharge();
+  amplitudes_.resize(cluster.width(), cluster.avgCharge());
+  firstStrip_ = ((cluster.barycenter() - cluster.width()/2) < 1) ? 1 : cluster.barycenter() - cluster.width(); 
+}
+
+int SiStripCluster::charge() const {
+  if( barycenter_ > 0 ) return charge_;
+  return std::accumulate(begin(), end(), int(0)); 
+}
+
 float SiStripCluster::barycenter() const {
+  if ( barycenter_ > 0 ) return barycenter_;
+
   int sumx = 0;
   int suma = 0;
   auto asize = size();
