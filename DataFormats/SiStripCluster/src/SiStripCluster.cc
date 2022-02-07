@@ -29,6 +29,8 @@ SiStripCluster::SiStripCluster( SiStripApproximateCluster cluster ) : error_x(-9
   barycenter_ = cluster.barycenter();
   charge_ = cluster.width() * cluster.avgCharge();
   amplitudes_.resize(cluster.width(), cluster.avgCharge());
+
+  //initialize firstStrip_
   firstStrip_ = ((cluster.barycenter() - cluster.width()/2) < 1) ? 1 : cluster.barycenter() - cluster.width(); 
 }
 
