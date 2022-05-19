@@ -76,22 +76,25 @@ process.DQMoutput = cms.OutputModule("DQMRootOutputModule",
 # Additional output definition
 
 # Other statements
-process.mix.input.nbPileupEvents.averageNumber = cms.double(35.000000)
-process.mix.bunchspace = cms.int32(25)
-process.mix.minBunch = cms.int32(-12)
-process.mix.maxBunch = cms.int32(3)
-process.mix.input.fileNames = cms.untracked.vstring(['/store/relval/CMSSW_12_0_0_pre4/RelValMinBias_13/GEN-SIM/113X_upgrade2018_realistic_v5-v1/00000/06d49f03-b7cc-4f25-90df-abb4cc4c7b8f.root', '/store/relval/CMSSW_12_0_0_pre4/RelValMinBias_13/GEN-SIM/113X_upgrade2018_realistic_v5-v1/00000/0ebd0035-8183-4f64-849b-152326aac512.root', '/store/relval/CMSSW_12_0_0_pre4/RelValMinBias_13/GEN-SIM/113X_upgrade2018_realistic_v5-v1/00000/bac53773-7ea5-4932-b02f-0ade2980899f.root', '/store/relval/CMSSW_12_0_0_pre4/RelValMinBias_13/GEN-SIM/113X_upgrade2018_realistic_v5-v1/00000/ce505a54-d661-48ec-b5b1-6fa20c40de16.root', '/store/relval/CMSSW_12_0_0_pre4/RelValMinBias_13/GEN-SIM/113X_upgrade2018_realistic_v5-v1/00000/dd2c7d37-b1f5-4135-b6a7-c245c0ac1f47.root'])
-process.mix.playback = True
-process.mix.digitizers = cms.PSet()
-for a in process.aliases: delattr(process, a)
-process.RandomNumberGeneratorService.restoreStateLabel=cms.untracked.string("randomEngineStateProducer")
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, '120X_upgrade2018_realistic_v1', '')
+
+
+#this module gets a collection of standard strip clusters (list of amplitudes) as input
+#it computes the barycenter using the strip amplitudes as weights, 
+#the avg charge (tot charge/width).
+#the output is a collection of SiStripApproximatedClusters; each cluster is described through its
+#barycenter, avg charge and width (number of strips) and each cluster is of type SiStripApproximateCluster
 
 process.siStripClusters2ApproxClusters = cms.EDProducer("SiStripClusters2ApproxClusters",
 	inputClusters = cms.InputTag("siStripClusters")
 )
 
+#this module allows to have a different resolution on the barycenter and on
+#the charge (see RecoLocalTracker/SiStripClusterizer/pluging/SiStripApprox2Approx
+#for the different resolutions)
+#the input of this module is a collection of SiStripApproximateClusters and the output is 
+#still a collection of SiStripApproximateClusters
 process.siStripApprox2ApproxClusters = cms.EDProducer("SiStripApprox2ApproxClusters",
 	inputApproxClusters = cms.InputTag("siStripClusters2ApproxClusters"),
     approxVersion= cms.string("ORIGINAL")
@@ -101,6 +104,10 @@ process.siStripApprox2ApproxClusters = cms.EDProducer("SiStripApprox2ApproxClust
     #approximatedClustersTag = cms.InputTag("SiStripClusters2ApproxClusters")
 #    approximatedClustersTag = cms.InputTag("siStripApprox2ApproxClusters")
 #)
+
+#now the collection of SiStripApproximatedClusters is converted back to
+#a collection of SiStripClusters; we use the SiStripCluster(SiStripApproximateCluster cluster)
+#constructor
 
 process.load('RecoLocalTracker.SiStripClusterizer.SiStripApprox2Clusters_cfi')
 process.siStripConvertedClusters = process.SiStripApprox2Clusters.clone(
@@ -121,7 +128,6 @@ process.SiStripDQMSource = cms.Sequence(
   process.refittedForPixelDQM+
   process.MonitorTrackResiduals+
   process.dqmInfoSiStrip
-#  +process.siStripApproxClustersMonitor
 )
 
 #Path and EndPath definitions
@@ -133,8 +139,8 @@ process.approxToApproxClusters_step = cms.Path(process.siStripApprox2ApproxClust
 process.reconstruction_step = cms.Path(process.reconstruction_trackingOnly)
 process.striptrackerlocalrecoTask = cms.Task(process.siStripConvertedClusters,process.siStripMatchedRecHits)
 process.striptrackerlocalreco_step = cms.Path(process.striptrackerlocalrecoTask)
-process.prevalidation_step = cms.Path(process.globalPrevalidationTrackingOnly)
-process.validation_step = cms.EndPath(process.globalValidationTrackingOnly)
+process.prevalidation_step = cms.Path(process.globalPrevalidationTrackingOnly) #tracking only validation; no infos from other subdetectors
+process.validation_step = cms.EndPath(process.globalValidationTrackingOnly)     
 process.dqmoffline_step = cms.EndPath(process.SiStripDQMSource+
   process.TrackingDQMSource
   process.DQMOfflineTracking)
@@ -142,140 +148,7 @@ process.dqmofflineOnPAT_step = cms.EndPath(process.PostDQMOffline)
 process.RECOSIMoutput_step = cms.EndPath(process.RECOSIMoutput)
 process.DQMoutput_step = cms.EndPath(process.DQMoutput)
 
-#enable only pixelLess step
-#process.iterTrackingEarlyTask = cms.Task(process.PixelLessStepTask)
 
-process.pixelLessStepSeeds = cms.EDProducer("SeedCreatorFromRegionConsecutiveHitsTripletOnlyEDProducer",
-    MinOneOverPtError = cms.double(1),
-    OriginTransverseErrorMultiplier = cms.double(1),
-    SeedComparitorPSet = cms.PSet(
-        ComponentName = cms.string('CombinedSeedComparitor'),
-        comparitors = cms.VPSet(
-            cms.PSet(
-                ClusterShapeCacheSrc = cms.InputTag("siPixelClusterShapeCache"),
-                ClusterShapeHitFilterName = cms.string('pixelLessStepClusterShapeHitFilter'),
-                ComponentName = cms.string('PixelClusterShapeSeedComparitor'),
-                FilterAtHelixStage = cms.bool(True),
-                FilterPixelHits = cms.bool(False),
-                FilterStripHits = cms.bool(True)
-            ),
-            cms.PSet(
-               ComponentName = cms.string('StripSubClusterShapeSeedFilter'),
-                FilterAtHelixStage = cms.bool(False),
-                label = cms.untracked.string('Seeds'),
-                maxNSat = cms.uint32(3),
-                maxTrimmedSizeDiffNeg = cms.double(1.0),
-                maxTrimmedSizeDiffPos = cms.double(0.7),
-                seedCutMIPs = cms.double(0.35),
-                seedCutSN = cms.double(7.0),
-                subclusterCutMIPs = cms.double(0.45),
-                subclusterCutSN = cms.double(12.0),
-                subclusterWindow = cms.double(0.7),
-                trimMaxADC = cms.double(30.0),
-                trimMaxFracNeigh = cms.double(0.25),
-                trimMaxFracTotal = cms.double(0.15)
-            )
-        ),
-        mode = cms.string('and')
-    ),
-    SeedMomentumForBOFF = cms.double(5),
-    TTRHBuilder = cms.string('WithTrackAngle'),
-    forceKinematicWithRegionDirection = cms.bool(False),
-    magneticField = cms.string('ParabolicMf'),
-    mightGet = cms.untracked.vstring(
-        'RegionsSeedingHitSets_pixelLessStepHitTriplets__rawPrime',
-        'BaseTrackerRecHitsOwned_pixelLessStepHitTriplets__rawPrime'
-    ),
-    propagator = cms.string('PropagatorWithMaterialParabolicMf'),
-    seedingHitSets = cms.InputTag("pixelLessStepHitTriplets")
-)
-
-process.tobTecStepSeedsPair = cms.EDProducer("SeedCreatorFromRegionConsecutiveHitsEDProducer",
-    MinOneOverPtError = cms.double(1),
-    OriginTransverseErrorMultiplier = cms.double(1),
-    SeedComparitorPSet = cms.PSet(
-        ComponentName = cms.string('CombinedSeedComparitor'),
-        comparitors = cms.VPSet(
-            cms.PSet(
-                ClusterShapeCacheSrc = cms.InputTag("siPixelClusterShapeCache"),
-                ClusterShapeHitFilterName = cms.string('tobTecStepClusterShapeHitFilter'),
-                ComponentName = cms.string('PixelClusterShapeSeedComparitor'),
-                FilterAtHelixStage = cms.bool(True),
-                FilterPixelHits = cms.bool(False),
-                FilterStripHits = cms.bool(True)
-            ),
-            cms.PSet(
-                ComponentName = cms.string('StripSubClusterShapeSeedFilter'),
-                FilterAtHelixStage = cms.bool(False),
-                label = cms.untracked.string('Seeds'),
-                maxNSat = cms.uint32(3),
-                maxTrimmedSizeDiffNeg = cms.double(1.0),
-                maxTrimmedSizeDiffPos = cms.double(0.7),
-                seedCutMIPs = cms.double(0.35),
-                seedCutSN = cms.double(7.0),
-                subclusterCutMIPs = cms.double(0.45),
-                subclusterCutSN = cms.double(12.0),
-                subclusterWindow = cms.double(0.7),
-                trimMaxADC = cms.double(30.0),
-                trimMaxFracNeigh = cms.double(0.25),
-                trimMaxFracTotal = cms.double(0.15)
-            )
-        ),
-        mode = cms.string('and')
-    ),
-    SeedMomentumForBOFF = cms.double(5),
-    TTRHBuilder = cms.string('WithTrackAngle'),
-    forceKinematicWithRegionDirection = cms.bool(False),
-    magneticField = cms.string('ParabolicMf'),
-    mightGet = cms.untracked.vstring('RegionsSeedingHitSets_tobTecStepHitDoubletsPair__rawPrime'),
-    propagator = cms.string('PropagatorWithMaterialParabolicMf'),
-    seedingHitSets = cms.InputTag("tobTecStepHitDoubletsPair")
-)
-
-process.tobTecStepSeedsTripl = cms.EDProducer("SeedCreatorFromRegionConsecutiveHitsEDProducer",
-    MinOneOverPtError = cms.double(1),
-    OriginTransverseErrorMultiplier = cms.double(1),
-    SeedComparitorPSet = cms.PSet(
-        ComponentName = cms.string('CombinedSeedComparitor'),
-        comparitors = cms.VPSet(
-            cms.PSet(
-                ClusterShapeCacheSrc = cms.InputTag("siPixelClusterShapeCache"),
-                ClusterShapeHitFilterName = cms.string('tobTecStepClusterShapeHitFilter'),
-                ComponentName = cms.string('PixelClusterShapeSeedComparitor'),
-                FilterAtHelixStage = cms.bool(True),
-                FilterPixelHits = cms.bool(False),
-                FilterStripHits = cms.bool(True)
-            ),
-            cms.PSet(
-                ComponentName = cms.string('StripSubClusterShapeSeedFilter'),
-                FilterAtHelixStage = cms.bool(False),
-                label = cms.untracked.string('Seeds'),
-                maxNSat = cms.uint32(3),
-                maxTrimmedSizeDiffNeg = cms.double(1.0),
-                maxTrimmedSizeDiffPos = cms.double(0.7),
-                seedCutMIPs = cms.double(0.35),
-                seedCutSN = cms.double(7.0),
-                subclusterCutMIPs = cms.double(0.45),
-                subclusterCutSN = cms.double(12.0),
-                subclusterWindow = cms.double(0.7),
-                trimMaxADC = cms.double(30.0),
-                trimMaxFracNeigh = cms.double(0.25),
-                trimMaxFracTotal = cms.double(0.15)
-            )
-        ),
-        mode = cms.string('and')
-    ),
-    SeedMomentumForBOFF = cms.double(5),
-    TTRHBuilder = cms.string('WithTrackAngle'),
-    forceKinematicWithRegionDirection = cms.bool(False),
-    magneticField = cms.string('ParabolicMf'),
-    mightGet = cms.untracked.vstring(
-        'RegionsSeedingHitSets_tobTecStepHitTripletsTripl__rawPrime',
-        'BaseTrackerRecHitsOwned_tobTecStepHitTripletsTripl__rawPrime'
-    ),
-    propagator = cms.string('PropagatorWithMaterialParabolicMf'),
-    seedingHitSets = cms.InputTag("tobTecStepHitTripletsTripl")
-)
 
 # Schedule definition
 process.schedule = cms.Schedule(process.raw2digi_step,
@@ -284,7 +157,7 @@ process.schedule = cms.Schedule(process.raw2digi_step,
   process.siStripClusters2ApproxClusters_step, #convert SiStripCluster to SiStripApproximateCluster
   process.approxToApproxClusters_step, #change resolution on barycenter and charge (optional; see SiStripApprox2ApproxCluster) 
   process.striptrackerlocalreco_step, #convert SiStripApproximateCluster to SiStripCluster
-  process.reconstruction_step,
+  process.reconstruction_step, #standard reconstruction
   process.prevalidation_step,
   process.validation_step,
   process.dqmoffline_step,process.dqmofflineOnPAT_step,
@@ -306,7 +179,6 @@ process.MeasurementTrackerEvent.stripClusterProducer = "siStripConvertedClusters
 from Configuration.Applications.ConfigBuilder import MassReplaceInputTag
 MassReplaceInputTag(process, new='siStripConvertedClusters', old='siStripClusters') #use siStripConvertedCluster instead of siStripCluster everywhere in the reconstruction steps
 
-#process.siStripClusters.DigiProducersList = cms.VInputTag(cms.InputTag("simSiStripDigis","ZeroSuppressed"), cms.InputTag("simSiStripZeroSuppression","VirginRaw"), cms.InputTag("simSiStripZeroSuppression","ProcessedRaw"), cms.InputTag("simSiStripZeroSuppression","ScopeMode"))
 
 process.siStripMatchedRecHits.ClusterProducer = "siStripConvertedClusters" 
 
