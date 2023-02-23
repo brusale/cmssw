@@ -9,6 +9,8 @@
 #include "RecoEcal/EgammaCoreTools/interface/PositionCalc.h"
 //
 #include "DataFormats/CaloRecHit/interface/CaloID.h"
+#include "DataFormats/HcalDetId/interface/HcalDetId.h"
+
 #include "oneapi/tbb/task_arena.h"
 #include "oneapi/tbb.h"
 #include <limits>
@@ -72,6 +74,57 @@ void HGCalCLUEAlgoT<T>::populate(const HGCRecHitCollection& hits) {
     }  // else, isSilicon == true and eta phi values will not be used
     cells_[layer].weight.emplace_back(hgrh.energy());
     cells_[layer].sigmaNoise.emplace_back(sigmaNoise);
+  }
+}
+
+template <typename T>
+void HGCalCLUEAlgoT<T>::populate(const reco::PFRecHitCollection& eb_hits, 
+                                 const reco::PFRecHitCollection& hb_hits,
+                                 const reco::PFRecHitCollection& ho_hits) {
+
+  for (unsigned int i = 0; i < eb_hits.size(); ++i) {
+    const reco::PFRecHit& eb_hit = eb_hits[i];
+    DetId detid(eb_hit.detId());
+    const GlobalPoint position(rhtools_.getPosition(detid));
+    int layer = 0;
+
+    cells_[layer].detid.emplace_back(detid);
+    cells_[layer].isSi.emplace_back(false);
+    cells_[layer].eta.emplace_back(position.eta());
+    cells_[layer].phi.emplace_back(position.phi());
+    cells_[layer].weight.emplace_back(eb_hit.energy());
+  }
+  for (unsigned int i = 0; i < hb_hits.size(); ++i) {
+    const reco::PFRecHit& hb_hit = hb_hits[i];
+    DetId detid(hb_hit.detId());
+    const GlobalPoint position(rhtools_.getPosition(detid));
+    HcalDetId hid(hb_hit.detId());
+    int layer = hid.depth();  //maybe get it through rhtools?
+
+    cells_[layer].detid.emplace_back(detid);
+    cells_[layer].isSi.emplace_back(false);
+    cells_[layer].eta.emplace_back(position.eta());
+    cells_[layer].phi.emplace_back(position.phi());
+    cells_[layer].weight.emplace_back(hb_hit.energy());
+  }
+  for (unsigned int i = 0; i < ho_hits.size(); ++i) {
+    const reco::PFRecHit& ho_hit = ho_hits[i];
+    DetId detid(ho_hit.detId());
+    HcalDetId hid(ho_hit.detId());
+    const GlobalPoint position(rhtools_.getPosition(detid));
+    int layer = hid.depth()+1; //maybe get it through rhtools? (+1 because HO has depth 4 like the last layers of HB)
+    //uncomment this if we want to add another layer (and find a better way to do it)
+    /*if (position.perp() == 390) { //find a better way to do this
+      layer += 1;              
+    } else {
+      layer += 2;
+    }*?
+
+    cells_[layer].detid.emplace_back(detid);
+    cells_[layer].isSi.emplace_back(false);
+    cells_[layer].eta.emplace_back(position.eta());
+    cells_[layer].phi.emplace_back(position.phi());
+    cells_[layer].weight.emplace_back(ho_hit.energy());
   }
 }
 
