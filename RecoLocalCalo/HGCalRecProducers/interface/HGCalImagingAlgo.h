@@ -17,6 +17,8 @@
 
 #include "DataFormats/Math/interface/Point3D.h"
 #include "DataFormats/EgammaReco/interface/BasicCluster.h"
+#include "DataFormats/ParticleFlowReco/interface/PFRecHitFwd.h"
+#include "DataFormats/ParticleFlowReco/interface/PFRecHit.h"
 
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 #include "CommonTools/RecoAlgos/interface/KDTreeLinkerAlgo.h"
@@ -54,6 +56,7 @@ public:
 
   void getEventSetupPerAlgorithm(const edm::EventSetup &es) override;
 
+  void populate(const std::vector<edm::Handle<reco::PFRecHitCollection>> &hitCollections) override { }
   void populate(const HGCRecHitCollection &hits) override;
   // this is the method that will start the clusterisation (it is possible to invoke this method more than once - but make sure it is with
   // different hit collections (or else use reset)
