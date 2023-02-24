@@ -59,7 +59,7 @@ public:
   void getEventSetupPerAlgorithm(const edm::EventSetup& es) override;
 
   
-  void populate(const reco::PFRecHitCollection& eb_hits, const reco::PFRecHitCollection& hb_hits, const reco::PFRecHitCollection& ho_hits);
+  void populate(const std::vector<edm::Handle<reco::PFRecHitCollection>>& hitCollections) override;
   void populate(const HGCRecHitCollection& hits) override;
 
   // this is the method that will start the clusterisation (it is possible to invoke this method
