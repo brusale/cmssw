@@ -10,6 +10,7 @@
 //
 #include "DataFormats/CaloRecHit/interface/CaloID.h"
 #include "DataFormats/HcalDetId/interface/HcalDetId.h"
+#include "DataFormats/EcalDetId/interface/EBDetId.h"
 
 #include "oneapi/tbb/task_arena.h"
 #include "oneapi/tbb.h"
@@ -78,28 +79,26 @@ void HGCalCLUEAlgoT<T>::populate(const HGCRecHitCollection& hits) {
 }
 
 template <typename T>
-void HGCalCLUEAlgoT<T>::populate(const std::vector<edm::Handle<reco::PFRecHitCollection>>& hitCollectionsHandles) {
-  for (auto const& handle : hitCollectionsHandles) {
-    const reco::PFRecHitCollection& hits = *handle;
-    for (unsigned int i = 0; i < hits.size(); ++i) {
-      const reco::PFRecHit& hit = hits[i];
-      DetId detid(hit.detId());
-      const GlobalPoint position(rhtools_.getPosition(detid));
-      int layer = 0;
-      if (detid.det() == DetId::Hcal) {
-          HcalDetId hid(hit.detId());
-          layer = hid.depth();
-          if (detid.subdetId() == HcalSubdetector::HcalOuter) {
-            layer += 1;
-          }
-      } 
-      cells_[layer].detid.emplace_back(detid);
-      cells_[layer].isSi.emplace_back(false);
-      cells_[layer].eta.emplace_back(position.eta());
-      cells_[layer].phi.emplace_back(position.phi());
-      cells_[layer].weight.emplace_back(hit.energy());
-    }
+void HGCalCLUEAlgoT<T>::populate(const reco::PFRecHitCollection& hits) {
+  for (unsigned int i = 0; i < hits.size(); ++i) {
+    const reco::PFRecHit& hit = hits[i];
+    DetId detid(hit.detId());
+    const GlobalPoint position(rhtools_.getPosition(detid));
+    int layer = 0;
+    if (detid.det() == DetId::Hcal) {
+        HcalDetId hid(hit.detId());
+        layer = hid.depth();
+        if (detid.subdetId() == HcalSubdetector::HcalOuter) {
+          layer += 1;
+        }
+    } 
+    cells_[layer].detid.emplace_back(detid);
+    cells_[layer].isSi.emplace_back(false);
+    cells_[layer].eta.emplace_back(position.eta());
+    cells_[layer].phi.emplace_back(position.phi());
+    cells_[layer].weight.emplace_back(hit.energy());
   }
+  
 }
 
 template <typename T>
@@ -130,7 +129,12 @@ void HGCalCLUEAlgoT<T>::makeClusters() {
       prepareDataStructures(i);
       T lt;
       lt.clear();
-      lt.fill(cells_[i].x, cells_[i].y, cells_[i].eta, cells_[i].phi, cells_[i].isSi);
+      if constexpr (std::is_same_v<T, EBLayerTiles> || std::is_same_v<T, HBLayerTiles> || std::is_same_v<T, HOLayerTiles>) {
+        lt.fill(cells_[i].eta, cells_[i].phi, cells_[i].isSi);
+      }
+      else {
+        lt.fill(cells_[i].x, cells_[i].y, cells_[i].eta, cells_[i].phi, cells_[i].isSi);
+      }
       float delta_c;  // maximum search distance (critical distance) for local
                       // density calculation
       if (i % maxlayer_ < lastLayerEE_)
@@ -320,10 +324,27 @@ void HGCalCLUEAlgoT<T>::calculateLocalDensity(const T& lt, const unsigned int la
             unsigned int otherId = lt[binId][j];
             if (!cellsOnLayer.isSi[otherId]) {  //scintillator cells cannot talk to silicon cells
               if (distance(i, otherId, layerId, true) < delta) {
-                int iPhi = HGCScintillatorDetId(cellsOnLayer.detid[i]).iphi();
+                int iPhi(0), otherIPhi(0), iEta(0), otherIEta(0);
+                if (std::is_same_v<T, EBLayerTiles>) {
+                  iPhi = EBDetId(cellsOnLayer.detid[i]).iphi();
+                  otherIPhi = EBDetId(cellsOnLayer.detid[otherId]).iphi();
+                  iEta = EBDetId(cellsOnLayer.detid[i]).ieta();
+                  otherIEta = EBDetId(cellsOnLayer.detid[i]).ieta();
+                } else if (std::is_same_v<T, HBLayerTiles> || std::is_same_v<T, HOLayerTiles>) {
+                  iPhi = HcalDetId(cellsOnLayer.detid[i]).iphi();
+                  otherIPhi = HcalDetId(cellsOnLayer.detid[otherId]).iphi();
+                  iEta = HcalDetId(cellsOnLayer.detid[i]).ieta();
+                  otherIEta = HcalDetId(cellsOnLayer.detid[i]).iphi();
+                } else {
+                  iPhi = HGCScintillatorDetId(cellsOnLayer.detid[i]).iphi();
+                  otherIPhi = HGCScintillatorDetId(cellsOnLayer.detid[otherId]).iphi();
+                  iEta = HGCScintillatorDetId(cellsOnLayer.detid[i]).ieta();
+                  otherIEta = HGCScintillatorDetId(cellsOnLayer.detid[otherId]).ieta();
+                }
+/*               int iPhi = HGCScintillatorDetId(cellsOnLayer.detid[i]).iphi();
                 int otherIPhi = HGCScintillatorDetId(cellsOnLayer.detid[otherId]).iphi();
                 int iEta = HGCScintillatorDetId(cellsOnLayer.detid[i]).ieta();
-                int otherIEta = HGCScintillatorDetId(cellsOnLayer.detid[otherId]).ieta();
+                int otherIEta = HGCScintillatorDetId(cellsOnLayer.detid[otherId]).ieta();*/
                 int dIPhi = otherIPhi - iPhi;
                 dIPhi += abs(dIPhi) < 2 ? 0
                          : dIPhi < 0    ? scintMaxIphi_
@@ -596,3 +617,6 @@ Density HGCalCLUEAlgoT<T>::getDensity() {
 // explicit template instantiation
 template class HGCalCLUEAlgoT<HGCalLayerTiles>;
 template class HGCalCLUEAlgoT<HFNoseLayerTiles>;
+template class HGCalCLUEAlgoT<EBLayerTiles>;
+template class HGCalCLUEAlgoT<HBLayerTiles>;
+template class HGCalCLUEAlgoT<HOLayerTiles>;

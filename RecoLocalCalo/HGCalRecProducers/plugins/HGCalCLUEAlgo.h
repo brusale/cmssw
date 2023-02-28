@@ -59,7 +59,7 @@ public:
   void getEventSetupPerAlgorithm(const edm::EventSetup& es) override;
 
   
-  void populate(const std::vector<edm::Handle<reco::PFRecHitCollection>>& hitCollections) override;
+  void populate(const reco::PFRecHitCollection& hits) override;
   void populate(const HGCRecHitCollection& hits) override;
 
   // this is the method that will start the clusterisation (it is possible to invoke this method
@@ -250,8 +250,13 @@ private:
 // explicit template instantiation
 extern template class HGCalCLUEAlgoT<HGCalLayerTiles>;
 extern template class HGCalCLUEAlgoT<HFNoseLayerTiles>;
+extern template class HGCalCLUEAlgoT<EBLayerTiles>;
+extern template class HGCalCLUEAlgoT<HBLayerTiles>;
+extern template class HGCalCLUEAlgoT<HOLayerTiles>;
 
 using HGCalCLUEAlgo = HGCalCLUEAlgoT<HGCalLayerTiles>;
 using HFNoseCLUEAlgo = HGCalCLUEAlgoT<HFNoseLayerTiles>;
-
+using EBCLUEAlgo = HGCalCLUEAlgoT<EBLayerTiles>;
+using HBCLUEAlgo = HGCalCLUEAlgoT<HBLayerTiles>;
+using HOCLUEAlgo = HGCalCLUEAlgoT<HOLayerTiles>;
 #endif
