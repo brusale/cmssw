@@ -55,7 +55,7 @@ public:
       : verbosity_(v), algoId_(algo), caloGeomToken_(iC.esConsumes<CaloGeometry, CaloGeometryRecord>()) {}
   virtual ~HGCalClusteringAlgoBase() {}
 
-  virtual void populate(const std::vector<edm::Handle<reco::PFRecHitCollection>> &hitCollections) = 0;
+  virtual void populate(const reco::PFRecHitCollection &hits) = 0;
   virtual void populate(const HGCRecHitCollection &hits) = 0;
   virtual void makeClusters() = 0;
   virtual std::vector<reco::BasicCluster> getClusters(bool) = 0;
