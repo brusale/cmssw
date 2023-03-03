@@ -216,3 +216,54 @@ void BarrelCLUEAlgoT<T>::calculateLocalDensity(const T& lt,
     }
   }
 }
+
+template <typename T>
+void BarrelCLUEAlgoT<T>::calculateDistanceToHigher(const T& lt,
+                                                   const unsigned int layerId,
+                                                   float delta_c,
+                                                   float delta_r) {
+  auto& cellsOnLayer = cells_[layerId];
+  unsigned int numberOfCells = cellsOnLayer.detid.size();
+
+  for (unsigned int i = 0; i < numberOfCells; ++i) {
+    float maxDelta = std::numeric_limits<float>::max();
+    float i_delta = maxDelta;
+    int i_nearestHigher = -1;
+    float delta = delta_c;
+    auto range = outlierDeltaFactor_ * delta;
+    auto range_phi = range/cellsOnLayer.r[i];
+
+    std::array<int, 4> search_box = lt.searchBoxPhiZ(cellsOnLayer.phi[i] - range,
+                                                     cellsOnLayer.phi[i] + range,
+                                                     cellsOnLayer.z[i] - range,
+                                                     cellsOnLayer.z[i] + range);
+    
+    for (int xBin = search_box[0]; xBin < search_box[1]; ++xBin) {
+      for (int yBin = search_box[2]; yBin < search_box[3]; ++yBin) {
+        int phi = (yBin % T::type::nRowsPhi);
+        int binId = lt.getGlobalBinByBinPhi(phi, yBin);
+        int binSize = lt[binId].size();
+
+        for (unsigned int j = 0; j < binSize; ++j) {
+          unsigned int otherId = lt[binId][j];
+          float dist = distance(i, otherId, layerId);
+          bool foundHigher = (cellsOnLayer.rho[otherId] > cellsOnLayer.rho[i]) ||
+                             (cellsOnLayer.rho[otherId] == cellsOnLayer.rho[i] &&
+                              cellsOnLayer.detid[otherId] > cellsOnLayer.detid[i]);
+          if (foundHigher && dist <= i_delta) {
+            i_delta = dist;
+            i_nearestHigher = otherId;
+          }
+        }
+      }
+    }
+    bool foundNearestHigherInSearchBox = (i_nearestHigher != maxDelta);
+    if (foundNearestHigherInSearchBox) {
+      cellsOnLayer.delta[i] = i_delta;
+      cellsOnLayer.nearestHigher = i_nearestHigher;
+    } else {
+      cellsOnLayer.delta[i] = maxDelta;
+      cellsOnLayer.nearestHigher = -1;
+    }
+  }
+}
