@@ -1,6 +1,8 @@
 #ifndef RecoLocalCalo_HGCalRecProducers_BarrelCLUEAlgo_h
 #define RecoLocalCalo_HGCalRecProducers_BarrelCLUEAlgo_h
 
+#include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
+
 #include "RecoLocalCalo/HGCalRecProducers/interface/HGCalClusteringAlgoBase.h"
 
 #include "DataFormats/DetId/interface/DetId.h"
@@ -11,9 +13,7 @@
 #include "DataFormats/Math/interface/Point3D.h"
 #include "DataFormats/Math/interface/deltaPhi.h"
 
-#include "RecoLocalCalo/HGCalRecProducers/interface/EBTilesConstants.h"
-#include "RecoLocalCalo/HGCalRecProducers/interface/HBTilesConstants.h"
-#include "RecoLocalCalo/HGCalRecProducers/interface/HOTilesConstants.h"
+#include "RecoLocalCalo/HGCalRecProducers/interface/HGCalLayerTiles.h"
 
 using Density = hgcal_clustering::Density;
 
@@ -22,14 +22,14 @@ class BarrelCLUEAlgoT : HGCalClusteringAlgoBase {
   public:
     BarrelCLUEAlgoT(const edm::ParameterSet& ps, edm::ConsumesCollector iC) 
       : HGCalClusteringAlgoBase(
-	          (HGCalClusteringAlgoBase::VerbosityLevel)ps.getUntrackedParameter<unsigned int>("verbosity", 3);
-	          reco::CaloCluster::undeined,
+	          (HGCalClusteringAlgoBase::VerbosityLevel)ps.getUntrackedParameter<unsigned int>("verbosity", 3),
+	          reco::CaloCluster::undefined,
 	          iC) {}
     ~BarrelCLUEAlgoT() override {}
 
     void getEventSetupPerAlgorithm(const edm::EventSetup& es) override;
 
-    void populate(reco::PFRecHitCollection& hits) override;
+    void populate(const reco::PFRecHitCollection& hits) override;
 
     void makeClusters() override;
 
@@ -37,7 +37,7 @@ class BarrelCLUEAlgoT : HGCalClusteringAlgoBase {
 
     void reset() override {
       clusters_v_.clear();
-      clusters_v.shrink_to_fit();
+      clusters_v_.shrink_to_fit();
 
       for (auto& cl : numberOfClustersPerLayer_) {
 	      cl = 0;
@@ -47,7 +47,7 @@ class BarrelCLUEAlgoT : HGCalClusteringAlgoBase {
 	      cells.clear();
 	      cells.shrink_to_fit();
       }
-      density.clear();
+      density_.clear();
     }
 
 
@@ -128,18 +128,14 @@ class BarrelCLUEAlgoT : HGCalClusteringAlgoBase {
       }
     };
 
-    if constexpr (std::is_same_v<TILE, EBLayerTiles>) {
-      std::vector<BarrelCellsOnLayer> cells_;
-    } else {
-      std::vector<HcalCellsOnLayer> cells_;
-    }
+    std::vector<BarrelCellsOnLayer> cells_;
 
     std::vector<int> numberOfClustersPerLayer_;
 
     inline float distance2(int cell1, int cell2, int layerId) {
       //const float dphi = reco::deltaPhi(cells_[layerId].phi[cell1] - cells_[layerId].phi[cell2]);
       //const float deta = cells_[layerId].eta[cell1] - cells_[layerId].eta[cell2];
-      const float drphi = r * reco::deltaPhi(cells_[layerId].phi[cell1] - cells_[layerId].phi[cell2]);
+      const float drphi = cells_[layerId].r[cell1] * reco::deltaPhi(cells_[layerId].phi[cell1] - cells_[layerId].phi[cell2]);
       const float dz = cells_[layerId].z[cell1] - cells_[layerId].z[cell2];
       //return (deta * deta + dphi * dphi)
       return (drphi * drphi + dz * dz);
@@ -161,4 +157,11 @@ class BarrelCLUEAlgoT : HGCalClusteringAlgoBase {
 
 };
 
+extern template class BarrelCLUEAlgoT<EBLayerTiles>;
+extern template class BarrelCLUEAlgoT<HBLayerTiles>;
+extern template class BarrelCLUEAlgoT<HOLayerTiles>;
+
+using EBCLUEAlgo = BarrelCLUEAlgoT<EBLayerTiles>;
+using HBCLUEAlgo = BarrelCLUEAlgoT<HBLayerTiles>;
+using HOCLUEAlgo = BarrelCLUEAlgoT<HOLayerTiles>;
 #endif
