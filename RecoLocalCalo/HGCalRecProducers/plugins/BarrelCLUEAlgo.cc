@@ -154,3 +154,65 @@ std::vector<reco::BasicCluster> BarrelCLUEAlgoT<T>::getClusters(bool) {
   }
 }
 
+template <typename T>
+math::XYZPoint BarrelCLUEAlgoT<T>::calculatePosition(const std::vector<int>& v, const unsigned int layerId) const {
+    float total_weight;
+    float total_weight_log = 0.f;
+    float x_log = 0.f;
+    float y_log = 0.f;
+    float z_log = 0.f;
+
+    auto& cellsOnLayer = cells_[layerId];
+
+    for (auto i : v) {
+      total_weight += cellsOnLayer.weight[i];
+    }
+    for (auto i : v) {
+      float rhEnergy = cellsOnLayer.weight[i];
+      float Wi = std::log(rhEnergy/total_weight);
+      total_weight_log += Wi;
+      x_log += cellsOnLayer.x[i] * Wi;
+      y_log += cellsOnLayer.y[i] * Wi;
+      z_log += cellsOnLayer.z[i] * Wi;
+    }
+    if (total_weight_log != 0.) {
+      float inv_tot_weight_log = 1.f / total_weight_log;
+
+      return math::XYZPoint(x_log*inv_tot_weight_log, y_log*inv_tot_weight_log, z_log*inv_tot_weight_log);
+    } else {
+      return math::XYZPoint(0.f, 0.f, 0.f);
+    }
+}
+
+template <typename T>
+void BarrelCLUEAlgoT<T>::calculateLocalDensity(const T& lt,
+                                              const unsigned int layerId,
+                                              float delta_c,
+                                              float delta_r) {
+  auto& cellsOnLayer = cells_[layerId];
+  unsigned int numberOfCells = cellsOnLayer.detid.size();
+  
+  for (unsigned int i = 0; i < numberOfCells; ++i) {
+    float delta = delta_c;
+    float delta_phi = delta/cellsOnLayer.r[i];
+    std::array<int,4> search_box = lt.searchBoxPhiZ(cellsOnLayer.phi[i] - delta_phi,
+                                                    cellsOnLayer.phi[i] + delta_phi,
+                                                    cellsOnLayer.z[i] - delta,
+                                                    cellsOnLayer.z[i] + delta);
+    
+    for (int xBin = search_box[0]; xBin < search_box[1]; ++xBin) {
+      for (int yBin = search_box[2]; yBin < search_box[3]; ++yBin) {
+        int phi = (xBin % T::type::nRowsPhi);
+        int binId = lt.getGlobalBinByBinPhi(phi, yBin); //implement this in LayerTiles.h
+        int binSize = lt[binId].size();
+
+        for (unsigned int j = 0; j < binSize; ++j) {
+          unsigned int otherId = lt[binId][j];
+          if (distance(i, otherId, layerId, true) < delta) {
+            cellsOnLayer.rho[i] += (i == j ? 1.f : 0.5f) * cellsOnLayer.rho[i];
+          } 
+        }
+      }
+    }
+  }
+}
