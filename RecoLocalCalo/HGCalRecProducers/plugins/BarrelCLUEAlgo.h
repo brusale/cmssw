@@ -91,6 +91,7 @@ private:
   // The two parameters used to identify clusters
   std::vector<double> vecDeltas_;
   double kappa_;
+  double rhoc_;
 
   Density density_;
   // For keeping the density per hit
