@@ -4,6 +4,11 @@
 #include "DataFormats/CaloRecHit/interface/CaloID.h"
 #include "DataFormats/HcalDetId/interface/HcalDetId.h"
 
+
+#include "oneapi/tbb/task_arena.h"
+#include "oneapi/tbb.h"
+#include <limits>
+
 using namespace hgcal_clustering;
 
 template <typename T>
@@ -51,5 +56,29 @@ void BarrelCLUEAlgoT<T>::prepareDataStructures(unsigned int l) {
   cells_[l].r.resize(cellsSize, 0.f);
 }
 
-
+template <typename T>
+void BarrelCLUEAlgoT<T>::makeClusters() {
+  tbb::this_task_arena::isolate([&] {
+    tbb::parallel_for(size_t(0), size_t(maxlayer_ + 1), [&](size_t i) {
+      prepareDataStructures(i);
+      T lt;
+      lt.clear();
+      lt.fill(cells_[i].eta, cells_[i].phi);
+      float delta_c;
+      
+      if (i == 0)
+	delta_c = vecDeltas_[0];
+      else
+	delta_c = vecDeltas_[1];
+      float delta_r = vecDeltas_[2];
+      
+      calculateLocalDensity(lt, i, delta_c, delta_r);
+      calculateDistanceToHigher(lt, i, delta_c, delta_r);
+      numberOfClustersPerLayer_[i] = findAndAssignClusters(i, delta_c, delta_r);
+      });
+    });
+  for (unsigned int i = 0; i < maxlayer_ + 1; ++i) {
+    setDensity(i);
+  }
+}
 
