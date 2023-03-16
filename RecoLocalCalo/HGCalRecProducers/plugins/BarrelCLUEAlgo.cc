@@ -48,7 +48,7 @@ void BarrelCLUEAlgoT<T>::prepareDataStructures(unsigned int l) {
   auto cellsSize = cells_[l].detid.size();
   cells_[l].rho.resize(cellsSize, 0.f);
   cells_[l].delta.resize(cellsSize, 9999999);
-  cells_[l].nearestHigher(cellsSize, -1);
+  cells_[l].nearestHigher.resize(cellsSize, -1);
   cells_[l].clusterIndex.resize(cellsSize, -1);
   cells_[l].followers.resize(cellsSize);
   cells_[l].eta.resize(cellsSize, 0.f);
@@ -285,3 +285,22 @@ int BarrelCLUEAlgoT<T>::findAndAssignClusters(const unsigned int layerId, float 
   }
   return nClustersOnLayer;
 }
+
+template <typename T> 
+void BarrelCLUEAlgoT<T>::setDensity(const unsigned int layerId) {
+  auto& cellsOnLayer = cells_[layerId];
+  unsigned int numberOfCells = cellsOnLayer.detid.size();
+  for (unsigned int i = 0; i < numberOfCells; ++i) {
+    density_[cellsOnLayer.detid[i]] = cellsOnLayer.rho[i];
+  }
+}
+
+template <typename T>
+Density BarrelCLUEAlgoT<T>::getDensity() {
+  return density_;
+}
+
+template class BarrelCLUEAlgoT<EBLayerTiles>;
+template class BarrelCLUEAlgoT<HBLayerTiles>;
+template class BarrelCLUEAlgoT<HOLayerTiles>;
+
