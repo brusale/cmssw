@@ -25,7 +25,7 @@
 #include "RecoLocalCalo/HGCalRecAlgos/interface/HGCalDepthPreClusterer.h"
 
 #include "Geometry/Records/interface/IdealGeometryRecord.h"
-#include "Geometry/HGCalGeometry/interface/HGCalGeometry.h"
+#include "Geometry/CaloGeometry/interface/CaloGeometry.h"
 
 #include "DataFormats/ParticleFlowReco/interface/PFCluster.h"
 #include "DataFormats/Common/interface/ValueMap.h"

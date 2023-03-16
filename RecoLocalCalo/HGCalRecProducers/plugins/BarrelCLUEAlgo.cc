@@ -15,6 +15,7 @@ template <typename T>
 void BarrelCLUEAlgoT<T>::getEventSetupPerAlgorithm(const edm::EventSetup& es) {
   cells_.clear();
   numberOfClustersPerLayer_.clear();
+  maxlayer_ = 0; //for testing purposes
   cells_.resize(maxlayer_ + 1);
   numberOfClustersPerLayer_.resize(maxlayer_ + 1, 0);
 }
@@ -51,6 +52,7 @@ void BarrelCLUEAlgoT<T>::prepareDataStructures(unsigned int l) {
   cells_[l].nearestHigher.resize(cellsSize, -1);
   cells_[l].clusterIndex.resize(cellsSize, -1);
   cells_[l].followers.resize(cellsSize);
+  cells_[l].isSeed.resize(cellsSize, false);
   cells_[l].eta.resize(cellsSize, 0.f);
   cells_[l].phi.resize(cellsSize, 0.f);
   cells_[l].r.resize(cellsSize, 0.f);
@@ -254,12 +256,10 @@ int BarrelCLUEAlgoT<T>::findAndAssignClusters(const unsigned int layerId, float 
   auto& cellsOnLayer = cells_[layerId];
   unsigned int numberOfCells = cellsOnLayer.detid.size();
   std::vector<int> localStack;
-
   for (unsigned int i = 0; i < numberOfCells; ++i) {
     float rho_c = rhoc_; //for testing purposes
     //float rho_c = kappa_ * cellsOnLayer.sigmaNoise[i];
     float delta = delta_c;
-
     cellsOnLayer.clusterIndex[i] = -1;
     bool isSeed = (cellsOnLayer.delta[i] > delta) && (cellsOnLayer.rho[i] >= rho_c);
     bool isOutlier = (cellsOnLayer.delta[i] > outlierDeltaFactor_ * delta) && (cellsOnLayer.rho[i] < rho_c);
