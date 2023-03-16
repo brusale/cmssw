@@ -82,3 +82,68 @@ void BarrelCLUEAlgoT<T>::makeClusters() {
   }
 }
 
+template <typename T>
+std::vector<reco::BasicCluster> BarrelCLUEAlgoT<T>::getClusters(bool) {
+  std::vector<int> offsets(numberOfClustersPerLayer_.size(), 0);
+
+  int maxClustersOnLayer = numberOfClustersPerLayer_[0];
+
+  if constexpr (!std::is_same_v<T, EBLayerTiles>) {
+    for (unsigned layerId = 1; layerId < offsets.size(); ++layerId) {
+      offsets[layerId] = offsets[layerId - 1] + numberOfClustersPerLayer_[layerId - 1];
+      maxClustersOnLayer = std::max(maxClustersOnLayer, numberOfClustersPerLayer_[layerId]);
+    }
+  }
+
+  auto totalNumberOfClusters = offsets.back() + numberOfClustersPerLayer_.back();
+  clusters_v_.resize(totalNumberOfClusters);
+  std::vector<std::vector<int>> cellsIdInCluster;
+  cellsIdInCluster.reserve(maxClustersOnLayer);
+
+  for (unsigned int layerId = 0; layerId < maxlayer_ + 1; ++layerId) {
+    cellsIdInCluster.resize(numberOfClustersPerLayer_[layerId]);
+    auto& cellsOnLayer = cells_[layerId];
+    unsigned int numberOfCells = cellsOnLayer.detid.size();
+    auto firstClusterIdx = offsets[layerId];
+
+    for (unsigned int i = 0; i < numberOfCells; ++i) {
+      auto clusterIndex = cellsOnLayer.clusterIndex[i];
+      if (clusterIndex != -1) 
+	cellsIdInCluster[clusterIndex].push_back(i);
+    }
+
+    std::vector<std::pair<DetId, float>> thisCluster;
+
+    for (auto& cl : cellsIdInCluster) {
+      auto position = calculatePosition(cl, layerId);
+      float energy = 0.f;
+      int seedDetId = -1;
+
+      for (auto cellIdx : cl) {
+	energy += cellsOnLayer.weight[cellIdx];
+	thisCluster.emplace_back(cellsOnLayer.detid[cellIdx], 1.f);
+	if (cellsOnLayer.isSeed[cellIdx]) {
+	  seedDetId = cellsOnLayer.detid[cellIdx];
+	}
+      }
+      auto globalClusterIndex = cellsOnLayer.clusterIndex[cl[0]] + firstClusterIdx;
+
+      if constexpr (std::is_same_v<T, EBLayerTiles>) {
+	clusters_v_[globalClusterIndex] = 
+	  reco::BasicCluster(energy, position, reco::CaloID::DET_ECAL_BARREL, thisCluster, algoId_);
+      } else if constexpr (std::is_same_v<T, HBLayerTiles>) {
+	  clusters_v_[globalClusterIndex] =
+	    reco::BasicCluster(energy, position, reco::CaloID::DET_HCAL_BARREL, thisCluster, algoId_);
+      } else {
+	  clusters_v_[globalClusterIndex] = 
+	    reco::BasicCluster(energy, position, reco::CaloID::DET_HO, thisCluster, algoId_);
+      }
+      clusters_v_[globalClusterIndex].setSeed(seedDetId);
+      thisCluster.clear();
+    }
+    cellsIdInCluster.clear();
+  }
+  return clusters_v_;
+}
+
+
