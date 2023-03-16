@@ -5,6 +5,8 @@
 #include "FWCore/Framework/interface/ConsumesCollector.h"
 
 #include "DataFormats/HGCRecHit/interface/HGCRecHitCollections.h"
+#include "DataFormats/ParticleFlowReco/interface/PFRecHit.h"
+#include "DataFormats/ParticleFlowReco/interface/PFRecHitFwd.h"
 #include "DataFormats/Math/interface/Point3D.h"
 #include "DataFormats/EgammaReco/interface/BasicCluster.h"
 
@@ -52,6 +54,7 @@ public:
   HGCalClusteringAlgoBase(VerbosityLevel v, reco::CaloCluster::AlgoId algo) : verbosity_(v), algoId_(algo) {}
   virtual ~HGCalClusteringAlgoBase() {}
 
+  virtual void populate(const reco::PFRecHitCollection& hits) = 0;
   virtual void populate(const HGCRecHitCollection &hits) = 0;
   virtual void makeClusters() = 0;
   virtual std::vector<reco::BasicCluster> getClusters(bool) = 0;
