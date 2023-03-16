@@ -171,3 +171,78 @@ math::XYZPoint BarrelCLUEAlgoT<T>::calculatePosition(const std::vector<int>& v, 
     return math::XYZPoint(0.f, 0.f, 0.f);
   }
 }
+
+template <typename T>
+void BarrelCLUEAlgoT<T>::calculateLocalDensity(const T& lt, const unsigned int layerId, float delta_c, float delta_r) {
+  auto& cellsOnLayer = cells_[layerId];
+  unsigned int numberOfCells = cellsOnLayer.detid.size();
+
+  for (unsigned int i = 0; i < numberOfCells; ++i) {
+    float delta = delta_c;
+    std::array<int, 4> search_box = lt.searchBoxEtaPhi(cellsOnLayer.eta[i] - delta,
+						       cellsOnLayer.eta[i] + delta, 
+						       cellsOnLayer.phi[i] - delta,
+						       cellsOnLayer.phi[i] + delta);
+    cellsOnLayer.rho[i] += cellsOnLayer.weight[i];
+    for (int etaBin = search_box[0]; etaBin < search_box[1]; ++etaBin) {
+      for (int phiBin = search_box[2]; phiBin < search_box[3]; ++phiBin) {
+	int phi = (phiBin % T::type::nRowsPhi);
+	int binId = lt.getGlobalBinByBinEtaPhi(etaBin, phi);
+	size_t binSize = lt[binId].size();
+
+	for (unsigned int j = 0; j < binSize; ++j) {
+	  unsigned int otherId = lt[binId][j];
+	  if (distance(i, otherId, layerId) < delta) {
+	    cellsOnLayer.rho[i] += (i == otherId ? 1.f : 0.5f) * cellsOnLayer.weight[otherId];
+	  }
+	}
+      }
+    }
+  }
+}
+
+template <typename T>
+void BarrelCLUEAlgoT<T>::calculateDistanceToHigher(const T& lt, const unsigned int layerId, float delta_c, float delta_r) {
+  auto& cellsOnLayer = cells_[layerId];
+  unsigned int numberOfCells = cellsOnLayer.detid.size();
+
+  for (unsigned int i = 0; i < numberOfCells; ++i) {
+    float maxDelta = std::numeric_limits<float>::max();
+    float i_delta = maxDelta;
+    float i_nearestHigher = -1;
+
+    float delta = delta_c;
+    std::array<int, 4> search_box = lt.searchBoxEtaPhi(cellsOnLayer.eta[i] - delta,
+						       cellsOnLayer.eta[i] + delta,
+						       cellsOnLayer.phi[i] - delta,
+						       cellsOnLayer.phi[i] + delta);
+
+    for (int etaBin = search_box[0]; etaBin < search_box[1]; ++etaBin) {
+      for (int phiBin = search_box[2]; phiBin < search_box[3]; ++phiBin) {
+	int phi = (phiBin % T::type::nRowsPhi);
+	size_t binId = lt.getGlobalBinByBinEtaPhi(etaBin, phi);
+	size_t binSize = lt[binId].size();
+	
+	for (unsigned int j = 0; j < binSize; ++j) {
+	  int otherId = lt[binId][j];
+	  float dist = distance(i, otherId, layerId);
+	  bool foundHigher = (cellsOnLayer.rho[otherId] > cellsOnLayer.rho[i]) ||
+			     (cellsOnLayer.rho[otherId] == cellsOnLayer.rho[i] &&
+			     cellsOnLayer.detid[otherId] > cellsOnLayer.detid[i]);
+	  if (foundHigher && dist <= i_delta) {
+	    i_delta = dist;
+	    i_nearestHigher = otherId;
+	  }
+	}
+      }
+    }
+    bool foundNearestHigherInSearchBox = (i_delta != maxDelta);
+    if (foundNearestHigherInSearchBox) {
+      cellsOnLayer.delta[i] = i_delta;
+      cellsOnLayer.nearestHigher[i] = i_nearestHigher;
+    } else {
+      cellsOnLayer.delta[i] = maxDelta;
+      cellsOnLayer.nearestHigher[i] = -1;
+    }
+  }
+}
