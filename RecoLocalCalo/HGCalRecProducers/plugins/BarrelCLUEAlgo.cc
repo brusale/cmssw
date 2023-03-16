@@ -212,10 +212,11 @@ void BarrelCLUEAlgoT<T>::calculateDistanceToHigher(const T& lt, const unsigned i
     float i_nearestHigher = -1;
 
     float delta = delta_c;
-    std::array<int, 4> search_box = lt.searchBoxEtaPhi(cellsOnLayer.eta[i] - delta,
-						       cellsOnLayer.eta[i] + delta,
-						       cellsOnLayer.phi[i] - delta,
-						       cellsOnLayer.phi[i] + delta);
+    auto range = outlierDeltaFactor_ * delta;
+    std::array<int, 4> search_box = lt.searchBoxEtaPhi(cellsOnLayer.eta[i] - range,
+						       cellsOnLayer.eta[i] + range,
+						       cellsOnLayer.phi[i] - range,
+						       cellsOnLayer.phi[i] + range);
 
     for (int etaBin = search_box[0]; etaBin < search_box[1]; ++etaBin) {
       for (int phiBin = search_box[2]; phiBin < search_box[3]; ++phiBin) {
@@ -245,4 +246,42 @@ void BarrelCLUEAlgoT<T>::calculateDistanceToHigher(const T& lt, const unsigned i
       cellsOnLayer.nearestHigher[i] = -1;
     }
   }
+}
+
+template <typename T>
+int BarrelCLUEAlgoT<T>::findAndAssignClusters(const unsigned int layerId, float delta_c, float delta_r) {
+  unsigned int nClustersOnLayer = 0;
+  auto& cellsOnLayer = cells_[layerId];
+  unsigned int numberOfCells = cellsOnLayer.detid.size();
+  std::vector<int> localStack;
+
+  for (unsigned int i = 0; i < numberOfCells; ++i) {
+    float rho_c = rhoc_; //for testing purposes
+    //float rho_c = kappa_ * cellsOnLayer.sigmaNoise[i];
+    float delta = delta_c;
+
+    cellsOnLayer.clusterIndex[i] = -1;
+    bool isSeed = (cellsOnLayer.delta[i] > delta) && (cellsOnLayer.rho[i] >= rho_c);
+    bool isOutlier = (cellsOnLayer.delta[i] > outlierDeltaFactor_ * delta) && (cellsOnLayer.rho[i] < rho_c);
+    if (isSeed) {
+      cellsOnLayer.clusterIndex[i] = nClustersOnLayer;
+      cellsOnLayer.isSeed[i] = true;
+      nClustersOnLayer++;
+      localStack.push_back(i);
+    } else if (!isOutlier) {
+      cellsOnLayer.followers[cellsOnLayer.nearestHigher[i]].push_back(i);
+    }
+  }
+
+  while (!localStack.empty()) {
+    int endStack = localStack.back();
+    auto& thisSeed = cellsOnLayer.followers[endStack];
+    localStack.pop_back();
+
+    for (int j : thisSeed) {
+      cellsOnLayer.clusterIndex[j] = cellsOnLayer.clusterIndex[endStack];
+      localStack.push_back(j);
+    }
+  }
+  return nClustersOnLayer;
 }
