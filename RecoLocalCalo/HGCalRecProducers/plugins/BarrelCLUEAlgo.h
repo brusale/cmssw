@@ -33,7 +33,7 @@ using Density = hgcal_clustering::Density;
 template <typename TILE>
 class BarrelCLUEAlgoT : public HGCalClusteringAlgoBase {
 public:
-  HGCalCLUEAlgoT(const edm::ParameterSet& ps, edm::ConsumesCollector iC)
+  BarrelCLUEAlgoT(const edm::ParameterSet& ps, edm::ConsumesCollector iC)
       : HGCalClusteringAlgoBase(
             (HGCalClusteringAlgoBase::VerbosityLevel)ps.getUntrackedParameter<unsigned int>("verbosity", 3),
             reco::CaloCluster::undefined,
@@ -92,6 +92,7 @@ private:
   std::vector<double> vecDeltas_;
   double kappa_;
 
+  Density density_;
   // For keeping the density per hit
 
 
@@ -101,6 +102,7 @@ private:
     std::vector<DetId> detid;
     std::vector<float> eta;
     std::vector<float> phi;
+    std::vector<float> r;
 
     std::vector<float> weight;
     std::vector<float> rho;
@@ -114,9 +116,9 @@ private:
 
     void clear() {
       detid.clear();
-      isSi.clear();
       eta.clear();
       phi.clear();
+      r.clear();
       weight.clear();
       rho.clear();
       delta.clear();
@@ -129,7 +131,7 @@ private:
 
     void shrink_to_fit() {
       detid.shrink_to_fit();
-      isSi.shrink_to_fit();
+      r.shrink_to_fit();
       eta.shrink_to_fit();
       phi.shrink_to_fit();
       weight.shrink_to_fit();
@@ -143,7 +145,7 @@ private:
     }
   };
 
-  std::vector<CellsOnLayer> cells_;
+  std::vector<BarrelCellsOnLayer> cells_;
 
   std::vector<int> numberOfClustersPerLayer_;
 
@@ -154,7 +156,7 @@ private:
   }
 
   inline float distance(int cell1, int cell2, int layerId) const {  // 2-d distance on the layer (x-y)
-    return std::sqrt(distance2(cell1, cell2, layerId, isEtaPhi));
+    return std::sqrt(distance2(cell1, cell2, layerId));
   }
 
   void prepareDataStructures(const unsigned int layerId);
