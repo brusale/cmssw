@@ -129,7 +129,7 @@ const CaloSubdetectorGeometry* RecHitTools::getSubdetectorGeometry(const DetId& 
 GlobalPoint RecHitTools::getPosition(const DetId& id) const {
   auto geom = getSubdetectorGeometry(id);
   GlobalPoint position;
-  if (id.det() == DetId::Hcal) {
+  if (id.det() == DetId::Hcal || id.det() == DetId::Ecal) {
     position = geom->getGeometry(id)->getPosition();
   } else {
     auto hg = static_cast<const HGCalGeometry*>(geom);
