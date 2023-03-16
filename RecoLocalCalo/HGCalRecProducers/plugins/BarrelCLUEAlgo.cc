@@ -146,4 +146,28 @@ std::vector<reco::BasicCluster> BarrelCLUEAlgoT<T>::getClusters(bool) {
   return clusters_v_;
 }
 
+template <typename T>
+math::XYZPoint BarrelCLUEAlgoT<T>::calculatePosition(const std::vector<int>& v, const unsigned int layerId) const {
+  float total_weight = 0.f;
+  float x = 0.f;
+  float y = 0.f;
+  float z = 0.f;
 
+  auto& cellsOnLayer = cells_[layerId];
+  for (auto i : v) {
+    float rhEnergy = cellsOnLayer.weight[i];
+    total_weight += rhEnergy;
+    float theta = 2 * std::atan(std::exp(-cellsOnLayer.eta[i]));
+    const GlobalPoint gp(GlobalPoint::Polar(theta, cellsOnLayer.phi[i], cellsOnLayer.r[i]));
+    x += gp.x() * rhEnergy;
+    y += gp.y() * rhEnergy;
+    z += gp.z() * rhEnergy;
+  }
+
+  if (total_weight != 0.f) {
+    float inv_total_weight = 1.f/total_weight;
+    return math::XYZPoint(x * inv_total_weight, y * inv_total_weight, z * inv_total_weight);
+  } else {
+    return math::XYZPoint(0.f, 0.f, 0.f);
+  }
+}
