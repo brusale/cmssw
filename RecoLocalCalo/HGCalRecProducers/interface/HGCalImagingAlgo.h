@@ -9,6 +9,8 @@
 #include "Geometry/CaloTopology/interface/HGCalTopology.h"
 #include "DataFormats/DetId/interface/DetId.h"
 #include "DataFormats/HGCRecHit/interface/HGCRecHitCollections.h"
+#include "DataFormats/ParticleFlowReco/interface/PFRecHit.h"
+#include "DataFormats/ParticleFlowReco/interface/PFRecHitFwd.h"
 #include "Geometry/CaloGeometry/interface/CaloSubdetectorGeometry.h"
 #include "Geometry/CaloGeometry/interface/CaloGeometry.h"
 #include "Geometry/CaloGeometry/interface/CaloCellGeometry.h"
@@ -54,6 +56,7 @@ public:
 
   void getEventSetupPerAlgorithm(const edm::EventSetup &es) override;
 
+  void populate(const reco::PFRecHitCollection &hits) override {};
   void populate(const HGCRecHitCollection &hits) override;
   // this is the method that will start the clusterisation (it is possible to invoke this method more than once - but make sure it is with
   // different hit collections (or else use reset)
