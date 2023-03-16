@@ -6,6 +6,10 @@
 
 #include "RecoLocalCalo/HGCalRecProducers/interface/HGCalTilesConstants.h"
 #include "RecoLocalCalo/HGCalRecProducers/interface/HFNoseTilesConstants.h"
+#include "RecoLocalCalo/HGCalRecProducers/interface/EBTilesConstants.h"
+#include "RecoLocalCalo/HGCalRecProducers/interface/HBTilesConstants.h"
+#include "RecoLocalCalo/HGCalRecProducers/interface/HOTilesConstants.h"
+
 #include "DataFormats/Math/interface/normalizedPhi.h"
 
 #include <vector>
@@ -29,6 +33,14 @@ public:
       if (!isSi[i]) {
         tiles_[getGlobalBinEtaPhi(eta[i], phi[i])].push_back(i);
       }
+    }
+  }
+  
+  void fill(const std::vector<float>& eta,
+	    const std::vector<float>& phi) {
+    auto cellsSize = eta.size();
+    for (unsigned int i = 0; i < cellsSize; ++i) {
+      tiles_[getGlobalBinEtaPhi(eta[i], phi[i])].push_back(i);
     }
   }
 
@@ -122,4 +134,7 @@ private:
 
 using HGCalLayerTiles = HGCalLayerTilesT<HGCalTilesConstants>;
 using HFNoseLayerTiles = HGCalLayerTilesT<HFNoseTilesConstants>;
+using EBLayerTiles = HGCalLayerTilesT<EBTilesConstants>;
+using HBLayerTiles = HGCalLayerTilesT<HBTilesConstants>;
+using HOLayerTiles = HGCalLayerTilesT<HOTilesConstants>;
 #endif
