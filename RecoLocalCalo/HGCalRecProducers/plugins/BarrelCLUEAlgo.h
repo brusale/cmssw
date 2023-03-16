@@ -38,7 +38,8 @@ public:
             (HGCalClusteringAlgoBase::VerbosityLevel)ps.getUntrackedParameter<unsigned int>("verbosity", 3),
             reco::CaloCluster::undefined,
             iC),
-        vecDeltas_(ps.getParameter<std::vector<double>>("deltac")) {}
+        vecDeltas_(ps.getParameter<std::vector<double>>("deltac")),
+	rhoc_(ps.getParameter<double>("rhoc")) {}
   ~BarrelCLUEAlgoT() override {}
 
   void getEventSetupPerAlgorithm(const edm::EventSetup& es) override;
@@ -73,12 +74,12 @@ public:
   void computeThreshold();
 
   static void fillPSetDescription(edm::ParameterSetDescription& iDesc) {
+    iDesc.add<double>("rhoc", 30.);
     iDesc.add<std::vector<double>>("deltac",
                                    {
                                        1.3,
                                        1.3,
-                                       1.3,
-                                       0.0315,  // for scintillator
+                                       1.3
                                    });
   }
 
