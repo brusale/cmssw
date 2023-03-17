@@ -74,9 +74,9 @@ public:
     iDesc.add<double>("rhoc", 30.);
     iDesc.add<std::vector<double>>("deltac",
                                    {
-                                       1.3,
-                                       1.3,
-                                       1.3
+                                       0.0175,
+                                       0.0175,
+                                       0.0175
                                    });
   }
 
