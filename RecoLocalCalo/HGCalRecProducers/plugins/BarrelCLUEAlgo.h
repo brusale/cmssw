@@ -36,7 +36,8 @@ public:
             reco::CaloCluster::undefined,
             iC),
         vecDeltas_(ps.getParameter<std::vector<double>>("deltac")),
-	rhoc_(ps.getParameter<double>("rhoc")) {}
+	rhoc_(ps.getParameter<double>("rhoc")),
+	maxLayerIndex_(ps.getParameter<int>("maxLayerIndex")) {}
   ~BarrelCLUEAlgoT() override {}
 
   void getEventSetupPerAlgorithm(const edm::EventSetup& es) override;
@@ -71,12 +72,13 @@ public:
   void computeThreshold();
 
   static void fillPSetDescription(edm::ParameterSetDescription& iDesc) {
-    iDesc.add<double>("rhoc", 30.);
+    iDesc.add<int>("maxLayerIndex");
+    iDesc.add<double>("rhoc");
     iDesc.add<std::vector<double>>("deltac",
                                    {
                                        0.0175,
-                                       0.0175,
-                                       0.0175
+                                       5*0.087,
+                                       5*0.087
                                    });
   }
 
@@ -90,6 +92,7 @@ private:
   std::vector<double> vecDeltas_;
   double kappa_;
   double rhoc_;
+  int maxLayerIndex_;
 
   Density density_;
   // For keeping the density per hit

@@ -15,7 +15,7 @@ template <typename T>
 void BarrelCLUEAlgoT<T>::getEventSetupPerAlgorithm(const edm::EventSetup& es) {
   cells_.clear();
   numberOfClustersPerLayer_.clear();
-  maxlayer_ = 0; //for testing purposes
+  maxlayer_ = maxLayerIndex_; //for testing purposes
   cells_.resize(maxlayer_ + 1);
   numberOfClustersPerLayer_.resize(maxlayer_ + 1, 0);
 }
@@ -31,8 +31,8 @@ void BarrelCLUEAlgoT<T>::populate(const reco::PFRecHitCollection& hits) {
     if (detid.det() == DetId::Hcal) {
       HcalDetId hid(detid);
       layer = hid.depth();
-      if (detid.subdetId() == HcalSubdetector::HcalOuter) 
-	layer += 1;
+      if (detid.subdetId() == HcalSubdetector::HcalBarrel) 
+	layer -= 1;
     }
 
     cells_[layer].detid.emplace_back(detid);
@@ -68,7 +68,7 @@ void BarrelCLUEAlgoT<T>::makeClusters() {
       lt.fill(cells_[i].eta, cells_[i].phi);
       float delta_c;
       
-      if (i == 0)
+      if constexpr (std::is_same_v<T, EBLayerTiles>)
 	delta_c = vecDeltas_[0];
       else
 	delta_c = vecDeltas_[1];
