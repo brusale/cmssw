@@ -5,6 +5,8 @@ from SimCalorimetry.HGCalAssociatorProducers.LCToCPAssociation_cfi import layerC
 from SimCalorimetry.HGCalAssociatorProducers.LCToSCAssociation_cfi import layerClusterSimClusterAssociation as layerClusterSimClusterAssociationProducer
 from SimCalorimetry.HGCalAssociatorProducers.LCToCPAssociation_cfi import layerClusterCaloParticleAssociationHFNose as layerClusterCaloParticleAssociationProducerHFNose
 from SimCalorimetry.HGCalAssociatorProducers.LCToSCAssociation_cfi import layerClusterSimClusterAssociationHFNose as layerClusterSimClusterAssociationProducerHFNose
+from SimCalorimetry.HGCalAssociatorProducers.BarrelLCToCPAssociation_cfi import barrelLayerClusterCaloParticleAssociation as barrelLayerClusterCaloParticleAssociationProducer
+from SimCalorimetry.HGCalAssociatorProducers.barrelLayerClusterAssociatorByEnergyScore_cfi import barrelLayerClusterAssociatorByEnergyScore as barrelLCAssocByEnergyScoreProducer
 
 from Validation.HGCalValidation.simhitValidation_cff    import *
 from Validation.HGCalValidation.digiValidation_cff      import *
@@ -28,7 +30,8 @@ hgcalPFJetValidation = _hgcalPFJetValidation.clone(BenchmarkLabel = 'PFJetValida
 
 hgcalAssociators = cms.Task(lcAssocByEnergyScoreProducer, layerClusterCaloParticleAssociationProducer,
                             scAssocByEnergyScoreProducer, layerClusterSimClusterAssociationProducer,
-                            )
+			    barrelLCAssocByEnergyScoreProducer, barrelLayerClusterCaloParticleAssociationProducer,
+		    )
 
 hgcalValidation = cms.Sequence(hgcalSimHitValidationEE
                                + hgcalSimHitValidationHEF

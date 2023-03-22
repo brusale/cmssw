@@ -3,6 +3,7 @@
 <use name="SimDataFormats/Associations"/>
 <use name="RecoLocalCalo/HGCalRecAlgos"/>
 <use name="DataFormats/HGCalReco"/>
+<use name="DataFormats/ParticleFlowReco"/>
 <use name="DataFormats/CaloRecHit"/>
 <use name="FWCore/MessageLogger"/>
 <use name="FWCore/Utilities"/>

@@ -68,6 +68,9 @@
 
   <class name="std::vector<reco::PFRecHit>"/>
   <class name="edm::Wrapper<std::vector<reco::PFRecHit> >"/>
+  <class name="std::unordered_map<DetId, const reco::PFRecHit*>" persistent="false"/>
+  <class name="edm::Wrapper<std::unordered_map<DetId, const reco::PFRecHit*>>" persistent="false"/>
+  <class name="std::pair<const DetId, const reco::PFRecHit*>"/>
   <class name="edm::Ref< std::vector<reco::PFRecHit>, reco::PFRecHit, edm::refhelper::FindUsingAdvance<std::vector<reco::PFRecHit>,reco::PFRecHit>  >"/>
 
   <class name="edm::RefVector<std::vector<reco::PFRecHit>,reco::PFRecHit,edm::refhelper::FindUsingAdvance<std::vector<reco::PFRecHit>,reco::PFRecHit> >"/>
