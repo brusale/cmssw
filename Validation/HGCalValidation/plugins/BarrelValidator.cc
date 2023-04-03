@@ -51,7 +51,7 @@ BarrelValidator::BarrelValidator(const edm::ParameterSet& pset)
 
   hitMap_ = consumes<std::unordered_map<DetId, const reco::PFRecHit*>>(edm::InputTag("barrelRecHitMapProducer"));
 
-  density_ = consumes<Density>(edm::InputTag("barrelLayerClusters"));
+  //density_ = consumes<Density>(edm::InputTag("barrelLayerClusters"));
 
   simClusters_ = consumes<std::vector<SimCluster>>(pset.getParameter<edm::InputTag>("label_scl"));
 
@@ -134,7 +134,7 @@ void BarrelValidator::bookHistograms(DQMStore::IBooker& ibook,
     ibook.cd();
     ibook.setCurrentFolder(dirName_ + label_SimClustersPlots_.label() + "/" + label_SimClustersLevel_.label());
     histoProducerAlgo_->bookSimClusterHistos(
-        ibook, histograms.histoProducerAlgo, totallayers_to_monitor_, thicknesses_to_monitor_);
+        ibook, histograms.histoProducerAlgo, totallayers_to_monitor_);//, thicknesses_to_monitor_);
 
     for (unsigned int ws = 0; ws < label_clustersmask.size(); ws++) {
       ibook.cd();
@@ -159,7 +159,7 @@ void BarrelValidator::bookHistograms(DQMStore::IBooker& ibook,
       ibook.setCurrentFolder(dirName);
 
       histoProducerAlgo_->bookSimClusterAssociationHistos(
-          ibook, histograms.histoProducerAlgo, totallayers_to_monitor_, thicknesses_to_monitor_);
+          ibook, histograms.histoProducerAlgo, totallayers_to_monitor_);//, thicknesses_to_monitor_);
     }  //end of loop over masks
   }    //if for simCluster plots
 
@@ -169,9 +169,9 @@ void BarrelValidator::bookHistograms(DQMStore::IBooker& ibook,
     ibook.setCurrentFolder(dirName_ + label_layerClustersPlots_.label() + "/ClusterLevel");
     histoProducerAlgo_->bookClusterHistos_ClusterLevel(ibook,
                                                        histograms.histoProducerAlgo,
-                                                       totallayers_to_monitor_,
-                                                       thicknesses_to_monitor_,
-                                                       cummatbudinxo_.fullPath());
+                                                       totallayers_to_monitor_);//,
+                                                       //thicknesses_to_monitor_,
+                                                       //cummatbudinxo_.fullPath());
     ibook.cd();
     ibook.setCurrentFolder(dirName_ + label_layerClustersPlots_.label() + "/" + label_LCToCPLinking_.label());
     histoProducerAlgo_->bookClusterHistos_LCtoCP_association(
@@ -180,7 +180,7 @@ void BarrelValidator::bookHistograms(DQMStore::IBooker& ibook,
     ibook.cd();
     ibook.setCurrentFolder(dirName_ + label_layerClustersPlots_.label() + "/CellLevel");
     histoProducerAlgo_->bookClusterHistos_CellLevel(
-        ibook, histograms.histoProducerAlgo, totallayers_to_monitor_, thicknesses_to_monitor_);
+        ibook, histograms.histoProducerAlgo, totallayers_to_monitor_);
   }
 
   //Booking histograms for Tracksters
@@ -323,9 +323,9 @@ void BarrelValidator::dqmAnalyze(const edm::Event& event,
   const reco::CaloClusterCollection& clusters = *clusterHandle;
 
   //Density
-  edm::Handle<Density> densityHandle;
-  event.getByToken(density_, densityHandle);
-  const Density& densities = *densityHandle;
+  //edm::Handle<Density> densityHandle;
+  //event.getByToken(density_, densityHandle);
+  //const Density& densities = *densityHandle;
 
   auto nSimClusters = simClusters.size();
   std::vector<size_t> sCIndices;
@@ -348,7 +348,7 @@ void BarrelValidator::dqmAnalyze(const edm::Event& event,
   // ##############################################
   if (doSimClustersPlots_) {
     histoProducerAlgo_->fill_simCluster_histos(
-        histograms.histoProducerAlgo, simClusters, totallayers_to_monitor_, thicknesses_to_monitor_);
+        histograms.histoProducerAlgo, simClusters, totallayers_to_monitor_);
 
     for (unsigned int ws = 0; ws < label_clustersmask.size(); ws++) {
       const auto& inputClusterMask = event.get(clustersMaskTokens_[ws]);
@@ -388,7 +388,7 @@ void BarrelValidator::dqmAnalyze(const edm::Event& event,
                                                     w,
                                                     clusterHandle,
                                                     clusters,
-                                                    densities,
+                                                    //densities,
                                                     caloParticleHandle,
                                                     caloParticles,
                                                     cPIndices,
@@ -396,7 +396,6 @@ void BarrelValidator::dqmAnalyze(const edm::Event& event,
                                                     *hitMap,
                                                     cummatbudg,
                                                     totallayers_to_monitor_,
-                                                    thicknesses_to_monitor_,
                                                     recSimColl,
                                                     simRecColl);
 
@@ -424,7 +423,7 @@ void BarrelValidator::dqmAnalyze(const edm::Event& event,
                                  << tracksters.size() << "\n"
                                  << std::endl;
 
-      histoProducerAlgo_->fill_trackster_histos(histograms.histoProducerAlgo,
+      /*histoProducerAlgo_->fill_trackster_histos(histograms.histoProducerAlgo,
                                                 wml,
                                                 tracksters,
                                                 clusters,
@@ -438,6 +437,6 @@ void BarrelValidator::dqmAnalyze(const edm::Event& event,
                                                 selected_cPeff,
                                                 *hitMap,
                                                 totallayers_to_monitor_);
-    }
+    */}
   }  //end of loop over Trackster input labels
 }
