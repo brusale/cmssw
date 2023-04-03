@@ -31,8 +31,8 @@ void BarrelCLUEAlgoT<T>::populate(const reco::PFRecHitCollection& hits) {
     if (detid.det() == DetId::Hcal) {
       HcalDetId hid(detid);
       layer = hid.depth();
-      if (detid.subdetId() == HcalSubdetector::HcalBarrel) 
-	layer -= 1;
+      if (detid.subdetId() == HcalSubdetector::HcalOuter) 
+	layer += 1;
     }
 
     cells_[layer].detid.emplace_back(detid);
