@@ -3,7 +3,7 @@ import FWCore.ParameterSet.Config as cms
 barrelLayerClusterCaloParticleAssociation = cms.EDProducer("LCToCPAssociatorEDProducer",
     associator = cms.InputTag('barrelLCAssocByEnergyScoreProducer'),
     label_cp = cms.InputTag("mix","MergedCaloTruth"),
-    label_lc = cms.InputTag("barrekLayerClusters")
+    label_lc = cms.InputTag("barrelLayerClusters")
 )
 
 from Configuration.ProcessModifiers.premix_stage2_cff import premix_stage2
