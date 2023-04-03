@@ -5,9 +5,9 @@ def customize_step2(process):
     process.caloParticles.simHitCollections = cms.PSet(
         hcal = cms.VInputTag(cms.InputTag('g4SimHits','HcalHits')),
         ecal = cms.VInputTag(
-            cms.InputTag('g4SimHits','EcalHitsEE'),
+#            cms.InputTag('g4SimHits','EcalHitsEE'),
             cms.InputTag('g4SimHits','EcalHitsEB'),
-            cms.InputTag('g4SimHits','EcalHitsES'),
+#            cms.InputTag('g4SimHits','EcalHitsES'),
         )
     )
     process.caloParticles.doHGCAL = False

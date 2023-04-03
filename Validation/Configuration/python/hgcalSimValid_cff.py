@@ -7,6 +7,8 @@ from SimCalorimetry.HGCalAssociatorProducers.LCToCPAssociation_cfi import layerC
 from SimCalorimetry.HGCalAssociatorProducers.LCToSCAssociation_cfi import layerClusterSimClusterAssociationHFNose as layerClusterSimClusterAssociationProducerHFNose
 from SimCalorimetry.HGCalAssociatorProducers.BarrelLCToCPAssociation_cfi import barrelLayerClusterCaloParticleAssociation as barrelLayerClusterCaloParticleAssociationProducer
 from SimCalorimetry.HGCalAssociatorProducers.barrelLayerClusterAssociatorByEnergyScore_cfi import barrelLayerClusterAssociatorByEnergyScore as barrelLCAssocByEnergyScoreProducer
+from SimCalorimetry.HGCalAssociatorProducers.BarrelLCToSCAssociation_cfi import barrelLayerClusterSimClusterAssociation as barrelLayerClusterSimClusterAssociationProducer
+from SimCalorimetry.HGCalAssociatorProducers.barrelSimClusterAssociatorByEnergyScore_cfi import barrelSimClusterAssociatorByEnergyScore as barrelSCAssocByEnergyScoreProducer
 
 from Validation.HGCalValidation.simhitValidation_cff    import *
 from Validation.HGCalValidation.digiValidation_cff      import *
@@ -15,6 +17,7 @@ from Validation.HGCalValidation.hgcalHitValidation_cff  import *
 from RecoHGCal.TICL.SimTracksters_cff import *
 
 from Validation.HGCalValidation.HGCalValidator_cfi import hgcalValidator
+from Validation.HGCalValidation.BarrelValidator_cfi import barrelValidator
 from Validation.RecoParticleFlow.PFJetValidation_cff import pfJetValidation1 as _hgcalPFJetValidation
 
 from Validation.HGCalValidation.ticlPFValidation_cfi import ticlPFValidation
@@ -23,7 +26,7 @@ hgcalTiclPFValidation = cms.Sequence(ticlPFValidation)
 from Validation.HGCalValidation.ticlTrackstersEdgesValidation_cfi import ticlTrackstersEdgesValidation
 hgcalTiclTrackstersEdgesValidationSequence = cms.Sequence(ticlTrackstersEdgesValidation)
 
-hgcalValidatorSequence = cms.Sequence(hgcalValidator)
+hgcalValidatorSequence = cms.Sequence(hgcalValidator + barrelValidator)
 hgcalPFJetValidation = _hgcalPFJetValidation.clone(BenchmarkLabel = 'PFJetValidation/HGCAlCompWithGenJet',
     VariablePtBins=[10., 30., 80., 120., 250., 600.],
     DeltaPtOvPtHistoParameter = dict(EROn=True,EREtaMax=3.0, EREtaMin=1.6, slicingOn=True))
@@ -31,6 +34,7 @@ hgcalPFJetValidation = _hgcalPFJetValidation.clone(BenchmarkLabel = 'PFJetValida
 hgcalAssociators = cms.Task(lcAssocByEnergyScoreProducer, layerClusterCaloParticleAssociationProducer,
                             scAssocByEnergyScoreProducer, layerClusterSimClusterAssociationProducer,
 			    barrelLCAssocByEnergyScoreProducer, barrelLayerClusterCaloParticleAssociationProducer,
+			    barrelSCAssocByEnergyScoreProducer, barrelLayerClusterSimClusterAssociationProducer,
 		    )
 
 hgcalValidation = cms.Sequence(hgcalSimHitValidationEE
