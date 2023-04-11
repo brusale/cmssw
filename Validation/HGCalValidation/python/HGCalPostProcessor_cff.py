@@ -4,6 +4,7 @@ from Validation.HGCalValidation.HGCalSimHitsClient_cff import *
 from Validation.HGCalValidation.HGCalDigiClient_cff    import *
 from Validation.HGCalValidation.HGCalRecHitsClient_cff import *
 from Validation.HGCalValidation.PostProcessorHGCAL_cfi import postProcessorHGCALlayerclusters,postProcessorHGCALsimclusters,postProcessorHGCALTracksters
+from Validation.HGCalValidation.PostProcessorBarrel_cfi import postProcessorBarrellayerclusters
 
 hgcalPostProcessor = cms.Sequence(hgcalSimHitClientEE
     + hgcalSimHitClientHEF
@@ -17,5 +18,6 @@ hgcalPostProcessor = cms.Sequence(hgcalSimHitClientEE
 
 hgcalValidatorPostProcessor = cms.Sequence(
     postProcessorHGCALlayerclusters+
+    postProcessorBarrellayerclusters+
     postProcessorHGCALsimclusters+
     postProcessorHGCALTracksters)
