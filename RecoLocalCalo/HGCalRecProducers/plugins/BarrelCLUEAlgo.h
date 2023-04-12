@@ -20,6 +20,9 @@
 
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 
+#include "CondFormats/DataRecord/interface/EcalPFRecHitThresholdsRcd.h"
+#include "CondFormats/EcalObjects/interface/EcalPFRecHitThresholds.h"
+
 // C/C++ headers
 #include <set>
 #include <string>
@@ -35,7 +38,8 @@ public:
             (HGCalClusteringAlgoBase::VerbosityLevel)ps.getUntrackedParameter<unsigned int>("verbosity", 3),
             reco::CaloCluster::undefined,
             iC),
-        vecDeltas_(ps.getParameter<std::vector<double>>("deltac")),
+        tok_ebThresholds_(iC.esConsumes<EcalPFRecHitThresholds, EcalPFRecHitThresholdsRcd>()),
+	vecDeltas_(ps.getParameter<std::vector<double>>("deltac")),
 	rhoc_(ps.getParameter<double>("rhoc")),
 	maxLayerIndex_(ps.getParameter<int>("maxLayerIndex")) {}
   ~BarrelCLUEAlgoT() override {}
@@ -86,7 +90,9 @@ public:
   typedef math::XYZPoint Point;
 
 private:
-  // To compute the cluster position
+  // To get ECAL sigmaNoise
+  edm::ESGetToken<EcalPFRecHitThresholds, EcalPFRecHitThresholdsRcd> tok_ebThresholds_;
+  const EcalPFRecHitThresholds* ebThresholds_;
 
   // The two parameters used to identify clusters
   std::vector<double> vecDeltas_;
@@ -112,7 +118,7 @@ private:
     std::vector<float> delta;
     std::vector<int> nearestHigher;
     std::vector<int> clusterIndex;
-    //std::vector<float> sigmaNoise;
+    std::vector<float> sigmaNoise;
     std::vector<std::vector<int>> followers;
     std::vector<bool> isSeed;
 

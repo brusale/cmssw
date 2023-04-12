@@ -17,6 +17,8 @@
 <use name="Geometry/HGCalGeometry"/>
 <use name="HeterogeneousCore/CUDACore"/>
 <use name="HeterogeneousCore/CUDAUtilities"/>
+<use name="CondFormats/DataRecord"/>
+<use name="CondFormats/EcalObjects"/>
 <use name="RecoLocalCalo/HGCalRecAlgos"/>
 <use name="RecoLocalCalo/HGCalRecProducers"/>
 <library file="*.cc *.cu" name="RecoLocalCaloHGCalRecProducersPlugins">
