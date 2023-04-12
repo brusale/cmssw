@@ -15,6 +15,7 @@ template <typename T>
 void BarrelCLUEAlgoT<T>::getEventSetupPerAlgorithm(const edm::EventSetup& es) {
   cells_.clear();
   numberOfClustersPerLayer_.clear();
+  ebThresholds_ = &es.getData(tok_ebThresholds_);
   maxlayer_ = maxLayerIndex_; //for testing purposes
   cells_.resize(maxlayer_ + 1);
   numberOfClustersPerLayer_.resize(maxlayer_ + 1, 0);
@@ -31,8 +32,8 @@ void BarrelCLUEAlgoT<T>::populate(const reco::PFRecHitCollection& hits) {
     if (detid.det() == DetId::Hcal) {
       HcalDetId hid(detid);
       layer = hid.depth();
-      if (detid.subdetId() == HcalSubdetector::HcalBarrel) 
-	layer -= 1;
+      if (detid.subdetId() == HcalSubdetector::HcalOuter) 
+	layer += 1;
     }
 
     cells_[layer].detid.emplace_back(detid);
@@ -40,7 +41,12 @@ void BarrelCLUEAlgoT<T>::populate(const reco::PFRecHitCollection& hits) {
     cells_[layer].phi.emplace_back(position.phi());
     cells_[layer].weight.emplace_back(hit.energy());
     cells_[layer].r.emplace_back(position.mag());
-    //cells_[layer].sigmaNoise.emplace_back(sigmaNoise);
+   
+    float sigmaNoise = 0.f;
+    if (detid.det() == DetId::Ecal) {
+      sigmaNoise = (*ebThresholds_)[detid];
+      cells_[layer].sigmaNoise.emplace_back(sigmaNoise);
+    }
   }
 }
 
