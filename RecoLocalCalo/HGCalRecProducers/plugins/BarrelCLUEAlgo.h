@@ -37,7 +37,8 @@ public:
             iC),
         vecDeltas_(ps.getParameter<std::vector<double>>("deltac")),
 	rhoc_(ps.getParameter<double>("rhoc")),
-	maxLayerIndex_(ps.getParameter<int>("maxLayerIndex")) {}
+	maxLayerIndex_(ps.getParameter<int>("maxLayerIndex")),
+	outlierDeltaFactor_(ps.getParameter<double>("outlierDeltaFactor")) {}
   ~BarrelCLUEAlgoT() override {}
 
   void getEventSetupPerAlgorithm(const edm::EventSetup& es) override;
@@ -74,6 +75,7 @@ public:
   static void fillPSetDescription(edm::ParameterSetDescription& iDesc) {
     iDesc.add<int>("maxLayerIndex");
     iDesc.add<double>("rhoc");
+    iDesc.add<double>("outlierDeltaFactor");
     iDesc.add<std::vector<double>>("deltac",
                                    {
                                        0.0175,
@@ -98,7 +100,7 @@ private:
   // For keeping the density per hit
 
 
-  float outlierDeltaFactor_ = 2.f;
+  double outlierDeltaFactor_;
 
   struct BarrelCellsOnLayer {
     std::vector<DetId> detid;
