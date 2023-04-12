@@ -24,11 +24,10 @@ simLabel = 'simulation'
 allLabel = 'all'
 
 collection_choices = [allLabel]
-collection_choices.extend(#[hitCalLabel]+[hitValLabel]+
-			 [layerClustersLabel]
-                         #+[trackstersLabel]+[trackstersWithEdges]+[simLabel]
-			 )
-
+collection_choices.extend(  # [hitCalLabel]+[hitValLabel]+
+    [layerClustersLabel]
+    # +[trackstersLabel]+[trackstersWithEdges]+[simLabel]
+)
 
 
 def main(opts):
@@ -45,7 +44,7 @@ def main(opts):
     if opts.verbose:
         plotting.verbose = True
 
-    filenames = [(f, f.replace('.root', '')) for fi in opts.files]
+    filenames = [(f, f.replace('.root', '')) for f in opts.files]
     sample = SimpleSample(opts.subdirprefix[0], opts.html_sample, filenames)
 
     val = SimpleValidation([sample], opts.outputDir[0])
