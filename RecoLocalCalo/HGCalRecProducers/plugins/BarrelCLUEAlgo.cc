@@ -16,6 +16,7 @@ void BarrelCLUEAlgoT<T>::getEventSetupPerAlgorithm(const edm::EventSetup& es) {
   cells_.clear();
   numberOfClustersPerLayer_.clear();
   ebThresholds_ = &es.getData(tok_ebThresholds_);
+  hcalThresholds_ = &es.getData(tok_hcalThresholds_);
   maxlayer_ = maxLayerIndex_; //for testing purposes
   cells_.resize(maxlayer_ + 1);
   numberOfClustersPerLayer_.resize(maxlayer_ + 1, 0);
@@ -45,6 +46,13 @@ void BarrelCLUEAlgoT<T>::populate(const reco::PFRecHitCollection& hits) {
     float sigmaNoise = 0.f;
     if (detid.det() == DetId::Ecal) {
       sigmaNoise = (*ebThresholds_)[detid];
+      cells_[layer].sigmaNoise.emplace_back(sigmaNoise);
+    } else {
+      std::cout << "==== HCAL Noise ====" << std::endl;
+      std::cout << "eta: " << position.eta() << " phi: " << position.phi() << std::endl;
+      std::cout << "energy: " << hit.energy() << std::endl;
+      sigmaNoise = (*hcalThresholds_)[detid];
+      std::cout << "noise: " << sigmaNoise << std::endl;
       cells_[layer].sigmaNoise.emplace_back(sigmaNoise);
     }
   }
