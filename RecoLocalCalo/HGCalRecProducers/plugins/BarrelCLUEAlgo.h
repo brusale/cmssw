@@ -22,6 +22,8 @@
 
 #include "CondFormats/DataRecord/interface/EcalPFRecHitThresholdsRcd.h"
 #include "CondFormats/EcalObjects/interface/EcalPFRecHitThresholds.h"
+//#include "CondFormats/DataRecord/interface/HcalPFCutsRcd.h"
+//#include "CalibFormats/HcalObjects/interface/HcalPFCuts.h"
 
 // C/C++ headers
 #include <set>
@@ -39,6 +41,7 @@ public:
             reco::CaloCluster::undefined,
             iC),
         tok_ebThresholds_(iC.esConsumes<EcalPFRecHitThresholds, EcalPFRecHitThresholdsRcd>()),
+	tok_hcalThresholds_(iC.esConsumes<HcalPFCuts, HcalPFCutsRcd>()),
 	vecDeltas_(ps.getParameter<std::vector<double>>("deltac")),
 	rhoc_(ps.getParameter<double>("rhoc")),
 	maxLayerIndex_(ps.getParameter<int>("maxLayerIndex")) {}
@@ -93,7 +96,9 @@ private:
   // To get ECAL sigmaNoise
   edm::ESGetToken<EcalPFRecHitThresholds, EcalPFRecHitThresholdsRcd> tok_ebThresholds_;
   const EcalPFRecHitThresholds* ebThresholds_;
-
+  //To get HCAL sigmaNoise
+  edm::ESGetToken<HcalPFCuts, HcalPFCutsRcd> tok_hcalThresholds_;
+  const HcalPFCuts* hcalThresholds_;
   // The two parameters used to identify clusters
   std::vector<double> vecDeltas_;
   double kappa_;
@@ -132,7 +137,7 @@ private:
       delta.clear();
       nearestHigher.clear();
       clusterIndex.clear();
-      //sigmaNoise.clear();
+      sigmaNoise.clear();
       followers.clear();
       isSeed.clear();
     }
@@ -147,7 +152,7 @@ private:
       delta.shrink_to_fit();
       nearestHigher.shrink_to_fit();
       clusterIndex.shrink_to_fit();
-      //sigmaNoise.shrink_to_fit();
+      sigmaNoise.shrink_to_fit();
       followers.shrink_to_fit();
       isSeed.shrink_to_fit();
     }

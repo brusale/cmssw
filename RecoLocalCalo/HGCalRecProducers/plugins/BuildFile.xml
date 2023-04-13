@@ -19,6 +19,7 @@
 <use name="HeterogeneousCore/CUDAUtilities"/>
 <use name="CondFormats/DataRecord"/>
 <use name="CondFormats/EcalObjects"/>
+<use name="CondFormats/HcalObjects"/>
 <use name="RecoLocalCalo/HGCalRecAlgos"/>
 <use name="RecoLocalCalo/HGCalRecProducers"/>
 <library file="*.cc *.cu" name="RecoLocalCaloHGCalRecProducersPlugins">
