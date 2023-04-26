@@ -36,25 +36,20 @@ void BarrelCLUEAlgoT<T>::populate(const reco::PFRecHitCollection& hits) {
       if (detid.subdetId() == HcalSubdetector::HcalOuter) 
 	layer += 1;
     }
-
-    cells_[layer].detid.emplace_back(detid);
-    cells_[layer].eta.emplace_back(position.eta());
-    cells_[layer].phi.emplace_back(position.phi());
-    cells_[layer].weight.emplace_back(hit.energy());
-    cells_[layer].r.emplace_back(position.mag());
-   
+  
+    cells_[layer].detid.push_back(detid);
+    cells_[layer].eta.push_back(position.eta());
+    cells_[layer].phi.push_back(position.phi());
+    cells_[layer].weight.push_back(hit.energy());
+    cells_[layer].r.push_back(position.mag());
     float sigmaNoise = 0.f;
     if (detid.det() == DetId::Ecal) {
       sigmaNoise = (*ebThresholds_)[detid];
-      cells_[layer].sigmaNoise.emplace_back(sigmaNoise);
-    } else {
-      std::cout << "==== HCAL Noise ====" << std::endl;
-      std::cout << "eta: " << position.eta() << " phi: " << position.phi() << std::endl;
-      std::cout << "energy: " << hit.energy() << std::endl;
-      sigmaNoise = (*hcalThresholds_)[detid];
-      std::cout << "noise: " << sigmaNoise << std::endl;
-      cells_[layer].sigmaNoise.emplace_back(sigmaNoise);
+    } else { 
+      const HcalPFCut* item = (*hcalThresholds_).getValues(detid);
+      sigmaNoise = item->seedThreshold();
     }
+    cells_[layer].sigmaNoise.push_back(sigmaNoise);
   }
 }
 
