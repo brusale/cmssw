@@ -22,8 +22,8 @@
 
 #include "CondFormats/DataRecord/interface/EcalPFRecHitThresholdsRcd.h"
 #include "CondFormats/EcalObjects/interface/EcalPFRecHitThresholds.h"
-//#include "CondFormats/DataRecord/interface/HcalPFCutsRcd.h"
-//#include "CalibFormats/HcalObjects/interface/HcalPFCuts.h"
+#include "CondFormats/DataRecord/interface/HcalPFCutsRcd.h"
+#include "CondFormats/HcalObjects/interface/HcalPFCuts.h"
 
 // C/C++ headers
 #include <set>
