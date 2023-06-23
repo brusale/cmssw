@@ -4,7 +4,8 @@ from RecoLocalCalo.HGCalRecProducers.HGCalUncalibRecHit_cfi import *
 from RecoLocalCalo.HGCalRecProducers.HGCalRecHit_cfi import *
 
 from RecoLocalCalo.HGCalRecProducers.hgcalRecHitMapProducer_cfi import hgcalRecHitMapProducer
-
+from RecoLocalCalo.HGCalRecProducers.simBarrelRecHitMapProducer_cfi import simBarrelRecHitMapProducer
+from RecoLocalCalo.HGCalRecProducers.barrelRecHitMapProducer_cfi import barrelRecHitMapProducer
 # patch particle flow clusters for HGC into local reco sequence
 # (for now until global reco is going with some sort of clustering)
 from RecoParticleFlow.PFClusterProducer.particleFlowRecHitHGC_cfi import *
@@ -19,6 +20,8 @@ hgcalLocalRecoTask = cms.Task( HGCalUncalibRecHit,
                                        hgcalLayerClustersHSi,
                                        hgcalLayerClustersHSci,
                                        hgcalMergeLayerClusters,
+				       simBarrelRecHitMapProducer,
+				       barrelRecHitMapProducer,
                                        hgcalMultiClusters,
                                        particleFlowRecHitHGC,
                                        particleFlowClusterHGCal )
