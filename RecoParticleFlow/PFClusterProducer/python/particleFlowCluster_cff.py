@@ -22,6 +22,7 @@ from RecoParticleFlow.PFClusterProducer.particleFlowBadHcalPseudoCluster_cff imp
 
 from RecoLocalCalo.HGCalRecProducers.ebLayerClusters_cfi import *
 from RecoLocalCalo.HGCalRecProducers.barrelLayerClusters_cff import *
+from RecoLocalCalo.HGCalRecProducers.simBarrelLayerClusters_cff import *
 
 particleFlowClusterECALTask = cms.Task(particleFlowClusterECAL)
 particleFlowClusterECALSequence = cms.Sequence(particleFlowClusterECALTask)
@@ -63,7 +64,8 @@ particleFlowClusterTask = cms.Task(particleFlowBadHcalPseudoCluster,
                                    pfClusteringECALTask,
                                    pfClusteringHBHEHFTask,
                                    pfClusteringHOTask,
-				   barrelLayerClusters)
+				   barrelLayerClusters,
+				   simBarrelLayerClusters)
 
 particleFlowCluster = cms.Sequence(particleFlowClusterTask)
 
