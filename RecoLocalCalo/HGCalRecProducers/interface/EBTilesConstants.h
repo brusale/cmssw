@@ -17,9 +17,9 @@ struct EBTilesConstants {
   static constexpr float maxY = 285.f;
   static constexpr int nColumns = reco::ceil((maxX - minX) / tileSize);
   static constexpr int nRows = reco::ceil((maxY - minY) / tileSize);
-  static constexpr float tileSizeEtaPhi = 0.15f;
-  static constexpr float minEta = -3.f;
-  static constexpr float maxEta = 3.f;
+  static constexpr float tileSizeEtaPhi =3*0.0175f;
+  static constexpr float minEta = -1.5f;
+  static constexpr float maxEta = 1.5f;
   static constexpr int nColumnsEta = reco::ceil((maxEta - minEta) / tileSizeEtaPhi);
   static constexpr int nRowsPhi = reco::ceil(2. * M_PI / tileSizeEtaPhi);
   static constexpr int nTiles = nColumns * nRows + nColumnsEta * nRowsPhi;
