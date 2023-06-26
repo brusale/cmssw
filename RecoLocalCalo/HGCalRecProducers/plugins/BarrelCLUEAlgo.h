@@ -25,6 +25,9 @@
 #include "CondFormats/DataRecord/interface/HcalPFCutsRcd.h"
 #include "CondFormats/HcalObjects/interface/HcalPFCuts.h"
 
+#include "SimDataFormats/CaloHit/interface/PCaloHit.h"
+#include "SimDataFormats/CaloHit/interface/PCaloHitContainer.h"
+
 // C/C++ headers
 #include <set>
 #include <string>
@@ -51,7 +54,7 @@ public:
 
   void populate(const HGCRecHitCollection& hits) override {};
   void populate(const reco::PFRecHitCollection& hits) override;
-
+  void populate(const edm::PCaloHitContainer& hits) override {};
   // this is the method that will start the clusterisation (it is possible to invoke this method
   // more than once - but make sure it is with different hit collections (or else use reset)
 

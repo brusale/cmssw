@@ -3,6 +3,7 @@
 #include "RecoLocalCalo/HGCalRecProducers/interface/HGCalImagingAlgo.h"
 #include "RecoLocalCalo/HGCalRecProducers/plugins/HGCalCLUEAlgo.h"
 #include "RecoLocalCalo/HGCalRecProducers/plugins/BarrelCLUEAlgo.h"
+#include "RecoLocalCalo/HGCalRecProducers/plugins/SimBarrelCLUEAlgo.h"
 #include "FWCore/ParameterSet/interface/ValidatedPluginFactoryMacros.h"
 #include "FWCore/ParameterSet/interface/ValidatedPluginMacros.h"
 
@@ -13,3 +14,6 @@ DEFINE_EDM_VALIDATED_PLUGIN(HGCalLayerClusterAlgoFactory, HFNoseCLUEAlgo, "HFNos
 DEFINE_EDM_VALIDATED_PLUGIN(HGCalLayerClusterAlgoFactory, EBCLUEAlgo, "EBCLUE");
 DEFINE_EDM_VALIDATED_PLUGIN(HGCalLayerClusterAlgoFactory, HBCLUEAlgo, "HBCLUE");
 DEFINE_EDM_VALIDATED_PLUGIN(HGCalLayerClusterAlgoFactory, HOCLUEAlgo, "HOCLUE");
+DEFINE_EDM_VALIDATED_PLUGIN(HGCalLayerClusterAlgoFactory, SimEBCLUEAlgo, "SimEBCLUE");
+DEFINE_EDM_VALIDATED_PLUGIN(HGCalLayerClusterAlgoFactory, SimHBCLUEAlgo, "SimHBCLUE");
+DEFINE_EDM_VALIDATED_PLUGIN(HGCalLayerClusterAlgoFactory, SimHOCLUEAlgo, "SimHOCLUE");

@@ -10,6 +10,9 @@
 #include "DataFormats/Math/interface/Point3D.h"
 #include "DataFormats/EgammaReco/interface/BasicCluster.h"
 
+#include "SimDataFormats/CaloHit/interface/PCaloHit.h"
+#include "SimDataFormats/CaloHit/interface/PCaloHitContainer.h"
+
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 
 // C/C++ headers
@@ -57,6 +60,7 @@ public:
 
   virtual void populate(const reco::PFRecHitCollection& hits) = 0;
   virtual void populate(const HGCRecHitCollection &hits) = 0;
+  virtual void populate(const edm::PCaloHitContainer &hits) = 0;
   virtual void makeClusters() = 0;
   virtual std::vector<reco::BasicCluster> getClusters(bool) = 0;
   virtual void reset() = 0;
