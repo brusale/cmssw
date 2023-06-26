@@ -140,29 +140,29 @@ void BarrelLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup&
   hbalgo->getEventSetup(es);
   
   evt.getByToken(hbhits_token_, hbhits);
-  hbalgo->populate(*hbhits);
+  //hbalgo->populate(*hbhits);
   for (auto& hit : *hbhits) {
     hitmap[hit.detId()] = &(hit);
   }
-  hbalgo->makeClusters();
+  //hbalgo->makeClusters();
   //*hbclusters = hbalgo->getClusters(false);
-  std::vector<reco::BasicCluster> hbclusters = hbalgo->getClusters(false);
+  //std::vector<reco::BasicCluster> hbclusters = hbalgo->getClusters(false);
   hoalgo->getEventSetup(es);
 
   evt.getByToken(hohits_token_, hohits);
-  hoalgo->populate(*hohits);
+  //hoalgo->populate(*hohits);
   for (auto& hit : *hohits) {
     hitmap[hit.detId()] = &(hit);
   }
-  hoalgo->makeClusters();
+  //hoalgo->makeClusters();
   //*hoclusters = hoalgo->getClusters(false);
-  std::vector<reco::BasicCluster> hoclusters = hoalgo->getClusters(false);
+  //std::vector<reco::BasicCluster> hoclusters = hoalgo->getClusters(false);
 
   std::unique_ptr<std::vector<reco::BasicCluster>> clusters(new std::vector<reco::BasicCluster>);
-  (*clusters).reserve(ebclusters.size() + hbclusters.size() + hoclusters.size());
+  (*clusters).reserve(ebclusters.size());// + hbclusters.size() + hoclusters.size());
   (*clusters).insert((*clusters).end(), ebclusters.begin(), ebclusters.end());
-  (*clusters).insert((*clusters).end(), hbclusters.begin(), hbclusters.end());
-  (*clusters).insert((*clusters).end(), hoclusters.begin(), hoclusters.end());
+  //(*clusters).insert((*clusters).end(), hbclusters.begin(), hbclusters.end());
+  //(*clusters).insert((*clusters).end(), hoclusters.begin(), hoclusters.end());
 
   auto clusterHandle = evt.put(std::move(clusters));
 

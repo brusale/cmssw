@@ -36,7 +36,7 @@ void BarrelCLUEAlgoT<T>::populate(const reco::PFRecHitCollection& hits) {
       if (detid.subdetId() == HcalSubdetector::HcalOuter) 
 	layer += 1;
     }
-  
+ 
     cells_[layer].detid.push_back(detid);
     cells_[layer].eta.push_back(position.eta());
     cells_[layer].phi.push_back(position.phi());

@@ -131,9 +131,11 @@ GlobalPoint RecHitTools::getPosition(const DetId& id) const {
   GlobalPoint position;
   if (id.det() == DetId::Hcal || id.det() == DetId::Ecal) {
     position = geom->getGeometry(id)->getPosition();
-  } else {
+  } else if (id.det() == DetId::HGCalEE || id.det() == DetId::HGCalHSi || id.det() == DetId::HGCalHSc || id.det() == DetId::HGCalTrigger) {
     auto hg = static_cast<const HGCalGeometry*>(geom);
     position = hg->getPosition(id);
+  } else {
+    position = GlobalPoint(0., 0., 0.);
   }
   return position;
 }

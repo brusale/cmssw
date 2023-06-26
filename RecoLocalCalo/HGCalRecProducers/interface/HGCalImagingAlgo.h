@@ -20,6 +20,9 @@
 #include "DataFormats/Math/interface/Point3D.h"
 #include "DataFormats/EgammaReco/interface/BasicCluster.h"
 
+#include "SimDataFormats/CaloHit/interface/PCaloHit.h"
+#include "SimDataFormats/CaloHit/interface/PCaloHitContainer.h"
+
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 #include "CommonTools/RecoAlgos/interface/KDTreeLinkerAlgo.h"
 
@@ -57,7 +60,8 @@ public:
 
   void populate(const reco::PFRecHitCollection &hits) override {};
   void populate(const HGCRecHitCollection &hits) override;
-  // this is the method that will start the clusterisation (it is possible to invoke this method more than once - but make sure it is with
+  void populate(const edm::PCaloHitContainer &hits) override {};
+// this is the method that will start the clusterisation (it is possible to invoke this method more than once - but make sure it is with
   // different hit collections (or else use reset)
 
   void makeClusters() override;
