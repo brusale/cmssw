@@ -130,13 +130,22 @@ private:
     std::vector<float> weight;
     std::vector<float> rho;
 
-    std::vector<float> delta;
+    //std::vector<float> delta;
+    //for energy sharing
+    std::vector<float> deltaToNearestHigher;
+    std::vector<float> deltaToSecondNearestHigher;
+
     std::vector<int> nearestHigher;
+    //for energy sharing
+    std::vector<int> secondNearestHigher;
+
     std::vector<int> clusterIndex;
     std::vector<float> sigmaNoise;
     std::vector<std::vector<int>> followers;
+    //std::vector<std::vector<int>> followersNearestHigher;
+    //std::vector<std::vector<int>> followersSecondNearestHigher;
     std::vector<bool> isSeed;
-
+    
     void clear() {
       detid.clear();
       eta.clear();
@@ -144,11 +153,16 @@ private:
       r.clear();
       weight.clear();
       rho.clear();
-      delta.clear();
+      //delta.clear();
+      deltaToNearestHigher.clear();
+      deltaToSecondNearestHigher.clear();
       nearestHigher.clear();
+      secondNearestHigher.clear();
       clusterIndex.clear();
       sigmaNoise.clear();
-      followers.clear();
+      //followers.clear();
+      followersNearestHigher.clear();
+      followersSecondNearestHigher.clear();
       isSeed.clear();
     }
 
@@ -159,11 +173,16 @@ private:
       phi.shrink_to_fit();
       weight.shrink_to_fit();
       rho.shrink_to_fit();
-      delta.shrink_to_fit();
+      //delta.shrink_to_fit();
+      deltaToNearestHigher.shrink_to_fit();
+      deltaToSecondNearestHigher.shrink_to_fit();
       nearestHigher.shrink_to_fit();
+      secondNearestHigher.shrink_to_fit();
       clusterIndex.shrink_to_fit();
       sigmaNoise.shrink_to_fit();
-      followers.shrink_to_fit();
+      //followers.shrink_to_fit();
+      followersNearestHigher.shrink_to_fit();
+      followersSecondNearestHigher.shrink_to_fit();
       isSeed.shrink_to_fit();
     }
   };

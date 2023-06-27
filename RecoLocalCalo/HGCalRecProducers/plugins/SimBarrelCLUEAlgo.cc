@@ -72,9 +72,13 @@ template <typename T>
 void SimBarrelCLUEAlgoT<T>::prepareDataStructures(unsigned int l) {
   auto cellsSize = cells_[l].detid.size();
   cells_[l].rho.resize(cellsSize, 0.f);
-  cells_[l].delta.resize(cellsSize, 9999999);
+  //cells_[l].delta.resize(cellsSize, 9999999);
+  cells_[l].deltaToNearestHigher(cellsSize, -1);
+  cells_[l].deltaToSecondNearestHigher(cellsSize, -1);
   cells_[l].nearestHigher.resize(cellsSize, -1);
-  cells_[l].clusterIndex.resize(cellsSize, -1);
+  cells_[l].secondNearestHigher.resize(cellsSize, -1);
+  //cells_[l].clusterIndex.resize(cellsSize, -1);
+  cells_[l].clusterIndex.resize(cellsSize, std::make_pair(-1, -1));
   cells_[l].followers.resize(cellsSize);
   cells_[l].isSeed.resize(cellsSize, false);
   cells_[l].eta.resize(cellsSize, 0.f);
@@ -245,10 +249,12 @@ void SimBarrelCLUEAlgoT<T>::calculateDistanceToHigher(const T& lt, const unsigne
 
   for (unsigned int i = 0; i < numberOfCells; ++i) {
     float maxDelta = std::numeric_limits<float>::max();
-    float i_delta = maxDelta;
-    float i_nearestHigher = -1;
-
-    float delta = delta_c;
+    //float i_delta = maxDelta;
+    float i_deltaToNearestHigher = maxDelta;
+    float i_deltaToSecondNearestHigher = maxDelta;
+    int i_nearestHigher = -1;
+    int i_secondNearestHigher = -1;
+    //float delta = delta_c;
     auto range = outlierDeltaFactor_;
     std::array<int, 4> search_box = lt.searchBoxEtaPhi(cellsOnLayer.eta[i] - range,
 						       cellsOnLayer.eta[i] + range,
@@ -267,19 +273,34 @@ void SimBarrelCLUEAlgoT<T>::calculateDistanceToHigher(const T& lt, const unsigne
 	  bool foundHigher = (cellsOnLayer.rho[otherId] > cellsOnLayer.rho[i]) ||
 			     (cellsOnLayer.rho[otherId] == cellsOnLayer.rho[i] &&
 			     cellsOnLayer.detid[otherId] > cellsOnLayer.detid[i]);
-	  if (foundHigher && dist <= i_delta) {
-	    i_delta = dist;
+	  if (!foundHigher) continue;
+	  if (dist <= i_deltaToNearestHigher) {
+	    //the old nearest becomes the second nearest
+	    i_deltaToSecondNearestHigher = i_deltaToNearestHigher;
+	    i_secondNearestHigher = i_nearestHigher;
+	    i_deltaToNearestHigher = dist;
+	    //i_delta = dist;
 	    i_nearestHigher = otherId;
+	  } 
+	  else if (dist <= i_deltaToSecondNearestHigher) {
+	    i_secondNearestHigher = otherId;
+	    i_deltaToSecondNearestHigher = dist;
 	  }
 	}
       }
     }
-    bool foundNearestHigherInSearchBox = (i_delta != maxDelta);
-    if (foundNearestHigherInSearchBox) {
-      cellsOnLayer.delta[i] = i_delta;
+    bool foundNearestHigherInSearchBox = (i_deltaToNearestHigher != maxDelta);
+    bool foundSecondNearestHigherInSearchBox = (i_deltaToSecondNearestHigher != maxDelta);
+    if (foundSecondNearestHigherInSearchBox) {
+      cellsOnLayer.deltaToNearestHigher[i] = i_deltaToNearestHigher;
+      cellsOnLayer.nearestHigher[i] = i_nearestHigher;
+      cellsOnLayer.deltaToSecondNearestHigher[i] = i_deltaToSecondNearestHigher;
+      cellsOnLayer.secondNearestHigher[i] = i_secondNearestHigher;
+    } else if (foundNearestHigherInSearchBox) {
+      cellsOnLayer.deltaToNearestHigher[i] = i_deltaToNearestHigher;
       cellsOnLayer.nearestHigher[i] = i_nearestHigher;
     } else {
-      cellsOnLayer.delta[i] = maxDelta;
+	cellsOnLayer.delta[i] = maxDelta;
       cellsOnLayer.nearestHigher[i] = -1;
     }
   }
@@ -296,8 +317,10 @@ int SimBarrelCLUEAlgoT<T>::findAndAssignClusters(const unsigned int layerId, flo
     float rho_c = kappa_ * cellsOnLayer.sigmaNoise[i];
     float delta = delta_c;
     cellsOnLayer.clusterIndex[i] = -1;
-    bool isSeed = (cellsOnLayer.delta[i] > delta) && (cellsOnLayer.rho[i] >= rho_c);
-    bool isOutlier = (cellsOnLayer.delta[i] > outlierDeltaFactor_ ) && (cellsOnLayer.rho[i] < rho_c);
+    //bool isSeed = (cellsOnLayer.delta[i] > delta) && (cellsOnLayer.rho[i] >= rho_c);
+    bool is Seed = (cellsOnLayer.deltaToNearestHigher[i] > delta) && (cellsOnLayer.rho[i] >= rho_c);
+    //bool isOutlier = (cellsOnLayer.delta[i] > outlierDeltaFactor_ ) && (cellsOnLayer.rho[i] < rho_c);
+    bool isOutlier = (cellsOnLayer.deltaToNearestHigher.delta[i] > outlierDeltaFactor_) && (cellsOnLayer.rho[i] >= rho_c);
     if (isSeed) {
       cellsOnLayer.clusterIndex[i] = nClustersOnLayer;
       cellsOnLayer.isSeed[i] = true;
@@ -305,18 +328,23 @@ int SimBarrelCLUEAlgoT<T>::findAndAssignClusters(const unsigned int layerId, flo
       localStack.push_back(i);
     } else if (!isOutlier) {
       cellsOnLayer.followers[cellsOnLayer.nearestHigher[i]].push_back(i);
+      if (cellsOnLayer.secondNearestHigher[i] != -1) 
+	cellsOnLayer.followers[cellsOnLayer.secondNearestHigher[i]].push_back(i);
     }
   }
 
   while (!localStack.empty()) {
     int endStack = localStack.back();
-    auto& thisSeed = cellsOnLayer.followers[endStack];
+    //auto& thisSeed = cellsOnLayer.followers[endStack];
+    auto& followers = cellsOnLayer.followers[endStack];
     localStack.pop_back();
 
-    for (int j : thisSeed) {
+    /*for (int j : thisSeed) {
       cellsOnLayer.clusterIndex[j] = cellsOnLayer.clusterIndex[endStack];
       localStack.push_back(j);
-    }
+    }*/
+    for (int j : followers) {
+      if (cellsOnLayer.nearestHigher[j]
   }
   return nClustersOnLayer;
 }
