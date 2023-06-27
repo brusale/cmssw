@@ -74,7 +74,7 @@ void SimBarrelCLUEAlgoT<T>::prepareDataStructures(unsigned int l) {
   cells_[l].rho.resize(cellsSize, 0.f);
   cells_[l].delta.resize(cellsSize, 9999999);
   cells_[l].nearestHigher.resize(cellsSize, -1);
-  cells_[l].clusterIndex.resize(cellsSize, -1);
+  cells_[l].clusterIndex.resize(cellsSize);
   cells_[l].followers.resize(cellsSize);
   cells_[l].isSeed.resize(cellsSize, false);
   cells_[l].eta.resize(cellsSize, 0.f);
@@ -133,7 +133,13 @@ std::vector<reco::BasicCluster> SimBarrelCLUEAlgoT<T>::getClusters(bool) {
     auto firstClusterIdx = offsets[layerId];
 
     for (unsigned int i = 0; i < numberOfCells; ++i) {
+      float eta_cell = cellsOnLayer.eta[i];
+      float phi_cell = cellsOnLayer.phi[i];
       auto clusterIndex = cellsOnLayer.clusterIndex[i];
+      if (clusterIndex.size() > 1) {
+	for (const auto& seed : clusterIndex) {
+	  float sigma = 0.5;
+	  float eta_seed = cellsOnLayer 
       if (clusterIndex != -1) 
 	cellsIdInCluster[clusterIndex].push_back(i);
     }
@@ -248,8 +254,9 @@ void SimBarrelCLUEAlgoT<T>::calculateDistanceToHigher(const T& lt, const unsigne
     float i_delta = maxDelta;
     float i_nearestHigher = -1;
 
-    float delta = delta_c;
-    auto range = outlierDeltaFactor_;
+    //float delta = delta_c;
+    //auto range = outlierDeltaFactor_;
+    auto range = delta_c;
     std::array<int, 4> search_box = lt.searchBoxEtaPhi(cellsOnLayer.eta[i] - range,
 						       cellsOnLayer.eta[i] + range,
 						       cellsOnLayer.phi[i] - range,
@@ -299,7 +306,7 @@ int SimBarrelCLUEAlgoT<T>::findAndAssignClusters(const unsigned int layerId, flo
     bool isSeed = (cellsOnLayer.delta[i] > delta) && (cellsOnLayer.rho[i] >= rho_c);
     bool isOutlier = (cellsOnLayer.delta[i] > outlierDeltaFactor_ ) && (cellsOnLayer.rho[i] < rho_c);
     if (isSeed) {
-      cellsOnLayer.clusterIndex[i] = nClustersOnLayer;
+      cellsOnLayer.clusterIndex[i][0] = nClustersOnLayer;
       cellsOnLayer.isSeed[i] = true;
       nClustersOnLayer++;
       localStack.push_back(i);
@@ -314,11 +321,44 @@ int SimBarrelCLUEAlgoT<T>::findAndAssignClusters(const unsigned int layerId, flo
     localStack.pop_back();
 
     for (int j : thisSeed) {
-      cellsOnLayer.clusterIndex[j] = cellsOnLayer.clusterIndex[endStack];
+      cellsOnLayer.clusterIndex[j][0] = cellsOnLayer.clusterIndex[endStack];
       localStack.push_back(j);
     }
   }
+
+  passSharedClusterIndex(lt, layerId, delta);
   return nClustersOnLayer;
+}
+
+template <typename T>
+void SimBarrelCLUEAlgoT<T>::passSharedClusterIndex(const T& lt, const unsigned int layerId, float delta_c) {
+  auto& cellsOnLayer = cells_[layerId];
+  unsigned int numberOfCells = cellsOnLayer.detid.size();
+  float delta = delta_c;
+  for (unsigned int i = 0; i < numberOfCells; ++i) {
+    if ((cellsOnLayer.clusterIndex[i][0] == -1) || (cellsOnLayer.isSeed[i])) continue;
+
+    std::array<int, 4> search_box = lt.searchBoxEtaPhi(cellsOnLayer.eta[i] - delta,
+						      cellsOnLayer.eta[i] + delta,
+						      cellsOnLayer.phi[i] - delta, 
+						      cellsOnLayer.phi[i] + delta);
+    
+    for (int etaBin = search_box[0]; etaBin < search_box[1]; ++etaBin) {
+      for (int phiBin = search_box[2]; phiBin < search_box[3]; ++phiBin) {
+	int phi = (phiBin % T::type::nRowsPhi);
+	size_t binId = lt.getGlobalBinByBinEtaPhi(etaBin, phi);
+	size_t binSize = lt[binId].size();
+
+	for (unsigned int j = 0; j < binSize; ++j) {
+	  unsigned int otherId = lt[binId][j];
+	  int otherClusterIndex = cellsOnLayer.clusterIndex[otherId][0];
+	  if (std::find(std::begin(cellsOnLayer.clusterIndex[i]), std::end(cellsOnLayer.clusterInd), otherClusterIndex)) continue;
+	  cellsOnLayer.clusterIndex[i].push_back(otherClusterIndex);
+	}	  
+      }
+    }
+    std::cout << "ClusterIndex" << cellsOnLayer.clusterIndex[i] << std::endl;
+  }
 }
 
 template <typename T> 
