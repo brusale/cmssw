@@ -357,7 +357,6 @@ void SimBarrelCLUEAlgoT<T>::passSharedClusterIndex(const T& lt, const unsigned i
 	}	  
       }
     }
-    std::cout << "ClusterIndex" << cellsOnLayer.clusterIndex[i] << std::endl;
   }
 }
 
