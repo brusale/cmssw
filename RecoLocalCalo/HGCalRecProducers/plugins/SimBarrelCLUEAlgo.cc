@@ -138,6 +138,7 @@ std::vector<reco::BasicCluster> SimBarrelCLUEAlgoT<T>::getClusters(bool) {
     auto firstClusterIdx = offsets[layerId];
 
     for (unsigned int i = 0; i < numberOfCells; ++i) {
+      std::cout << "==============\n";
       auto clusterIndex = cellsOnLayer.clusterIndex[i];
       
       if (clusterIndex.size() == 1){
@@ -148,14 +149,20 @@ std::vector<reco::BasicCluster> SimBarrelCLUEAlgoT<T>::getClusters(bool) {
         std::vector<float> fractions (clusterIndex.size());
         
 	for (unsigned int j = 0; j < clusterIndex.size(); j++) {
-          const auto & seed = clusterIndex[j];
+          const auto& seed = clusterIndex[j];
+	  std::cout << "Seed " << seed << std::endl;
+	  std::cout << "seedToCellIndex[seed]" << cellsOnLayer.seedToCellIndex[seed] << std::endl;
           // compute the distance
 	  float dist = distance(i, cellsOnLayer.seedToCellIndex[seed], layerId) / T::type::cellWidthEta;
+	  std::cout << "Distance in cells unit " << dist << std::endl;
           fractions[j] = std::exp(-(std::pow(dist,2))/(2*std::pow(T::type::showerSigma,2)));
+	  std::cout << "Cell " << i << " in cluster index " << j << " with fraction " << fractions[j] << std::endl;
         }
+	std::cout << "==================\n";
         auto tot_norm_fractions = std::accumulate(std::begin(fractions), std::end(fractions),  0.);
 
         for (unsigned int j = 0; j < clusterIndex.size(); j++) {
+	  std::cout << "Adding Cell " << i << " to cluster " << j << " with energy " << cellsOnLayer.weight[i]*fractions[j]/tot_norm_fractions << std::endl;
           cellsIdInCluster[j].push_back(
             std::make_pair(i, cellsOnLayer.weight[i]*fractions[j]/tot_norm_fractions));
         }
@@ -343,7 +350,7 @@ void SimBarrelCLUEAlgoT<T>::passSharedClusterIndex(const T& lt, const unsigned i
   float delta = delta_c;
   for (unsigned int i = 0; i < numberOfCells; ++i) {
     // Do not run on outliers, but run also on seeds and followers
-    if ((cellsOnLayer.clusterIndex[i][0] == -1)) continue;
+    if ((cellsOnLayer.clusterIndex[i].size() == 0)) continue;
 
     std::array<int, 4> search_box = lt.searchBoxEtaPhi(cellsOnLayer.eta[i] - delta,
 						       cellsOnLayer.eta[i] + delta,
@@ -358,6 +365,7 @@ void SimBarrelCLUEAlgoT<T>::passSharedClusterIndex(const T& lt, const unsigned i
 
 	for (unsigned int j = 0; j < binSize; ++j) {
 	  unsigned int otherId = lt[binId][j];
+	  if (cellsOnLayer.clusterIndex[otherId].size() == 0) continue;
 	  int otherClusterIndex = cellsOnLayer.clusterIndex[otherId][0];
 	  if (std::find(std::begin(cellsOnLayer.clusterIndex[i]),
                         std::end(cellsOnLayer.clusterIndex[i]), otherClusterIndex) == std::end(cellsOnLayer.clusterIndex[i])) continue;
