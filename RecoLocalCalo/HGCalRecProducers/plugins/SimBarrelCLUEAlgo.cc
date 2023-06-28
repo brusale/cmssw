@@ -77,6 +77,7 @@ void SimBarrelCLUEAlgoT<T>::prepareDataStructures(unsigned int l) {
   cells_[l].clusterIndex.resize(cellsSize);
   cells_[l].followers.resize(cellsSize);
   cells_[l].isSeed.resize(cellsSize, false);
+//  cells_[l].seedToCellIndex.reserve(200);
   cells_[l].eta.resize(cellsSize, 0.f);
   cells_[l].phi.resize(cellsSize, 0.f);
   cells_[l].r.resize(cellsSize, 0.f);
@@ -123,9 +124,9 @@ std::vector<reco::BasicCluster> SimBarrelCLUEAlgoT<T>::getClusters(bool) {
 
   auto totalNumberOfClusters = offsets.back() + numberOfClustersPerLayer_.back();
   clusters_v_.resize(totalNumberOfClusters);
-  std::vector<std::vector<int>> cellsIdInCluster;
+  std::vector<std::vector<std::pair<int, float>>> cellsIdInCluster;
   cellsIdInCluster.reserve(maxClustersOnLayer);
-
+  
   for (unsigned int layerId = 0; layerId < maxlayer_ + 1; ++layerId) {
     cellsIdInCluster.resize(numberOfClustersPerLayer_[layerId]);
     auto& cellsOnLayer = cells_[layerId];
@@ -133,13 +134,16 @@ std::vector<reco::BasicCluster> SimBarrelCLUEAlgoT<T>::getClusters(bool) {
     auto firstClusterIdx = offsets[layerId];
 
     for (unsigned int i = 0; i < numberOfCells; ++i) {
-      float eta_cell = cellsOnLayer.eta[i];
-      float phi_cell = cellsOnLayer.phi[i];
       auto clusterIndex = cellsOnLayer.clusterIndex[i];
       if (clusterIndex.size() > 1) {
+        std::array<float, clusterIndex.size()> fractions;
+        size_t i =0;
 	for (const auto& seed : clusterIndex) {
-	  float sigma = 0.5;
-	  float eta_seed = cellsOnLayer 
+          // compute the distance
+	  float dist = distance(i, cellsOnLayer.seedToCellIndex[seed], layerId) / 0.0175;
+          
+          fractions[i] = 
+          
       if (clusterIndex != -1) 
 	cellsIdInCluster[clusterIndex].push_back(i);
     }
@@ -308,6 +312,7 @@ int SimBarrelCLUEAlgoT<T>::findAndAssignClusters(const unsigned int layerId, flo
     if (isSeed) {
       cellsOnLayer.clusterIndex[i][0] = nClustersOnLayer;
       cellsOnLayer.isSeed[i] = true;
+      seedToCellIndex.push_back(i);
       nClustersOnLayer++;
       localStack.push_back(i);
     } else if (!isOutlier) {
@@ -336,7 +341,8 @@ void SimBarrelCLUEAlgoT<T>::passSharedClusterIndex(const T& lt, const unsigned i
   unsigned int numberOfCells = cellsOnLayer.detid.size();
   float delta = delta_c;
   for (unsigned int i = 0; i < numberOfCells; ++i) {
-    if ((cellsOnLayer.clusterIndex[i][0] == -1) || (cellsOnLayer.isSeed[i])) continue;
+    // Do not run on outliers, but run also on seeds and followers
+    if ((cellsOnLayer.clusterIndex[i][0] == -1)) continue;
 
     std::array<int, 4> search_box = lt.searchBoxEtaPhi(cellsOnLayer.eta[i] - delta,
 						      cellsOnLayer.eta[i] + delta,

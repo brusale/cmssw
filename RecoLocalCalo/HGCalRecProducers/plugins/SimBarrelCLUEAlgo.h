@@ -137,6 +137,7 @@ private:
     std::vector<float> sigmaNoise;
     std::vector<std::vector<int>> followers;
     std::vector<bool> isSeed;
+    std::vector<int> seedToCellIndex;
 
     void clear() {
       detid.clear();
@@ -151,6 +152,7 @@ private:
       sigmaNoise.clear();
       followers.clear();
       isSeed.clear();
+      seedToCellIndex.clear();
     }
 
     void shrink_to_fit() {
@@ -166,6 +168,7 @@ private:
       sigmaNoise.shrink_to_fit();
       followers.shrink_to_fit();
       isSeed.shrink_to_fit();
+      seedToCellIndex.shrink_to_fit();
     }
   };
 
