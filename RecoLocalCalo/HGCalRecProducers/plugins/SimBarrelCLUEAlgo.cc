@@ -102,6 +102,8 @@ void SimBarrelCLUEAlgoT<T>::makeClusters() {
       calculateLocalDensity(lt, i, delta_c, delta_r);
       calculateDistanceToHigher(lt, i, delta_c, delta_r);
       numberOfClustersPerLayer_[i] = findAndAssignClusters(i, delta_c, delta_r);
+      // Now running the sharing routine
+      passSharedClusterIndex(lt, i, delta_c);
       });
     });
   for (unsigned int i = 0; i < maxlayer_ + 1; ++i) {
@@ -124,6 +126,8 @@ std::vector<reco::BasicCluster> SimBarrelCLUEAlgoT<T>::getClusters(bool) {
 
   auto totalNumberOfClusters = offsets.back() + numberOfClustersPerLayer_.back();
   clusters_v_.resize(totalNumberOfClusters);
+  // Store the cellId and energy for each cluster
+  // We need to store the energy as a pair here because we perform the energy splitting
   std::vector<std::vector<std::pair<int, float>>> cellsIdInCluster;
   cellsIdInCluster.reserve(maxClustersOnLayer);
   
@@ -135,45 +139,44 @@ std::vector<reco::BasicCluster> SimBarrelCLUEAlgoT<T>::getClusters(bool) {
 
     for (unsigned int i = 0; i < numberOfCells; ++i) {
       auto clusterIndex = cellsOnLayer.clusterIndex[i];
-      if (clusterIndex.size() > 1) {
-        std::array<float, clusterIndex.size()> fractions;
-        size_t i =0;
-	for (const auto& seed : clusterIndex) {
+      
+      if (clusterIndex.size() == 1){
+         cellsIdInCluster[clusterIndex[0]].push_back(
+            std::make_pair(i, cellsOnLayer.weight[i]));
+      }
+      else if (clusterIndex.size() > 1) {
+        std::vector<float> fractions (clusterIndex.size());
+        
+	for (unsigned int j = 0; j < clusterIndex.size(); j++) {
+          const auto & seed = clusterIndex[j];
           // compute the distance
-	  float dist = distance(i, cellsOnLayer.seedToCellIndex[seed], layerId) / 0.0175;
-          
-          fractions[i] = 
-          
-      if (clusterIndex != -1) 
-	cellsIdInCluster[clusterIndex].push_back(i);
+	  float dist = distance(i, cellsOnLayer.seedToCellIndex[seed], layerId) / T::type::cellWidthEta;
+          fractions[j] = std::exp(-(std::pow(dist,2))/(2*std::pow(T::type::showerSigma,2)));
+        }
+        auto tot_norm_fractions = std::accumulate(std::begin(fractions), std::end(fractions),  0.);
+
+        for (unsigned int j = 0; j < clusterIndex.size(); j++) {
+          cellsIdInCluster[j].push_back(
+            std::make_pair(i, cellsOnLayer.weight[i]*fractions[j]/tot_norm_fractions));
+        }
+      }
     }
 
     std::vector<std::pair<DetId, float>> thisCluster;
-
-    for (auto& cl : cellsIdInCluster) {
+    for (int clIndex = 0; clIndex < numberOfClustersPerLayer_[layerId]; clIndex++){
+      auto& cl = cellsIdInCluster[clIndex];
       auto position = calculatePosition(cl, layerId);
       float energy = 0.f;
       int seedDetId = -1;
 
-      for (auto cellIdx : cl) {
-	energy += cellsOnLayer.weight[cellIdx];
+      for (auto [cellIdx, cellEnergy] : cl) {
+	energy += cellEnergy;
 	thisCluster.emplace_back(cellsOnLayer.detid[cellIdx], 1.f);
 	if (cellsOnLayer.isSeed[cellIdx]) {
 	  seedDetId = cellsOnLayer.detid[cellIdx];
 	}
       }
-
-      /*for (auto cellIdx : cl) {
-	float fraction = cellsOnLayer.weight[cellIdx]/energy;
-	DetId id = cellsOnLayer.detid[cellIdx];
-	auto it = std::find_if(thisCluster.begin(), thisCluster.end(),
-	  [&id](const std::pair<DetId, float>& hit){ return hit.first == id; });
-	if (it != thisCluster.end()) {
-	  (it->second) = fraction;
-	}
-      }*/
-
-      auto globalClusterIndex = cellsOnLayer.clusterIndex[cl[0]] + firstClusterIdx;
+      auto globalClusterIndex = clIndex  + firstClusterIdx;
 
       if constexpr (std::is_same_v<T, EBLayerTiles>) {
 	clusters_v_[globalClusterIndex] = 
@@ -194,15 +197,15 @@ std::vector<reco::BasicCluster> SimBarrelCLUEAlgoT<T>::getClusters(bool) {
 }
 
 template <typename T>
-math::XYZPoint SimBarrelCLUEAlgoT<T>::calculatePosition(const std::vector<int>& v, const unsigned int layerId) const {
+  math::XYZPoint SimBarrelCLUEAlgoT<T>::calculatePosition(const std::vector<std::pair<int, float>>& v, const unsigned int layerId) const {
   float total_weight = 0.f;
   float x = 0.f;
   float y = 0.f;
   float z = 0.f;
 
   auto& cellsOnLayer = cells_[layerId];
-  for (auto i : v) {
-    float rhEnergy = cellsOnLayer.weight[i];
+  for (const auto & [i, rhEnergy] : v) {
+    // float rhEnergy = cellsOnLayer.weight[i];
     total_weight += rhEnergy;
     float theta = 2 * std::atan(std::exp(-cellsOnLayer.eta[i]));
     const GlobalPoint gp(GlobalPoint::Polar(theta, cellsOnLayer.phi[i], cellsOnLayer.r[i]));
@@ -306,13 +309,13 @@ int SimBarrelCLUEAlgoT<T>::findAndAssignClusters(const unsigned int layerId, flo
     //float rho_c = rhoc_; //for testing purposes
     float rho_c = kappa_ * cellsOnLayer.sigmaNoise[i];
     float delta = delta_c;
-    cellsOnLayer.clusterIndex[i] = -1;
+    // cellsOnLayer.clusterIndex[i] = -1;
     bool isSeed = (cellsOnLayer.delta[i] > delta) && (cellsOnLayer.rho[i] >= rho_c);
     bool isOutlier = (cellsOnLayer.delta[i] > outlierDeltaFactor_ ) && (cellsOnLayer.rho[i] < rho_c);
     if (isSeed) {
-      cellsOnLayer.clusterIndex[i][0] = nClustersOnLayer;
+      cellsOnLayer.clusterIndex[i].push_back(nClustersOnLayer);
       cellsOnLayer.isSeed[i] = true;
-      seedToCellIndex.push_back(i);
+      cellsOnLayer.seedToCellIndex.push_back(i);
       nClustersOnLayer++;
       localStack.push_back(i);
     } else if (!isOutlier) {
@@ -326,12 +329,10 @@ int SimBarrelCLUEAlgoT<T>::findAndAssignClusters(const unsigned int layerId, flo
     localStack.pop_back();
 
     for (int j : thisSeed) {
-      cellsOnLayer.clusterIndex[j][0] = cellsOnLayer.clusterIndex[endStack];
+      cellsOnLayer.clusterIndex[j].push_back(cellsOnLayer.clusterIndex[endStack][0]);
       localStack.push_back(j);
     }
   }
-
-  passSharedClusterIndex(lt, layerId, delta);
   return nClustersOnLayer;
 }
 
@@ -345,9 +346,9 @@ void SimBarrelCLUEAlgoT<T>::passSharedClusterIndex(const T& lt, const unsigned i
     if ((cellsOnLayer.clusterIndex[i][0] == -1)) continue;
 
     std::array<int, 4> search_box = lt.searchBoxEtaPhi(cellsOnLayer.eta[i] - delta,
-						      cellsOnLayer.eta[i] + delta,
-						      cellsOnLayer.phi[i] - delta, 
-						      cellsOnLayer.phi[i] + delta);
+						       cellsOnLayer.eta[i] + delta,
+						       cellsOnLayer.phi[i] - delta, 
+						       cellsOnLayer.phi[i] + delta);
     
     for (int etaBin = search_box[0]; etaBin < search_box[1]; ++etaBin) {
       for (int phiBin = search_box[2]; phiBin < search_box[3]; ++phiBin) {
@@ -358,7 +359,8 @@ void SimBarrelCLUEAlgoT<T>::passSharedClusterIndex(const T& lt, const unsigned i
 	for (unsigned int j = 0; j < binSize; ++j) {
 	  unsigned int otherId = lt[binId][j];
 	  int otherClusterIndex = cellsOnLayer.clusterIndex[otherId][0];
-	  if (std::find(std::begin(cellsOnLayer.clusterIndex[i]), std::end(cellsOnLayer.clusterInd), otherClusterIndex)) continue;
+	  if (std::find(std::begin(cellsOnLayer.clusterIndex[i]),
+                        std::end(cellsOnLayer.clusterIndex[i]), otherClusterIndex) == std::end(cellsOnLayer.clusterIndex[i])) continue;
 	  cellsOnLayer.clusterIndex[i].push_back(otherClusterIndex);
 	}	  
       }
