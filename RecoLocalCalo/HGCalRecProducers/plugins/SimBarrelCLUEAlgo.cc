@@ -162,9 +162,12 @@ std::vector<reco::BasicCluster> SimBarrelCLUEAlgoT<T>::getClusters(bool) {
         auto tot_norm_fractions = std::accumulate(std::begin(fractions), std::end(fractions),  0.);
 
         for (unsigned int j = 0; j < clusterIndex.size(); j++) {
-	  std::cout << "Adding Cell " << i << " to cluster " << j << " with energy " << cellsOnLayer.weight[i]*fractions[j]/tot_norm_fractions << std::endl;
-          cellsIdInCluster[j].push_back(
-            std::make_pair(i, cellsOnLayer.weight[i]*fractions[j]/tot_norm_fractions));
+          float norm_fraction = fractions[j]/tot_norm_fractions;
+	  std::cout << "Adding Cell " << i << " to cluster " << j << " with energy " << cellsOnLayer.weight[i]*norm_fraction  << " (fraction " << norm_fraction << ")" << std::endl;
+          if (norm_fraction >= fractionCutoff_){
+            cellsIdInCluster[j].push_back(
+              std::make_pair(i, cellsOnLayer.weight[i]*norm_fraction));
+          }
         }
       }
     }

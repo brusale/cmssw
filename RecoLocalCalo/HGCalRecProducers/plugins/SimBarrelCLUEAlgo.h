@@ -49,6 +49,7 @@ public:
 	vecDeltas_(ps.getParameter<std::vector<double>>("deltac")),
 	kappa_(ps.getParameter<double>("kappa")),
 	rhoc_(ps.getParameter<double>("rhoc")),
+        fractionCutoff_(ps.getParameter<double>("fractionCutoff")),
 	maxLayerIndex_(ps.getParameter<int>("maxLayerIndex")),
 	outlierDeltaFactor_(ps.getParameter<double>("outlierDeltaFactor")) {}
   ~SimBarrelCLUEAlgoT() override {}
@@ -97,6 +98,7 @@ public:
                                        5*0.087,
                                        5*0.087
                                    });
+    iDesc.add<double>("fractionCutoff", 0.);
   }
 
   /// point in the space
@@ -113,6 +115,7 @@ private:
   std::vector<double> vecDeltas_;
   double kappa_;
   double rhoc_;
+  double fractionCutoff_;
   int maxLayerIndex_;
 
   Density density_;
