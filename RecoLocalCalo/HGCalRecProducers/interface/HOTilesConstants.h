@@ -23,6 +23,9 @@ struct HOTilesConstants {
   static constexpr int nColumnsEta = reco::ceil((maxEta - minEta) / tileSizeEtaPhi);
   static constexpr int nRowsPhi = reco::ceil(2. * M_PI / tileSizeEtaPhi);
   static constexpr int nTiles = nColumns * nRows + nColumnsEta * nRowsPhi;
+  static constexpr float cellWidthEta = 0.087f; //FIXME
+  static constexpr float cellWidthPhi = 0.087f; //FIXME
+  static constexpr float showerSigma = 0.5f; //FIXME // in unit of xtals
 };
 
 #endif

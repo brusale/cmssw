@@ -120,7 +120,6 @@ private:
 
 
   float outlierDeltaFactor_;
-  constexpr MAX_SHARING = 4;
   struct BarrelCellsOnLayer {
     std::vector<DetId> detid;
     std::vector<float> eta;
@@ -194,7 +193,7 @@ private:
   void calculateDistanceToHigher(const TILE& lt, const unsigned int layerId, float delta_c, float delta_r);
   int findAndAssignClusters(const unsigned int layerId, float delta_c, float delta_r);
   void passSharedClusterIndex(const TILE& lt, const unsigned int layerId, float delta_c);
-  math::XYZPoint calculatePosition(const std::vector<int>& v, const unsigned int layerId) const;
+  math::XYZPoint calculatePosition(const std::vector<std::pair<int,float>>& v, const unsigned int layerId) const;
   void setDensity(const unsigned int layerId);
 };
 
