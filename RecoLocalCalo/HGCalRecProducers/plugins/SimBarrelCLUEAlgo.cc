@@ -336,6 +336,7 @@ int SimBarrelCLUEAlgoT<T>::findAndAssignClusters(const unsigned int layerId, flo
     localStack.pop_back();
 
     for (int j : thisSeed) {
+      
       cellsOnLayer.clusterIndex[j].push_back(cellsOnLayer.clusterIndex[endStack][0]);
       localStack.push_back(j);
     }
@@ -368,8 +369,8 @@ void SimBarrelCLUEAlgoT<T>::passSharedClusterIndex(const T& lt, const unsigned i
 	  if (cellsOnLayer.clusterIndex[otherId].size() == 0) continue;
 	  int otherClusterIndex = cellsOnLayer.clusterIndex[otherId][0];
 	  if (std::find(std::begin(cellsOnLayer.clusterIndex[i]),
-                        std::end(cellsOnLayer.clusterIndex[i]), otherClusterIndex) == std::end(cellsOnLayer.clusterIndex[i])) continue;
-	  cellsOnLayer.clusterIndex[i].push_back(otherClusterIndex);
+                        std::end(cellsOnLayer.clusterIndex[i]), otherClusterIndex) == std::end(cellsOnLayer.clusterIndex[i]))
+            cellsOnLayer.clusterIndex[i].push_back(otherClusterIndex);
 	}	  
       }
     }
