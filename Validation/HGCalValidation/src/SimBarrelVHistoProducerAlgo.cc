@@ -682,6 +682,24 @@ void SimBarrelVHistoProducerAlgo::bookClusterHistos_LCtoCP_association(DQMStore:
 		     nintPt_,
 		     minPt_,
 		     maxPt_);
+    histograms.h_num_caloparticle_etapt_perlayer[ilayer] = 
+	ibook.book2D("Num_CaloParticle_EtaPt_perlayer" + istr,
+		     "Num CaloParticle EtaPt per Layer Cluster for layer " + istr,
+		     nintEta_,
+		     minEta_,
+		     maxEta_,
+		     nintPt_,
+		     minPt_,
+		     maxPt_);
+    histograms.h_denom_caloparticle_etapt_perlayer[ilayer] =
+	ibook.book2D("Denom_CaloParticle_EtaPt_perlayer" + istr,
+		     "Denom CaloParticle EtaPt per Layer Cluster for layer " + istr,
+		     nintEta_,
+		     minEta_,
+		     maxEta_,
+		     nintPt_,
+		     minPt_,
+		     maxPt_);
     histograms.h_denom_caloparticle_eta_perlayer[ilayer] =
         ibook.book1D("Denom_CaloParticle_Eta_perlayer" + istr,
                      "Denom CaloParticle Eta per Layer Cluster for layer " + istr,
@@ -1708,7 +1726,7 @@ void SimBarrelVHistoProducerAlgo::layerClusters_to_CaloParticles(const Histogram
       histograms.h_denom_caloparticle_eta_perlayer.at(layerId)->Fill(cP[cpId].g4Tracks()[0].momentum().eta());
       histograms.h_denom_caloparticle_phi_perlayer.at(layerId)->Fill(cP[cpId].g4Tracks()[0].momentum().phi());
       histograms.h_denom_caloparticle_pt_perlayer.at(layerId)->Fill(cP[cpId].pt());
-
+      histograms.h_denom_caloparticle_etapt_perlayer.at(layerId)->Fill(cP[cpId].g4Tracks()[0].momentum().eta(), cP[cpId].pt());
       if (lcsIt == cPOnLayerMap.end())
         continue;
       const auto& lcs = lcsIt->val;
@@ -1744,6 +1762,7 @@ void SimBarrelVHistoProducerAlgo::layerClusters_to_CaloParticles(const Histogram
         histograms.h_num_caloparticle_eta_perlayer.at(layerId)->Fill(cP[cpId].g4Tracks()[0].momentum().eta());
         histograms.h_num_caloparticle_phi_perlayer.at(layerId)->Fill(cP[cpId].g4Tracks()[0].momentum().phi());
         histograms.h_num_caloparticle_pt_perlayer.at(layerId)->Fill(cP[cpId].pt());
+	histograms.h_num_caloparticle_etapt_perlayer.at(layerId)->Fill(cP[cpId].g4Tracks()[0].momentum().eta(), cP[cpId].pt());
 	if (assoc > 1) {
           histograms.h_numDup_caloparticle_eta_perlayer.at(layerId)->Fill(cP[cpId].g4Tracks()[0].momentum().eta());
           histograms.h_numDup_caloparticle_phi_perlayer.at(layerId)->Fill(cP[cpId].g4Tracks()[0].momentum().phi());

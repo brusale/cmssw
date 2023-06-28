@@ -1,5 +1,5 @@
-#ifndef Validation_HGCalValidation_SimBarrelVHistoProducerAlgo_h
-#define Validation_HGCalValidation_SimBarrelVHistoProducerAlgo_h
+#ifndef Validation_HGCalValidation_BarrelVHistoProducerAlgo_h
+#define Validation_HGCalValidation_BarrelVHistoProducerAlgo_h
 
 /* \author HGCal
  */
@@ -23,7 +23,6 @@
 
 #include "DataFormats/ParticleFlowReco/interface/PFRecHitFwd.h"
 #include "DataFormats/ParticleFlowReco/interface/PFRecHit.h"
-#include "SimDataFormats/CaloHit/interface/PCaloHit.h"
 
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 #include "SimDataFormats/CaloAnalysis/interface/CaloParticle.h"
@@ -34,7 +33,7 @@
 
 #include "DQMServices/Core/interface/DQMStore.h"
 
-struct SimBarrelVHistoProducerAlgoHistograms {
+struct BarrelVHistoProducerAlgoHistograms {
   //1D
   std::vector<dqm::reco::MonitorElement*> h_cluster_eta;
   std::vector<dqm::reco::MonitorElement*> h_mixedhitscluster_zminus;
@@ -62,8 +61,6 @@ struct SimBarrelVHistoProducerAlgoHistograms {
   std::unordered_map<int, dqm::reco::MonitorElement*> h_num_caloparticle_phi_perlayer;
   std::unordered_map<int, dqm::reco::MonitorElement*> h_numDup_caloparticle_phi_perlayer;
   std::unordered_map<int, dqm::reco::MonitorElement*> h_denom_caloparticle_phi_perlayer;
-  std::unordered_map<int, dqm::reco::MonitorElement*> h_num_caloparticle_pt_perlayer;
-  std::unordered_map<int, dqm::reco::MonitorElement*> h_denom_caloparticle_pt_perlayer;
   std::unordered_map<int, dqm::reco::MonitorElement*> h_num_layercl_eta_perlayer;
   std::unordered_map<int, dqm::reco::MonitorElement*> h_numMerge_layercl_eta_perlayer;
   std::unordered_map<int, dqm::reco::MonitorElement*> h_denom_layercl_eta_perlayer;
@@ -105,8 +102,6 @@ struct SimBarrelVHistoProducerAlgoHistograms {
   std::unordered_map<int, dqm::reco::MonitorElement*> h_caloparticle_layersnum_matchedtoRecHit;
   std::unordered_map<int, dqm::reco::MonitorElement*> h_caloparticle_fractions, h_caloparticle_fractions_weight;
 
-  std::unordered_map<int, dqm::reco::MonitorElement*> h_num_caloparticle_etapt_perlayer;
-  std::unordered_map<int, dqm::reco::MonitorElement*> h_denom_caloparticle_etapt_perlayer;
   //For SimClusters
   std::unordered_map<int, dqm::reco::MonitorElement*> h_simclusternum_perlayer;
   std::unordered_map<int, dqm::reco::MonitorElement*> h_simclusternum_perthick;
@@ -135,7 +130,6 @@ struct SimBarrelVHistoProducerAlgoHistograms {
   std::vector<std::unordered_map<int, dqm::reco::MonitorElement*>> h_numDup_simcluster_phi_perlayer;
   std::vector<std::unordered_map<int, dqm::reco::MonitorElement*>> h_sharedenergy_simcluster2layercl_vs_eta_perlayer;
   std::vector<std::unordered_map<int, dqm::reco::MonitorElement*>> h_sharedenergy_simcluster2layercl_vs_phi_perlayer;
-
 
   // For Tracksters
   // Linking and Pattern Recognition
@@ -218,15 +212,15 @@ struct SimBarrelVHistoProducerAlgoHistograms {
 
 using Density = hgcal_clustering::Density;
 
-class SimBarrelVHistoProducerAlgo {
+class BarrelVHistoProducerAlgo {
 public:
   typedef dqm::legacy::DQMStore DQMStore;
   typedef dqm::legacy::MonitorElement MonitorElement;
 
-  SimBarrelVHistoProducerAlgo(const edm::ParameterSet& pset);
-  ~SimBarrelVHistoProducerAlgo();
+  BarrelVHistoProducerAlgo(const edm::ParameterSet& pset);
+  ~BarrelVHistoProducerAlgo();
 
-  using Histograms = SimBarrelVHistoProducerAlgoHistograms;
+  using Histograms = BarrelVHistoProducerAlgoHistograms;
 
   void bookInfo(DQMStore::IBooker& ibook, Histograms& histograms);
   void bookCaloParticleHistos(DQMStore::IBooker& ibook, Histograms& histograms, int pdgid, unsigned int layers);
@@ -265,7 +259,7 @@ public:
                                       std::vector<CaloParticle> const& cP,
                                       std::vector<size_t> const& cPIndices,
                                       std::vector<size_t> const& cPSelectedIndices,
-                                      std::unordered_map<DetId, float> const&,
+                                      std::unordered_map<DetId, const reco::PFRecHit*> const&,
                                       unsigned int layers,
                                       const hgcal::RecoToSimCollection& recSimColl,
                                       const hgcal::SimToRecoCollection& simRecColl) const;
@@ -277,7 +271,7 @@ public:
                                     std::vector<SimCluster> const& simClusters,
                                     std::vector<size_t> const& sCIndices,
                                     const std::vector<float>& mask,
-                                    std::unordered_map<DetId, float> const&,
+                                    std::unordered_map<DetId, const reco::PFRecHit*> const&,
                                     unsigned int layers,
                                     const hgcal::RecoToSimCollectionWithSimClusters& recSimColl,
                                     const hgcal::SimToRecoCollectionWithSimClusters& simRecColl) const;
@@ -294,7 +288,7 @@ public:
                                    std::vector<CaloParticle> const& cP,
                                    std::vector<size_t> const& cPIndices,
                                    std::vector<size_t> const& cPSelectedIndices,
-                                   std::unordered_map<DetId, float> const&,
+                                   std::unordered_map<DetId, const reco::PFRecHit*> const&,
                                    unsigned int layers) const;
   void fill_info_histos(const Histograms& histograms, unsigned int layers) const;
   void fill_caloparticle_histos(const Histograms& histograms,
@@ -302,7 +296,7 @@ public:
                                 const CaloParticle& caloparticle,
                                 std::vector<SimVertex> const& simVertices,
                                 unsigned int layers,
-                                std::unordered_map<DetId, float> const&) const;
+                                std::unordered_map<DetId, const reco::PFRecHit*> const&) const;
   void fill_generic_cluster_histos(const Histograms& histograms,
                                    const int count,
                                    edm::Handle<reco::CaloClusterCollection> clusterHandle,
@@ -312,7 +306,7 @@ public:
                                    std::vector<CaloParticle> const& cP,
                                    std::vector<size_t> const& cPIndices,
                                    std::vector<size_t> const& cPSelectedIndices,
-                                   std::unordered_map<DetId, float> const&,
+                                   std::unordered_map<DetId, const reco::PFRecHit*> const&,
                                    std::map<double, double> cummatbudg,
                                    unsigned int layers,
                                    //std::vector<int> thicknesses,
@@ -329,7 +323,7 @@ public:
                                          std::vector<SimCluster> const& simClusters,
                                          std::vector<size_t> const& sCIndices,
                                          const std::vector<float>& mask,
-                                         std::unordered_map<DetId, float> const& hitMap,
+                                         std::unordered_map<DetId, const reco::PFRecHit*> const& hitMap,
                                          unsigned int layers,
                                          const hgcal::RecoToSimCollectionWithSimClusters& recSimColl,
                                          const hgcal::SimToRecoCollectionWithSimClusters& simRecColl) const;
@@ -346,7 +340,7 @@ public:
                              std::vector<CaloParticle> const& cP,
                              std::vector<size_t> const& cPIndices,
                              std::vector<size_t> const& cPSelectedIndices,
-                             std::unordered_map<DetId, float> const&,
+                             std::unordered_map<DetId, const reco::PFRecHit*> const&,
                              unsigned int layers) const;
   double distance2(const double x1, const double y1, const double x2, const double y2) const;
   double distance(const double x1, const double y1, const double x2, const double y2) const;
@@ -355,7 +349,7 @@ public:
   double distanceetaphi(const double eta1, const double phi1, const double eta2, const double phi2) const;
   void setRecHitTools(std::shared_ptr<hgcal::RecHitTools> recHitTools);
 
-  DetId findmaxhit(const reco::CaloCluster& cluster, std::unordered_map<DetId, float> const&) const;
+  DetId findmaxhit(const reco::CaloCluster& cluster, std::unordered_map<DetId, const reco::PFRecHit*> const&) const;
 
   struct detIdInfoInCluster {
     bool operator==(const detIdInfoInCluster& o) const { return clusterId == o.clusterId; };
