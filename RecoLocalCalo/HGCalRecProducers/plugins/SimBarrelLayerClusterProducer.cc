@@ -80,6 +80,8 @@ SimBarrelLayerClusterProducer::SimBarrelLayerClusterProducer(const edm::Paramete
     hopluginPSet.getParameter<std::string>("type"), hopluginPSet, consumesCollector());
   hoalgo->setAlgoId(algoId);
 
+  ebalgo->setThresholds(consumesCollector().esConsumes<EcalPFRecHitThresholds, EcalPFRecHitThresholdsRcd>(), consumesCollector().esConsumes<HcalPFCuts, HcalPFCutsRcd>());
+
   //produces<std::vector<float>>("InitialLayerClustersMask");
   produces<std::vector<reco::BasicCluster>>();
   //produces<std::unordered_map<uint32_t, PCaloHit*>>();

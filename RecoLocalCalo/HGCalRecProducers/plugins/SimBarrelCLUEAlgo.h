@@ -42,8 +42,7 @@ public:
   SimBarrelCLUEAlgoT(const edm::ParameterSet& ps, edm::ConsumesCollector iC)
       : HGCalClusteringAlgoBase(
             (HGCalClusteringAlgoBase::VerbosityLevel)ps.getUntrackedParameter<unsigned int>("verbosity", 3),
-            reco::CaloCluster::undefined,
-            iC),
+            reco::CaloCluster::undefined),
         tok_ebThresholds_(iC.esConsumes<EcalPFRecHitThresholds, EcalPFRecHitThresholdsRcd>()),
 	tok_hcalThresholds_(iC.esConsumes<HcalPFCuts, HcalPFCutsRcd>()),
 	vecDeltas_(ps.getParameter<std::vector<double>>("deltac")),

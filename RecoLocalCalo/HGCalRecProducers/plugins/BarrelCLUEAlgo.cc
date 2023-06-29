@@ -12,6 +12,14 @@
 using namespace hgcal_clustering;
 
 template <typename T>
+void BarrelCLUEAlgoT<T>::setThresholds(
+                     edm::ESGetToken<EcalPFRecHitThresholds, EcalPFRecHitThresholdsRcd> EBThres,
+                     edm::ESGetToken<HcalPFCuts, HcalPFCutsRcd> HCALThres ){
+  tok_ebThresholds_ = EBThres;
+  tok_hcalThresholds_ = HCALThres;
+}
+
+template <typename T>
 void BarrelCLUEAlgoT<T>::getEventSetupPerAlgorithm(const edm::EventSetup& es) {
   cells_.clear();
   numberOfClustersPerLayer_.clear();
@@ -190,15 +198,15 @@ void BarrelCLUEAlgoT<T>::calculateLocalDensity(const T& lt, const unsigned int l
 
   for (unsigned int i = 0; i < numberOfCells; ++i) {
     float delta = delta_c;
-    std::array<int, 4> search_box = lt.searchBoxEtaPhi(cellsOnLayer.eta[i] - delta,
-						       cellsOnLayer.eta[i] + delta, 
-						       cellsOnLayer.phi[i] - delta,
-						       cellsOnLayer.phi[i] + delta);
+    std::array<int, 4> search_box = lt.searchBox(cellsOnLayer.eta[i] - delta,
+                                                 cellsOnLayer.eta[i] + delta, 
+                                                 cellsOnLayer.phi[i] - delta,
+                                                 cellsOnLayer.phi[i] + delta);
     cellsOnLayer.rho[i] += cellsOnLayer.weight[i];
     for (int etaBin = search_box[0]; etaBin < search_box[1]; ++etaBin) {
       for (int phiBin = search_box[2]; phiBin < search_box[3]; ++phiBin) {
-	int phi = (phiBin % T::type::nRowsPhi);
-	int binId = lt.getGlobalBinByBinEtaPhi(etaBin, phi);
+	int phi = (phiBin % T::type::nRows);
+	int binId = lt.getGlobalBinByBin(etaBin, phi);
 	size_t binSize = lt[binId].size();
 
 	for (unsigned int j = 0; j < binSize; ++j) {
@@ -224,15 +232,15 @@ void BarrelCLUEAlgoT<T>::calculateDistanceToHigher(const T& lt, const unsigned i
 
     float delta = delta_c;
     auto range = outlierDeltaFactor_ * delta;
-    std::array<int, 4> search_box = lt.searchBoxEtaPhi(cellsOnLayer.eta[i] - range,
-						       cellsOnLayer.eta[i] + range,
-						       cellsOnLayer.phi[i] - range,
-						       cellsOnLayer.phi[i] + range);
+    std::array<int, 4> search_box = lt.searchBox(cellsOnLayer.eta[i] - range,
+                                                 cellsOnLayer.eta[i] + range,
+                                                 cellsOnLayer.phi[i] - range,
+                                                 cellsOnLayer.phi[i] + range);
 
     for (int etaBin = search_box[0]; etaBin < search_box[1]; ++etaBin) {
       for (int phiBin = search_box[2]; phiBin < search_box[3]; ++phiBin) {
-	int phi = (phiBin % T::type::nRowsPhi);
-	size_t binId = lt.getGlobalBinByBinEtaPhi(etaBin, phi);
+	int phi = (phiBin % T::type::nRows);
+	size_t binId = lt.getGlobalBinByBin(etaBin, phi);
 	size_t binSize = lt[binId].size();
 	
 	for (unsigned int j = 0; j < binSize; ++j) {
@@ -266,8 +274,8 @@ int BarrelCLUEAlgoT<T>::findAndAssignClusters(const unsigned int layerId, float 
   unsigned int numberOfCells = cellsOnLayer.detid.size();
   std::vector<int> localStack;
   for (unsigned int i = 0; i < numberOfCells; ++i) {
-    float rho_c = rhoc_; //for testing purposes
-    //float rho_c = kappa_ * cellsOnLayer.sigmaNoise[i];
+    //float rho_c = rhoc_; //for testing purposes
+    float rho_c = kappa_ * cellsOnLayer.sigmaNoise[i];
     float delta = delta_c;
     cellsOnLayer.clusterIndex[i] = -1;
     bool isSeed = (cellsOnLayer.delta[i] > delta) && (cellsOnLayer.rho[i] >= rho_c);

@@ -239,15 +239,15 @@ void SimBarrelCLUEAlgoT<T>::calculateLocalDensity(const T& lt, const unsigned in
 
   for (unsigned int i = 0; i < numberOfCells; ++i) {
     float delta = delta_c;
-    std::array<int, 4> search_box = lt.searchBoxEtaPhi(cellsOnLayer.eta[i] - delta,
+    std::array<int, 4> search_box = lt.searchBox(cellsOnLayer.eta[i] - delta,
 						       cellsOnLayer.eta[i] + delta, 
 						       cellsOnLayer.phi[i] - delta,
 						       cellsOnLayer.phi[i] + delta);
     cellsOnLayer.rho[i] += cellsOnLayer.weight[i];
     for (int etaBin = search_box[0]; etaBin < search_box[1]; ++etaBin) {
       for (int phiBin = search_box[2]; phiBin < search_box[3]; ++phiBin) {
-	int phi = (phiBin % T::type::nRowsPhi);
-	int binId = lt.getGlobalBinByBinEtaPhi(etaBin, phi);
+	int phi = (phiBin % T::type::nRows);
+	int binId = lt.getGlobalBinByBin(etaBin, phi);
 	size_t binSize = lt[binId].size();
 
 	for (unsigned int j = 0; j < binSize; ++j) {
@@ -274,15 +274,15 @@ void SimBarrelCLUEAlgoT<T>::calculateDistanceToHigher(const T& lt, const unsigne
     //float delta = delta_c;
     //auto range = outlierDeltaFactor_;
     auto range = delta_c;
-    std::array<int, 4> search_box = lt.searchBoxEtaPhi(cellsOnLayer.eta[i] - range,
+    std::array<int, 4> search_box = lt.searchBox(cellsOnLayer.eta[i] - range,
 						       cellsOnLayer.eta[i] + range,
 						       cellsOnLayer.phi[i] - range,
 						       cellsOnLayer.phi[i] + range);
 
     for (int etaBin = search_box[0]; etaBin < search_box[1]; ++etaBin) {
       for (int phiBin = search_box[2]; phiBin < search_box[3]; ++phiBin) {
-	int phi = (phiBin % T::type::nRowsPhi);
-	size_t binId = lt.getGlobalBinByBinEtaPhi(etaBin, phi);
+	int phi = (phiBin % T::type::nRows);
+	size_t binId = lt.getGlobalBinByBin(etaBin, phi);
 	size_t binSize = lt[binId].size();
 	
 	for (unsigned int j = 0; j < binSize; ++j) {
@@ -356,15 +356,15 @@ void SimBarrelCLUEAlgoT<T>::passSharedClusterIndex(const T& lt, const unsigned i
     // Do not run on outliers, but run also on seeds and followers
     if ((cellsOnLayer.clusterIndex[i].size() == 0)) continue;
 
-    std::array<int, 4> search_box = lt.searchBoxEtaPhi(cellsOnLayer.eta[i] - delta,
+    std::array<int, 4> search_box = lt.searchBox(cellsOnLayer.eta[i] - delta,
 						       cellsOnLayer.eta[i] + delta,
 						       cellsOnLayer.phi[i] - delta, 
 						       cellsOnLayer.phi[i] + delta);
     
     for (int etaBin = search_box[0]; etaBin < search_box[1]; ++etaBin) {
       for (int phiBin = search_box[2]; phiBin < search_box[3]; ++phiBin) {
-	int phi = (phiBin % T::type::nRowsPhi);
-	size_t binId = lt.getGlobalBinByBinEtaPhi(etaBin, phi);
+	int phi = (phiBin % T::type::nRows);
+	size_t binId = lt.getGlobalBinByBin(etaBin, phi);
 	size_t binSize = lt[binId].size();
 
 	for (unsigned int j = 0; j < binSize; ++j) {

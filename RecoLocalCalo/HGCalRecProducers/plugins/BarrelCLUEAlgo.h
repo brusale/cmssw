@@ -38,19 +38,18 @@ using Density = hgcal_clustering::Density;
 template <typename TILE>
 class BarrelCLUEAlgoT : public HGCalClusteringAlgoBase {
 public:
-  BarrelCLUEAlgoT(const edm::ParameterSet& ps, edm::ConsumesCollector iC)
+  BarrelCLUEAlgoT(const edm::ParameterSet& ps)
       : HGCalClusteringAlgoBase(
             (HGCalClusteringAlgoBase::VerbosityLevel)ps.getUntrackedParameter<unsigned int>("verbosity", 3),
-            reco::CaloCluster::undefined,
-            iC),
-        tok_ebThresholds_(iC.esConsumes<EcalPFRecHitThresholds, EcalPFRecHitThresholdsRcd>()),
-	tok_hcalThresholds_(iC.esConsumes<HcalPFCuts, HcalPFCutsRcd>()),
+            reco::CaloCluster::undefined),
 	vecDeltas_(ps.getParameter<std::vector<double>>("deltac")),
 	rhoc_(ps.getParameter<double>("rhoc")),
 	maxLayerIndex_(ps.getParameter<int>("maxLayerIndex")) {}
   ~BarrelCLUEAlgoT() override {}
 
   void getEventSetupPerAlgorithm(const edm::EventSetup& es) override;
+  void setThresholds(edm::ESGetToken<EcalPFRecHitThresholds, EcalPFRecHitThresholdsRcd>,
+                     edm::ESGetToken<HcalPFCuts, HcalPFCutsRcd> );
 
   void populate(const HGCRecHitCollection& hits) override {};
   void populate(const reco::PFRecHitCollection& hits) override;
