@@ -138,35 +138,35 @@ std::vector<reco::BasicCluster> SimBarrelCLUEAlgoT<T>::getClusters(bool) {
     auto firstClusterIdx = offsets[layerId];
 
     for (unsigned int i = 0; i < numberOfCells; ++i) {
-      std::cout << "==============\n";
+      //std::cout << "===> Cell " << i << "\n";
       auto clusterIndex = cellsOnLayer.clusterIndex[i];
       
       if (clusterIndex.size() == 1){
          cellsIdInCluster[clusterIndex[0]].push_back(
-            std::make_pair(i, cellsOnLayer.weight[i]));
+            std::make_pair(i, 1.f));
       }
       else if (clusterIndex.size() > 1) {
         std::vector<float> fractions (clusterIndex.size());
         
 	for (unsigned int j = 0; j < clusterIndex.size(); j++) {
           const auto& seed = clusterIndex[j];
-	  std::cout << "Seed " << seed << std::endl;
-	  std::cout << "seedToCellIndex[seed]" << cellsOnLayer.seedToCellIndex[seed] << std::endl;
+	  //std::cout << "Seed " << seed << std::endl;
+	  //std::cout << "seedToCellIndex[seed]" << cellsOnLayer.seedToCellIndex[seed] << std::endl;
           // compute the distance
 	  float dist = distance(i, cellsOnLayer.seedToCellIndex[seed], layerId) / T::type::cellWidthEta;
-	  std::cout << "Distance in cells unit " << dist << std::endl;
+	  //std::cout << "Distance in cells unit " << dist << std::endl;
           fractions[j] = std::exp(-(std::pow(dist,2))/(2*std::pow(T::type::showerSigma,2)));
-	  std::cout << "Cell " << i << " in cluster index " << j << " with fraction " << fractions[j] << std::endl;
+	  //std::cout << "Cell " << i << " in cluster index " << j << " with fraction " << fractions[j] << std::endl;
         }
-	std::cout << "==================\n";
+	//std::cout << "==================\n";
         auto tot_norm_fractions = std::accumulate(std::begin(fractions), std::end(fractions),  0.);
 
         for (unsigned int j = 0; j < clusterIndex.size(); j++) {
           float norm_fraction = fractions[j]/tot_norm_fractions;
-	  std::cout << "Adding Cell " << i << " to cluster " << j << " with energy " << cellsOnLayer.weight[i]*norm_fraction  << " (fraction " << norm_fraction << ")" << std::endl;
+	  //std::cout << "Adding Cell " << i << " to cluster " << clusterIndex[j] << " with energy " << cellsOnLayer.weight[i]*norm_fraction  << " (fraction " << norm_fraction << ")" << std::endl;
           if (norm_fraction >= fractionCutoff_){
-            cellsIdInCluster[j].push_back(
-              std::make_pair(i, cellsOnLayer.weight[i]*norm_fraction));
+            cellsIdInCluster[clusterIndex[j]].push_back(
+              std::make_pair(i, norm_fraction));
           }
         }
       }
@@ -179,9 +179,9 @@ std::vector<reco::BasicCluster> SimBarrelCLUEAlgoT<T>::getClusters(bool) {
       float energy = 0.f;
       int seedDetId = -1;
 
-      for (auto [cellIdx, cellEnergy] : cl) {
-	energy += cellEnergy;
-	thisCluster.emplace_back(cellsOnLayer.detid[cellIdx], 1.f);
+      for (auto [cellIdx, fraction] : cl) {
+	energy += cellsOnLayer.weight[cellIdx]*fraction;
+	thisCluster.emplace_back(cellsOnLayer.detid[cellIdx], fraction);
 	if (cellsOnLayer.isSeed[cellIdx]) {
 	  seedDetId = cellsOnLayer.detid[cellIdx];
 	}
@@ -214,8 +214,8 @@ template <typename T>
   float z = 0.f;
 
   auto& cellsOnLayer = cells_[layerId];
-  for (const auto & [i, rhEnergy] : v) {
-    // float rhEnergy = cellsOnLayer.weight[i];
+  for (const auto & [i, fraction] : v) {
+    float rhEnergy = cellsOnLayer.weight[i] * fraction;
     total_weight += rhEnergy;
     float theta = 2 * std::atan(std::exp(-cellsOnLayer.eta[i]));
     const GlobalPoint gp(GlobalPoint::Polar(theta, cellsOnLayer.phi[i], cellsOnLayer.r[i]));

@@ -73,6 +73,7 @@ hgcal::association SimBarrelLCToSCAssociatorByEnergyScoreImpl::makeConnections(
   for (unsigned int lcId = 0; lcId < nLayerClusters; ++lcId) {
     const std::vector<std::pair<DetId, float>>& hits_and_fractions = clusters[lcId].hitsAndFractions();
     unsigned int numberOfHitsInLC = hits_and_fractions.size();
+    //std::cout << "LC id: " << lcId<< " n hits: " << numberOfHitsInLC << std::endl;
     const auto firstHitDetId = hits_and_fractions[0].first;
     int lcLayerId = 0;
     if (DetId(firstHitDetId).det() == DetId::Hcal) {
