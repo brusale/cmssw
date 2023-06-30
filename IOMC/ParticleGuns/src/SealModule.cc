@@ -8,6 +8,7 @@
 #include "IOMC/ParticleGuns/interface/CloseByParticleGunProducer.h"
 #include "IOMC/ParticleGuns/interface/ExpoRandomPtGunProducer.h"
 #include "IOMC/ParticleGuns/interface/ExpoRandomPGunProducer.h"
+#include "IOMC/ParticleGuns/interface/FlatPtCloseByParticleGunProducer.h"
 #include "IOMC/ParticleGuns/interface/FlatRandomEGunProducer.h"
 #include "IOMC/ParticleGuns/interface/FlatRandomEThetaGunProducer.h"
 #include "IOMC/ParticleGuns/interface/FileRandomKEThetaGunProducer.h"
@@ -37,6 +38,8 @@ using edm::FileRandomKEThetaGunProducer;
 DEFINE_FWK_MODULE(FileRandomKEThetaGunProducer);
 using edm::FileRandomMultiParticlePGunProducer;
 DEFINE_FWK_MODULE(FileRandomMultiParticlePGunProducer);
+using edm::FlatPtCloseByParticleGunProducer;
+DEFINE_FWK_MODULE(FlatPtCloseByParticleGunProducer);
 using edm::FlatRandomEGunProducer;
 DEFINE_FWK_MODULE(FlatRandomEGunProducer);
 using edm::FlatRandomPtGunProducer;
