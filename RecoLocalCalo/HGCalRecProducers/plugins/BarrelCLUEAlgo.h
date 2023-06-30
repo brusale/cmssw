@@ -43,13 +43,16 @@ public:
             (HGCalClusteringAlgoBase::VerbosityLevel)ps.getUntrackedParameter<unsigned int>("verbosity", 3),
             reco::CaloCluster::undefined),
 	vecDeltas_(ps.getParameter<std::vector<double>>("deltac")),
+        kappa_(ps.getParameter<double>("kappa")),
 	rhoc_(ps.getParameter<double>("rhoc")),
-	maxLayerIndex_(ps.getParameter<int>("maxLayerIndex")) {}
+        fractionCutoff_(ps.getParameter<double>("fractionCutoff")),
+	maxLayerIndex_(ps.getParameter<int>("maxLayerIndex")),
+        outlierDeltaFactor_(ps.getParameter<double>("outlierDeltaFactor")){}
   ~BarrelCLUEAlgoT() override {}
 
   void getEventSetupPerAlgorithm(const edm::EventSetup& es) override;
   void setThresholds(edm::ESGetToken<EcalPFRecHitThresholds, EcalPFRecHitThresholdsRcd>,
-                     edm::ESGetToken<HcalPFCuts, HcalPFCutsRcd> );
+                     edm::ESGetToken<HcalPFCuts, HcalPFCutsRcd> ) override;
 
   void populate(const HGCRecHitCollection& hits) override {};
   void populate(const reco::PFRecHitCollection& hits) override;
@@ -81,6 +84,8 @@ public:
   void computeThreshold();
 
   static void fillPSetDescription(edm::ParameterSetDescription& iDesc) {
+    iDesc.add<double>("outlierDeltaFactor", 2.);
+    iDesc.add<double>("kappa", 1.34);
     iDesc.add<int>("maxLayerIndex");
     iDesc.add<double>("rhoc");
     iDesc.add<std::vector<double>>("deltac",
@@ -89,6 +94,7 @@ public:
                                        5*0.087,
                                        5*0.087
                                    });
+    iDesc.add<double>("fractionCutoff", 0.);
   }
 
   /// point in the space
@@ -105,13 +111,12 @@ private:
   std::vector<double> vecDeltas_;
   double kappa_;
   double rhoc_;
+  double fractionCutoff_;
   int maxLayerIndex_;
-
+  float outlierDeltaFactor_;
   Density density_;
   // For keeping the density per hit
 
-
-  float outlierDeltaFactor_ = 2.f;
 
   struct BarrelCellsOnLayer {
     std::vector<DetId> detid;
@@ -124,10 +129,11 @@ private:
 
     std::vector<float> delta;
     std::vector<int> nearestHigher;
-    std::vector<int> clusterIndex;
+    std::vector<std::vector<int>> clusterIndex;
     std::vector<float> sigmaNoise;
     std::vector<std::vector<int>> followers;
     std::vector<bool> isSeed;
+    std::vector<int> seedToCellIndex;
 
     void clear() {
       detid.clear();
@@ -142,6 +148,7 @@ private:
       sigmaNoise.clear();
       followers.clear();
       isSeed.clear();
+      seedToCellIndex.clear();
     }
 
     void shrink_to_fit() {
@@ -157,6 +164,7 @@ private:
       sigmaNoise.shrink_to_fit();
       followers.shrink_to_fit();
       isSeed.shrink_to_fit();
+      seedToCellIndex.clear();
     }
   };
 
@@ -181,7 +189,8 @@ private:
                              float delta_r);  // return max density
   void calculateDistanceToHigher(const TILE& lt, const unsigned int layerId, float delta_c, float delta_r);
   int findAndAssignClusters(const unsigned int layerId, float delta_c, float delta_r);
-  math::XYZPoint calculatePosition(const std::vector<int>& v, const unsigned int layerId) const;
+  void passSharedClusterIndex(const TILE& lt, const unsigned int layerId, float delta_c);
+  math::XYZPoint calculatePosition(const std::vector<std::pair<int,float>>& v, const unsigned int layerId) const;
   void setDensity(const unsigned int layerId);
 };
 

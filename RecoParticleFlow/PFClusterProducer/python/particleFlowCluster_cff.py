@@ -20,7 +20,6 @@ from RecoParticleFlow.PFClusterProducer.particleFlowClusterHO_cfi import *
 from RecoParticleFlow.PFClusterProducer.particleFlowClusterPS_cfi import *
 from RecoParticleFlow.PFClusterProducer.particleFlowBadHcalPseudoCluster_cff import *
 
-from RecoLocalCalo.HGCalRecProducers.ebLayerClusters_cfi import *
 from RecoLocalCalo.HGCalRecProducers.barrelLayerClusters_cff import *
 from RecoLocalCalo.HGCalRecProducers.simBarrelLayerClusters_cff import *
 

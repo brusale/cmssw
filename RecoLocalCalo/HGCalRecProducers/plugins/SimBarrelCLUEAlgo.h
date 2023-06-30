@@ -39,12 +39,10 @@ using Density = hgcal_clustering::Density;
 template <typename TILE>
 class SimBarrelCLUEAlgoT : public HGCalClusteringAlgoBase {
 public:
-  SimBarrelCLUEAlgoT(const edm::ParameterSet& ps, edm::ConsumesCollector iC)
+  SimBarrelCLUEAlgoT(const edm::ParameterSet& ps)
       : HGCalClusteringAlgoBase(
             (HGCalClusteringAlgoBase::VerbosityLevel)ps.getUntrackedParameter<unsigned int>("verbosity", 3),
             reco::CaloCluster::undefined),
-        tok_ebThresholds_(iC.esConsumes<EcalPFRecHitThresholds, EcalPFRecHitThresholdsRcd>()),
-	tok_hcalThresholds_(iC.esConsumes<HcalPFCuts, HcalPFCutsRcd>()),
 	vecDeltas_(ps.getParameter<std::vector<double>>("deltac")),
 	kappa_(ps.getParameter<double>("kappa")),
 	rhoc_(ps.getParameter<double>("rhoc")),
@@ -54,7 +52,9 @@ public:
   ~SimBarrelCLUEAlgoT() override {}
 
   void getEventSetupPerAlgorithm(const edm::EventSetup& es) override;
-
+  void setThresholds(edm::ESGetToken<EcalPFRecHitThresholds, EcalPFRecHitThresholdsRcd>,
+                     edm::ESGetToken<HcalPFCuts, HcalPFCutsRcd> ) override;
+  
   void populate(const HGCRecHitCollection& hits) override {};
   void populate(const reco::PFRecHitCollection& hits) override {};
   void populate(const edm::PCaloHitContainer& hits) override;
@@ -116,12 +116,12 @@ private:
   double rhoc_;
   double fractionCutoff_;
   int maxLayerIndex_;
-
+  float outlierDeltaFactor_;
   Density density_;
   // For keeping the density per hit
 
 
-  float outlierDeltaFactor_;
+  
   struct BarrelCellsOnLayer {
     std::vector<DetId> detid;
     std::vector<float> eta;
@@ -133,7 +133,6 @@ private:
 
     std::vector<float> delta;
     std::vector<int> nearestHigher;
-    //std::vector<int> clusterIndex;
     std::vector<std::vector<int>> clusterIndex;
     std::vector<float> sigmaNoise;
     std::vector<std::vector<int>> followers;

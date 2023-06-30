@@ -32,6 +32,11 @@
 #include "SimDataFormats/CaloAnalysis/interface/CaloParticle.h"
 #include "SimDataFormats/CaloAnalysis/interface/CaloParticleFwd.h"
 
+#include "RecoLocalCalo/HGCalRecProducers/plugins/BarrelCLUEAlgo.h"
+#include "RecoLocalCalo/HGCalRecProducers/interface/EBTilesConstants.h"
+#include "RecoLocalCalo/HGCalRecProducers/interface/HBTilesConstants.h"
+#include "RecoLocalCalo/HGCalRecProducers/interface/HOTilesConstants.h"
+
 using Density = hgcal_clustering::Density;
 
 class SimBarrelLayerClusterProducer : public edm::stream::EDProducer<> {
@@ -44,15 +49,17 @@ public:
   void produce(edm::Event&, const edm::EventSetup&) override;
 
 private:
+reco::CaloCluster::AlgoId algoId;  
+  std::string timeClname;
+  unsigned int nHitsTime;
   edm::EDGetTokenT<edm::PCaloHitContainer> ebhits_token_;
   edm::EDGetTokenT<edm::PCaloHitContainer> hbhits_token_;
   edm::EDGetTokenT<edm::PCaloHitContainer> hohits_token_;
-  reco::CaloCluster::AlgoId algoId;
+  edm::ESGetToken<CaloGeometry, CaloGeometryRecord> caloGeomToken_;
 
   std::unique_ptr<HGCalClusteringAlgoBase> ebalgo, hbalgo, hoalgo;
-
-  std::string timeClname;
-  unsigned int nHitsTime;
+  hgcal::RecHitTools rhtools_;
+  
 };
 
 DEFINE_FWK_MODULE(SimBarrelLayerClusterProducer);
@@ -60,27 +67,34 @@ DEFINE_FWK_MODULE(SimBarrelLayerClusterProducer);
 SimBarrelLayerClusterProducer::SimBarrelLayerClusterProducer(const edm::ParameterSet& ps)
     : algoId(reco::CaloCluster::undefined),
       timeClname(ps.getParameter<std::string>("timeClname")),
-      nHitsTime(ps.getParameter<unsigned int>("nHitsTime")) {
-  ebhits_token_ = consumes<edm::PCaloHitContainer>(ps.getParameter<edm::InputTag>("EBInput"));
-  hbhits_token_ = consumes<edm::PCaloHitContainer>(ps.getParameter<edm::InputTag>("HBInput"));
-  hohits_token_ = consumes<edm::PCaloHitContainer>(ps.getParameter<edm::InputTag>("HOInput"));
-
-  auto ebpluginPSet = ps.getParameter<edm::ParameterSet>("ebplugin");
+      nHitsTime(ps.getParameter<unsigned int>("nHitsTime")), 
+      ebhits_token_{consumes<edm::PCaloHitContainer>(ps.getParameter<edm::InputTag>("EBInput"))},
+      hbhits_token_{consumes<edm::PCaloHitContainer>(ps.getParameter<edm::InputTag>("HBInput"))},
+      hohits_token_{consumes<edm::PCaloHitContainer>(ps.getParameter<edm::InputTag>("HOInput"))},
+      caloGeomToken_{consumesCollector().esConsumes<CaloGeometry, CaloGeometryRecord>()}
+{
+ auto ebpluginPSet = ps.getParameter<edm::ParameterSet>("ebplugin");
   ebalgo = HGCalLayerClusterAlgoFactory::get()->create(
-    ebpluginPSet.getParameter<std::string>("type"), ebpluginPSet, consumesCollector());
+    ebpluginPSet.getParameter<std::string>("type"), ebpluginPSet);
   ebalgo->setAlgoId(algoId);
   
   auto hbpluginPSet = ps.getParameter<edm::ParameterSet>("hbplugin");
-  hbalgo = HGCalLayerClusterAlgoFactory::get()->create(
-    hbpluginPSet.getParameter<std::string>("type"), hbpluginPSet, consumesCollector());
+  hbalgo = HGCalLayerClusterAlgoFactory::get()->create( hbpluginPSet.getParameter<std::string>("type"), hbpluginPSet);
   hbalgo->setAlgoId(algoId);
 
   auto hopluginPSet = ps.getParameter<edm::ParameterSet>("hoplugin");
   hoalgo = HGCalLayerClusterAlgoFactory::get()->create(
-    hopluginPSet.getParameter<std::string>("type"), hopluginPSet, consumesCollector());
+    hopluginPSet.getParameter<std::string>("type"), hopluginPSet);
   hoalgo->setAlgoId(algoId);
 
-  ebalgo->setThresholds(consumesCollector().esConsumes<EcalPFRecHitThresholds, EcalPFRecHitThresholdsRcd>(), consumesCollector().esConsumes<HcalPFCuts, HcalPFCutsRcd>());
+
+  ebalgo->setThresholds(consumesCollector().esConsumes<EcalPFRecHitThresholds, EcalPFRecHitThresholdsRcd>(),
+                        consumesCollector().esConsumes<HcalPFCuts, HcalPFCutsRcd>());
+  hbalgo->setThresholds(consumesCollector().esConsumes<EcalPFRecHitThresholds, EcalPFRecHitThresholdsRcd>(),
+                        consumesCollector().esConsumes<HcalPFCuts, HcalPFCutsRcd>());
+  hoalgo->setThresholds(consumesCollector().esConsumes<EcalPFRecHitThresholds, EcalPFRecHitThresholdsRcd>(),
+                        consumesCollector().esConsumes<HcalPFCuts, HcalPFCutsRcd>());
+ 
 
   //produces<std::vector<float>>("InitialLayerClustersMask");
   produces<std::vector<reco::BasicCluster>>();
@@ -118,7 +132,8 @@ void SimBarrelLayerClusterProducer::fillDescriptions(edm::ConfigurationDescripti
 
 void SimBarrelLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
   edm::Handle<edm::PCaloHitContainer> ebhits, hbhits, hohits;
-
+  edm::ESHandle<CaloGeometry> geom = es.getHandle(caloGeomToken_);
+  rhtools_.setGeometry(*geom);
   /*std::unique_ptr<std::vector<reco::BasicCluster>> ebclusters(new std::vector<reco::BasicCluster>),
 						   hbclusters(new std::vector<reco::BasicCluster>),
 						   hoclusters(new std::vector<reco::BasicCluster>);
@@ -127,7 +142,7 @@ void SimBarrelLayerClusterProducer::produce(edm::Event& evt, const edm::EventSet
 
   //auto density = std::make_unique<Density>();
   
-  ebalgo->getEventSetup(es);
+  ebalgo->getEventSetup(es, rhtools_);
 
   //make a map detid-rechit
   // NB for the moment just host EE and FH hits
@@ -142,7 +157,7 @@ void SimBarrelLayerClusterProducer::produce(edm::Event& evt, const edm::EventSet
   //*ebclusters = ebalgo->getClusters(false);
   std::vector<reco::BasicCluster> ebclusters = ebalgo->getClusters(false);
 
-  hbalgo->getEventSetup(es);
+  hbalgo->getEventSetup(es, rhtools_);
   
   evt.getByToken(hbhits_token_, hbhits);
   hbalgo->populate(*hbhits);
@@ -151,7 +166,7 @@ void SimBarrelLayerClusterProducer::produce(edm::Event& evt, const edm::EventSet
   hbalgo->makeClusters();
   //*hbclusters = hbalgo->getClusters(false);
   std::vector<reco::BasicCluster> hbclusters = hbalgo->getClusters(false);
-  hoalgo->getEventSetup(es);
+  hoalgo->getEventSetup(es, rhtools_);
 
   evt.getByToken(hohits_token_, hohits);
   hoalgo->populate(*hohits);

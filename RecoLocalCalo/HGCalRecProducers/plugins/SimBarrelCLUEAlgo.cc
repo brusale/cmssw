@@ -11,6 +11,16 @@
 
 using namespace hgcal_clustering;
 
+
+template <typename T>
+void SimBarrelCLUEAlgoT<T>::setThresholds(
+                     edm::ESGetToken<EcalPFRecHitThresholds, EcalPFRecHitThresholdsRcd> EBThres,
+                     edm::ESGetToken<HcalPFCuts, HcalPFCutsRcd> HCALThres ){
+  tok_ebThresholds_ = EBThres;
+  tok_hcalThresholds_ = HCALThres;
+}
+
+
 template <typename T>
 void SimBarrelCLUEAlgoT<T>::getEventSetupPerAlgorithm(const edm::EventSetup& es) {
   cells_.clear();
@@ -77,7 +87,6 @@ void SimBarrelCLUEAlgoT<T>::prepareDataStructures(unsigned int l) {
   cells_[l].clusterIndex.resize(cellsSize);
   cells_[l].followers.resize(cellsSize);
   cells_[l].isSeed.resize(cellsSize, false);
-//  cells_[l].seedToCellIndex.reserve(200);
   cells_[l].eta.resize(cellsSize, 0.f);
   cells_[l].phi.resize(cellsSize, 0.f);
   cells_[l].r.resize(cellsSize, 0.f);

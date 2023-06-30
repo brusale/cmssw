@@ -12,7 +12,10 @@
 
 #include "SimDataFormats/CaloHit/interface/PCaloHit.h"
 #include "SimDataFormats/CaloHit/interface/PCaloHitContainer.h"
-
+#include "CondFormats/DataRecord/interface/EcalPFRecHitThresholdsRcd.h"
+#include "CondFormats/EcalObjects/interface/EcalPFRecHitThresholds.h"
+#include "CondFormats/DataRecord/interface/HcalPFCutsRcd.h"
+#include "CondFormats/HcalObjects/interface/HcalPFCuts.h"
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 
 // C/C++ headers
@@ -80,6 +83,8 @@ public:
     algoId_ = algo;
     isNose_ = isNose;
   }
+  virtual void setThresholds(edm::ESGetToken<EcalPFRecHitThresholds, EcalPFRecHitThresholdsRcd>,
+                     edm::ESGetToken<HcalPFCuts, HcalPFCutsRcd> ){};
 
   //max number of layers
   unsigned int maxlayer_;
