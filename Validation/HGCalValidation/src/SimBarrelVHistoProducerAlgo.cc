@@ -682,6 +682,30 @@ void SimBarrelVHistoProducerAlgo::bookClusterHistos_LCtoCP_association(DQMStore:
 		     nintPt_,
 		     minPt_,
 		     maxPt_);
+    histograms.h_numDup_caloparticle_pt_perlayer[ilayer] =
+	ibook.book1D("NumDup_CaloParticle_Pt_perlayer" + istr,
+		     "Num Duplicate CaloParticle Pt per Layer Cluster for layer " + istr,
+		     nintPt_,
+		     minPt_,
+		     maxPt_);
+    histograms.h_num_caloparticle_energy_perlayer[ilayer] = 
+	ibook.book1D("Num_CaloParticle_Energy_perlayer" + istr,
+		     "Num CaloParticle Energy per Layer Cluster for layer" + istr,
+		     nintEne_,
+		     minEne_,
+		     maxEne_);
+    histograms.h_denom_caloparticle_energy_perlayer[ilayer] = 
+	ibook.book1D("Denom_CaloParticle_Energy_perlayer" + istr,
+		     "Denom CaloParticle Energy per Layer Cluster for layer" + istr,
+		     nintEne_,
+		     minEne_,
+		     maxEne_);
+    histograms.h_numDup_caloparticle_energy_perlayer[ilayer] = 
+	ibook.book1D("NumDup_CaloParticle_Energy_perlayer" + istr,
+		     "Num Duplicate Energy per Layer Cluster for layer" + istr,
+		     nintEne_,
+		     minEne_,
+		     maxEne_);
     histograms.h_num_caloparticle_etapt_perlayer[ilayer] = 
 	ibook.book2D("Num_CaloParticle_EtaPt_perlayer" + istr,
 		     "Num CaloParticle EtaPt per Layer Cluster for layer " + istr,
@@ -766,6 +790,24 @@ void SimBarrelVHistoProducerAlgo::bookClusterHistos_LCtoCP_association(DQMStore:
                      nintPhi_,
                      minPhi_,
                      maxPhi_);
+   histograms.h_num_layercl_energy_perlayer[ilayer] =
+        ibook.book1D("Num_LayerCluster_Energy_perlayer" + istr,
+		     "Num LayerCluster Energy per Layer Cluster for layer " + istr,
+		     nintEne_,
+		     minEne_,
+		     maxEne_);
+   histograms.h_denom_layercl_energy_perlayer[ilayer] =
+	ibook.book1D("Denom_LayerCluster_Energy_perlayer" + istr,
+		     "Denom LayerCluster Energy per Layer Cluster for layer " + istr,
+		     nintEne_,
+		     minEne_,
+		     maxEne_);
+  histograms.h_numMerge_layercl_energy_perlayer[ilayer] = 
+	ibook.book1D("NumMerge_LayerCluster_Energy_perlayer" + istr,
+		     "Num Merge LayerCluster Energy per Layer Cluster for layer " + istr,
+		     nintEne_,
+		     minEne_,
+		     maxEne_);
   }
   //---------------------------------------------------------------------------------------------------------------------------
 }
@@ -1633,6 +1675,7 @@ void SimBarrelVHistoProducerAlgo::layerClusters_to_CaloParticles(const Histogram
     }
     histograms.h_denom_layercl_eta_perlayer.at(lcLayerId)->Fill(clusters[lcId].eta());
     histograms.h_denom_layercl_phi_perlayer.at(lcLayerId)->Fill(clusters[lcId].phi());
+    histograms.h_denom_layercl_energy_perlayer.at(lcLayerId)->Fill(clusters[lcId].energy());
     //
     const edm::Ref<reco::CaloClusterCollection> lcRef(clusterHandle, lcId);
     const auto& cpsIt = cpsInLayerClusterMap.find(lcRef);
@@ -1669,9 +1712,11 @@ void SimBarrelVHistoProducerAlgo::layerClusters_to_CaloParticles(const Histogram
     if (assoc) {
       histograms.h_num_layercl_eta_perlayer.at(lcLayerId)->Fill(clusters[lcId].eta());
       histograms.h_num_layercl_phi_perlayer.at(lcLayerId)->Fill(clusters[lcId].phi());
+      histograms.h_num_layercl_energy_perlayer.at(lcLayerId)->Fill(clusters[lcId].energy());
       if (assoc > 1) {
         histograms.h_numMerge_layercl_eta_perlayer.at(lcLayerId)->Fill(clusters[lcId].eta());
         histograms.h_numMerge_layercl_phi_perlayer.at(lcLayerId)->Fill(clusters[lcId].phi());
+	histograms.h_numMerge_layercl_energy_perlayer.at(lcLayerId)->Fill(clusters[lcId].energy());
       }
       const auto& best = std::min_element(
           std::begin(cps), std::end(cps), [](const auto& obj1, const auto& obj2) { return obj1.second < obj2.second; });
@@ -1726,6 +1771,7 @@ void SimBarrelVHistoProducerAlgo::layerClusters_to_CaloParticles(const Histogram
       histograms.h_denom_caloparticle_eta_perlayer.at(layerId)->Fill(cP[cpId].g4Tracks()[0].momentum().eta());
       histograms.h_denom_caloparticle_phi_perlayer.at(layerId)->Fill(cP[cpId].g4Tracks()[0].momentum().phi());
       histograms.h_denom_caloparticle_pt_perlayer.at(layerId)->Fill(cP[cpId].pt());
+      histograms.h_denom_caloparticle_energy_perlayer.at(layerId)->Fill(cP[cpId].energy());
       histograms.h_denom_caloparticle_etapt_perlayer.at(layerId)->Fill(cP[cpId].g4Tracks()[0].momentum().eta(), cP[cpId].pt());
       if (lcsIt == cPOnLayerMap.end())
         continue;
@@ -1762,10 +1808,13 @@ void SimBarrelVHistoProducerAlgo::layerClusters_to_CaloParticles(const Histogram
         histograms.h_num_caloparticle_eta_perlayer.at(layerId)->Fill(cP[cpId].g4Tracks()[0].momentum().eta());
         histograms.h_num_caloparticle_phi_perlayer.at(layerId)->Fill(cP[cpId].g4Tracks()[0].momentum().phi());
         histograms.h_num_caloparticle_pt_perlayer.at(layerId)->Fill(cP[cpId].pt());
+	histograms.h_num_caloparticle_energy_perlayer.at(layerId)->Fill(cP[cpId].energy());
 	histograms.h_num_caloparticle_etapt_perlayer.at(layerId)->Fill(cP[cpId].g4Tracks()[0].momentum().eta(), cP[cpId].pt());
 	if (assoc > 1) {
           histograms.h_numDup_caloparticle_eta_perlayer.at(layerId)->Fill(cP[cpId].g4Tracks()[0].momentum().eta());
           histograms.h_numDup_caloparticle_phi_perlayer.at(layerId)->Fill(cP[cpId].g4Tracks()[0].momentum().phi());
+	  histograms.h_numDup_caloparticle_energy_perlayer.at(layerId)->Fill(cP[cpId].energy());
+	  histograms.h_numDup_caloparticle_pt_perlayer.at(layerId)->Fill(cP[cpId].pt());
         }
         const auto best = std::min_element(std::begin(lcs), std::end(lcs), [&](const auto& obj1, const auto& obj2) {
           if (getLCLayerId(obj1.first.index()) != layerId)
