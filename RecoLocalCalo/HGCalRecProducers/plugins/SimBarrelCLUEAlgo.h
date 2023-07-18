@@ -48,7 +48,8 @@ public:
 	rhoc_(ps.getParameter<double>("rhoc")),
         fractionCutoff_(ps.getParameter<double>("fractionCutoff")),
 	maxLayerIndex_(ps.getParameter<int>("maxLayerIndex")),
-	outlierDeltaFactor_(ps.getParameter<double>("outlierDeltaFactor")) {}
+	outlierDeltaFactor_(ps.getParameter<double>("outlierDeltaFactor")),
+	doSharing_(ps.getParameter<bool>("doSharing")) {}
   ~SimBarrelCLUEAlgoT() override {}
 
   void getEventSetupPerAlgorithm(const edm::EventSetup& es) override;
@@ -98,6 +99,7 @@ public:
                                        5*0.087
                                    });
     iDesc.add<double>("fractionCutoff", 0.);
+    iDesc.add<bool>("doSharing", false);
   }
 
   /// point in the space
@@ -117,6 +119,7 @@ private:
   double fractionCutoff_;
   int maxLayerIndex_;
   float outlierDeltaFactor_;
+  bool doSharing_;
   Density density_;
   // For keeping the density per hit
 

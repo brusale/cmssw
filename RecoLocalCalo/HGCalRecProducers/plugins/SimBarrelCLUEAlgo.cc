@@ -47,9 +47,8 @@ void SimBarrelCLUEAlgoT<T>::populate(const edm::PCaloHitContainer& hits) {
   }
   //for (unsigned int i = 0; i < hae.size(); ++i) {
   for (auto hit = hae.begin(); hit != hae.end(); ++hit) {
-    //std::pair<uint32_t, float> hit = hae[i];
+    if (hit->second < 0.1) continue;
     DetId detid(hit->first);
-    //if ((detid.det() == 3 || detid.det() == 4)  && hit->second > 0.1) {
     if ((detid.det() == 3 || detid.det() == 4)) {
       const GlobalPoint position = rhtools_.getPosition(detid);
       int layer = 0;
@@ -111,8 +110,10 @@ void SimBarrelCLUEAlgoT<T>::makeClusters() {
       calculateLocalDensity(lt, i, delta_c, delta_r);
       calculateDistanceToHigher(lt, i, delta_c, delta_r);
       numberOfClustersPerLayer_[i] = findAndAssignClusters(i, delta_c, delta_r);
-      // Now running the sharing routine
-      passSharedClusterIndex(lt, i, delta_c);
+      
+      if (doSharing_)
+	// Now running the sharing routine
+	passSharedClusterIndex(lt, i, delta_c);
       });
     });
   for (unsigned int i = 0; i < maxlayer_ + 1; ++i) {
@@ -173,11 +174,23 @@ std::vector<reco::BasicCluster> SimBarrelCLUEAlgoT<T>::getClusters(bool) {
         for (unsigned int j = 0; j < clusterIndex.size(); j++) {
           float norm_fraction = fractions[j]/tot_norm_fractions;
 	  //std::cout << "Adding Cell " << i << " to cluster " << clusterIndex[j] << " with energy " << cellsOnLayer.weight[i]*norm_fraction  << " (fraction " << norm_fraction << ")" << std::endl;
-          if (norm_fraction >= fractionCutoff_){
+          if (norm_fraction < fractionCutoff_) {
+	    auto clusterIndex_it = std::find(clusterIndex.begin(), clusterIndex.end(), clusterIndex[j]);
+	    auto fraction_it = std::find(fractions.begin(), fractions.end(), fractions[j]);
+	    clusterIndex.erase(clusterIndex_it);
+	    fractions.erase(fraction_it);
+	  }
+	  /*if (norm_fraction >= fractionCutoff_){
             cellsIdInCluster[clusterIndex[j]].push_back(
               std::make_pair(i, norm_fraction));
-          }
-        }
+          }*/
+	}
+	auto tot_norm_cleaned_fractions = std::accumulate(fractions.begin(), fractions.end(), 0.);
+	for (unsigned int j = 0; j < clusterIndex.size(); j++) {
+	  float norm_fraction = fractions[j]/tot_norm_cleaned_fractions;
+	  cellsIdInCluster[clusterIndex[j]].push_back(
+	    std::make_pair(i, norm_fraction));
+	}  
       }
     }
 
