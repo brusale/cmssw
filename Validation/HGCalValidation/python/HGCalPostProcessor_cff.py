@@ -18,7 +18,7 @@ hgcalPostProcessor = cms.Sequence(hgcalSimHitClientEE
 
 hgcalValidatorPostProcessor = cms.Sequence(
     postProcessorHGCALlayerclusters+
-    #postProcessorBarrellayercluster+
+    postProcessorBarrellayerclusters+
     simPostProcessorBarrellayerclusters+
     postProcessorHGCALsimclusters+
     postProcessorHGCALTracksters)
