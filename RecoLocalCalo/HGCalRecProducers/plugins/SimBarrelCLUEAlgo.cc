@@ -47,32 +47,34 @@ void SimBarrelCLUEAlgoT<T>::populate(const edm::PCaloHitContainer& hits) {
   }
   //for (unsigned int i = 0; i < hae.size(); ++i) {
   for (auto hit = hae.begin(); hit != hae.end(); ++hit) {
-    if (hit->second < 0.1) continue;
+    if (hit->second < 1e-2) continue;
     DetId detid(hit->first);
     if ((detid.det() == 3 || detid.det() == 4)) {
-      const GlobalPoint position = rhtools_.getPosition(detid);
-      int layer = 0;
+      if (detid.det() == 3 && detid.subdetId() <=5) {
+	const GlobalPoint position = rhtools_.getPosition(detid);
+	int layer = 0;
 
-      if (detid.det() == DetId::Hcal) {
-	HcalDetId hid(detid);
-	layer = hid.depth();
-	if (detid.subdetId() == HcalSubdetector::HcalOuter) 
-	  layer += 1;
+	if (detid.det() == DetId::Hcal) {
+	  HcalDetId hid(detid);
+	  layer = hid.depth();
+	  if (detid.subdetId() == HcalSubdetector::HcalOuter) 
+	    layer += 1;
+	}
+      
+	cells_[layer].detid.push_back(detid);
+	cells_[layer].eta.push_back(position.eta());
+	cells_[layer].phi.push_back(position.phi());
+	cells_[layer].weight.push_back(static_cast<float>(hit->second));
+	cells_[layer].r.push_back(position.mag());
+	float sigmaNoise = 0.f;
+	if (detid.det() == DetId::Ecal) {
+	  sigmaNoise = (*ebThresholds_)[detid];
+	} else { 
+	  const HcalPFCut* item = (*hcalThresholds_).getValues(detid);
+	  sigmaNoise = item->seedThreshold();
+	}
+	cells_[layer].sigmaNoise.push_back(sigmaNoise);
       }
-    
-      cells_[layer].detid.push_back(detid);
-      cells_[layer].eta.push_back(position.eta());
-      cells_[layer].phi.push_back(position.phi());
-      cells_[layer].weight.push_back(static_cast<float>(hit->second));
-      cells_[layer].r.push_back(position.mag());
-      float sigmaNoise = 0.f;
-      if (detid.det() == DetId::Ecal) {
-	sigmaNoise = (*ebThresholds_)[detid];
-      } else { 
-	const HcalPFCut* item = (*hcalThresholds_).getValues(detid);
-	sigmaNoise = item->seedThreshold();
-      }
-      cells_[layer].sigmaNoise.push_back(sigmaNoise);
     }
   }
 }
@@ -160,12 +162,14 @@ std::vector<reco::BasicCluster> SimBarrelCLUEAlgoT<T>::getClusters(bool) {
         
 	for (unsigned int j = 0; j < clusterIndex.size(); j++) {
           const auto& seed = clusterIndex[j];
+	  const auto& seedCell = cellsOnLayer.seedToCellIndex[seed];
+	  const auto& seedEnergy = cellsOnLayer.weight[seedCell];
 	  //std::cout << "Seed " << seed << std::endl;
 	  //std::cout << "seedToCellIndex[seed]" << cellsOnLayer.seedToCellIndex[seed] << std::endl;
           // compute the distance
-	  float dist = distance(i, cellsOnLayer.seedToCellIndex[seed], layerId) / T::type::cellWidthEta;
+	  float dist = distance(i, seedCell, layerId) / T::type::cellWidthEta;
 	  //std::cout << "Distance in cells unit " << dist << std::endl;
-          fractions[j] = std::exp(-(std::pow(dist,2))/(2*std::pow(T::type::showerSigma,2)));
+          fractions[j] = seedEnergy * std::exp(-(std::pow(dist,2))/(2*std::pow(T::type::showerSigma,2)));
 	  //std::cout << "Cell " << i << " in cluster index " << j << " with fraction " << fractions[j] << std::endl;
         }
 	//std::cout << "==================\n";
