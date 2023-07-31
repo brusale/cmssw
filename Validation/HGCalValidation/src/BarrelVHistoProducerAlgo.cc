@@ -719,13 +719,13 @@ void BarrelVHistoProducerAlgo::bookClusterHistos_LCtoCP_association(DQMStore::IB
 		     minEne_,
 		     maxEne_);
     histograms.h_num_caloparticle_pt_perlayer[ilayer] = 
-	ibook.book1D("Num_CaloPartilce_Pt_perlayer" + istr,
+	ibook.book1D("Num_CaloParticle_Pt_perlayer" + istr,
 		     "Num CaloParticle Pt per Layer Cluster per layer" + istr,
 		     nintPt_,
 		     minPt_,
 		     maxPt_);
     histograms.h_denom_caloparticle_pt_perlayer[ilayer] = 
-	ibook.book1D("Denom_CaloPartilce_Pt_perlayer" + istr,
+	ibook.book1D("Denom_CaloParticle_Pt_perlayer" + istr,
 		     "Denom CaloParticle Pt per Layer Cluster per layer" + istr,
 		     nintPt_,
 		     minPt_,
@@ -1694,7 +1694,7 @@ void BarrelVHistoProducerAlgo::layerClusters_to_CaloParticles(const Histograms& 
       histograms.h_num_layercl_eta_perlayer.at(lcLayerId)->Fill(clusters[lcId].eta());
       histograms.h_num_layercl_phi_perlayer.at(lcLayerId)->Fill(clusters[lcId].phi());
       histograms.h_num_layercl_phi_perlayer.at(lcLayerId)->Fill(clusters[lcId].phi());
-      histograms.h_num_layercl_phi_perlayer.at(lcLayerId)->Fill(clusters[lcId].energy());
+      histograms.h_num_layercl_energy_perlayer.at(lcLayerId)->Fill(clusters[lcId].energy());
       if (assoc > 1) {
         histograms.h_numMerge_layercl_eta_perlayer.at(lcLayerId)->Fill(clusters[lcId].eta());
         histograms.h_numMerge_layercl_phi_perlayer.at(lcLayerId)->Fill(clusters[lcId].phi());
