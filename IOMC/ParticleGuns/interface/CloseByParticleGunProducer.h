@@ -24,7 +24,7 @@ namespace edm {
     double fVarMin, fVarMax, fEtaMin, fEtaMax, fRMin, fRMax, fZMin, fZMax, fDelta, fPhiMin, fPhiMax, fTMin, fTMax, fOffsetFirst;
     int fNParticles;
     bool fMaxVarSpread = false;
-    bool fIsVarPt = false;
+    bool fFlatPtGeneration = false;
     bool fPointing = false;
     bool fOverlapping = false;
     bool fRandomShoot = false;

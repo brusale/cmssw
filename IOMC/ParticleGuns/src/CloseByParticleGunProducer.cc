@@ -28,7 +28,7 @@ CloseByParticleGunProducer::CloseByParticleGunProducer(const ParameterSet& pset)
   fVarMin = pgun_params.getParameter<double>("VarMin");
   fVarMax = pgun_params.getParameter<double>("VarMax");
   fMaxVarSpread = pgun_params.getParameter<bool>("MaxVarSpread");
-  fIsVarPt = pgun_params.getParameter<bool>("IsVarPt");
+  fFlatPtGeneration = pgun_params.getParameter<bool>("FlatPtGeneration");
   if (fControlledByEta) {
     fEtaMax = pgun_params.getParameter<double>("MaxEta");
     fEtaMin = pgun_params.getParameter<double>("MinEta");
@@ -46,8 +46,8 @@ CloseByParticleGunProducer::CloseByParticleGunProducer(const ParameterSet& pset)
   fPhiMin = pgun_params.getParameter<double>("MinPhi");
   fPhiMax = pgun_params.getParameter<double>("MaxPhi");
   fPointing = pgun_params.getParameter<bool>("Pointing");
-  if (fIsVarPt && !fPointing)
-    LogError("CloseByParticleGunProducer") << " Can't generate non pointing FlatPt samples; please switch fIsVarPt to False or set fPointing to True";
+  if (fFlatPtGeneration && !fPointing)
+    LogError("CloseByParticleGunProducer") << " Can't generate non pointing FlatPt samples; please switch FlatPtGeneration to False or set Pointing to True";
   fOverlapping = pgun_params.getParameter<bool>("Overlapping");
   fRandomShoot = pgun_params.getParameter<bool>("RandomShoot");
   fNParticles = pgun_params.getParameter<int>("NParticles");
@@ -80,7 +80,7 @@ void CloseByParticleGunProducer::fillDescriptions(ConfigurationDescriptions& des
     psd0.add<double>("VarMax", 200.0);
     psd0.add<double>("VarMin", 25.0);
     psd0.add<bool>("MaxVarSpread", false);
-    psd0.add<bool>("IsVarPt", false);
+    psd0.add<bool>("FlatPtGeneration", false);
     psd0.add<double>("MaxEta", 2.7);
     psd0.add<double>("MaxPhi", 3.14159265359);
     psd0.add<double>("MinEta", 1.7);
@@ -166,7 +166,7 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
     else
       fVar = CLHEP::RandFlat::shoot(engine, fVarMin, fVarMax);
     
-    if (!fIsVarPt) {
+    if (!fFlatPtGeneration) {
       mom2 = fVar * fVar - mass * mass;
       mom = 0.;
       if (mom2 > 0.)
@@ -191,7 +191,7 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
 
     HepMC::FourVector p(px, py, pz, energy);
     // If we are requested to be pointing to (0,0,0), correct the momentum direction
-    if (fPointing && !fIsVarPt) {
+    if (fPointing && !fFlatPtGeneration) {
       math::XYZVector direction(x, y, fZ);
       math::XYZVector momentum = direction.unit() * mom;
       p.setX(momentum.x());
