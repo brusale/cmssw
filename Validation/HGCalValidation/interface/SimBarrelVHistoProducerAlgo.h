@@ -50,6 +50,7 @@ struct SimBarrelVHistoProducerAlgoHistograms {
   std::unordered_map<int, dqm::reco::MonitorElement*> h_score_caloparticle2layercl_perlayer;
   std::unordered_map<int, dqm::reco::MonitorElement*> h_energy_vs_score_caloparticle2layercl_perlayer;
   std::unordered_map<int, dqm::reco::MonitorElement*> h_energy_vs_score_layercl2caloparticle_perlayer;
+  std::unordered_map<int, dqm::reco::MonitorElement*> h_layercluster_response_perlayer;
   std::unordered_map<int, dqm::reco::MonitorElement*> h_sharedenergy_caloparticle2layercl_perlayer;
   std::unordered_map<int, dqm::reco::MonitorElement*> h_sharedenergy_caloparticle2layercl_vs_eta_perlayer;
   std::unordered_map<int, dqm::reco::MonitorElement*> h_sharedenergy_caloparticle2layercl_vs_phi_perlayer;

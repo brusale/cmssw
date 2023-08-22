@@ -642,6 +642,12 @@ void SimBarrelVHistoProducerAlgo::bookClusterHistos_LCtoCP_association(DQMStore:
                           maxPhi_,
                           minSharedEneFrac_,
                           maxSharedEneFrac_);
+    histograms.h_layercluster_response_perlayer[ilayer] =
+	ibook.book1D("LayerCluster_response_perlayer" + istr,
+		     "LayerCluster response per best associated CP for layer" + istr,
+		     nintSharedEneFrac_,
+		     minSharedEneFrac_,
+		     maxSharedEneFrac_*1.5);
     histograms.h_sharedenergy_layercl2caloparticle_perlayer[ilayer] =
         ibook.book1D("SharedEnergy_layercluster2caloparticle_perlayer" + istr,
                      "Shared Energy of Layer Cluster per Layer Calo Particle for layer " + istr,
@@ -1729,6 +1735,7 @@ void SimBarrelVHistoProducerAlgo::layerClusters_to_CaloParticles(const Histogram
       if (best_cp_linked ==
           cPOnLayerMap[best->first].end())  // This should never happen by construction of the association maps
         continue;
+      histograms.h_layercluster_response_perlayer.at(lcLayerId)->Fill(lc_en / best_cp_linked->second.first);
       histograms.h_sharedenergy_layercl2caloparticle_vs_eta_perlayer.at(lcLayerId)->Fill(
           clusters[lcId].eta(), best_cp_linked->second.first / lc_en);
       histograms.h_sharedenergy_layercl2caloparticle_vs_phi_perlayer.at(lcLayerId)->Fill(

@@ -17,10 +17,10 @@ using namespace std;
 
 //Parameters for the score cut. Later, this will become part of the
 //configuration parameter for the HGCAL associator.
-const double ScoreCutLCtoCP_ = 0.1;
-const double ScoreCutCPtoLC_ = 0.1;
-const double ScoreCutLCtoSC_ = 0.1;
-const double ScoreCutSCtoLC_ = 0.1;
+const double ScoreCutLCtoCP_ = 0.3;
+const double ScoreCutCPtoLC_ = 0.3;
+const double ScoreCutLCtoSC_ = 0.3;
+const double ScoreCutSCtoLC_ = 0.3;
 const double ScoreCutTStoSTSFakeMerge_[] = {0.6, FLT_MIN};  //1.e-09
 const double ScoreCutSTStoTSPurDup_[] = {0.2, FLT_MIN};     //1.e-11
 
@@ -648,6 +648,12 @@ void BarrelVHistoProducerAlgo::bookClusterHistos_LCtoCP_association(DQMStore::IB
                      nintSharedEneFrac_,
                      minSharedEneFrac_,
                      maxSharedEneFrac_);
+    histograms.h_layercluster_response_perlayer[ilayer] =
+        ibook.book1D("LayerCluster_response_perlayer" + istr,
+		     "LayerCluster response per best associated CP for layer" + istr,
+		     150,
+		     minSharedEneFrac_,
+		     maxSharedEneFrac_*1.5);
     histograms.h_sharedenergy_layercl2caloparticle_vs_eta_perlayer[ilayer] =
         ibook.bookProfile("SharedEnergy_layercl2caloparticle_vs_eta_perlayer" + istr,
                           "Shared Energy of LayerCluster vs #eta per best Calo Particle for layer " + istr,
@@ -1711,6 +1717,7 @@ void BarrelVHistoProducerAlgo::layerClusters_to_CaloParticles(const Histograms& 
       if (best_cp_linked ==
           cPOnLayerMap[best->first].end())  // This should never happen by construction of the association maps
         continue;
+      histograms.h_layercluster_response_perlayer.at(lcLayerId)->Fill(lc_en / best_cp_linked->second.first);
       histograms.h_sharedenergy_layercl2caloparticle_vs_eta_perlayer.at(lcLayerId)->Fill(
           clusters[lcId].eta(), best_cp_linked->second.first / lc_en);
       histograms.h_sharedenergy_layercl2caloparticle_vs_phi_perlayer.at(lcLayerId)->Fill(
