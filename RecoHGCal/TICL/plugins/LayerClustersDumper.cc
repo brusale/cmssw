@@ -112,19 +112,26 @@ private:
   std::vector<float> layercluster_energy;
   std::vector<float> layercluster_eta;
   std::vector<float> layercluster_phi;
+  std::vector<float> layercluster_seed_eta;
+  std::vector<float> layercluster_seed_phi;
   std::vector<std::vector<float>> layercluster_hit_eta;
   std::vector<std::vector<float>> layercluster_hit_phi;
   std::vector<std::vector<float>> layercluster_hit_density;
   std::vector<std::vector<float>> layercluster_hit_energy;
   std::vector<int> layercluster_nhits;
+  std::vector<std::vector<float>> seed_density;
+  std::vector<float> layercluster_resolution;
 
   std::vector<float> simlayercluster_energy;
   std::vector<float> simlayercluster_eta;
   std::vector<float> simlayercluster_phi;
+  std::vector<float> simlayercluster_seed_eta;
+  std::vector<float> simlayercluster_seed_phi;
   std::vector<std::vector<float>> simlayercluster_hit_eta;
   std::vector<std::vector<float>> simlayercluster_hit_phi;
   std::vector<std::vector<float>> simlayercluster_hit_energy;
   std::vector<int> simlayercluster_nhits;
+  std::vector<float> simlayercluster_resolution;
 
   std::vector<float> caloparticle_energy;
   std::vector<float> caloparticle_eta;
@@ -140,10 +147,15 @@ private:
   std::vector<int> caloparticle_event;
   std::vector<int> caloparticle_hit_event;
 
+
   std::vector<std::vector<float>> cp2lc_score;
+  std::vector<std::vector<uint32_t>> associatedcp_to_lc;
   std::vector<std::vector<float>> lc2cp_score;
+  std::vector<std::vector<uint32_t>> associatedlc_to_cp;
   std::vector<std::vector<float>> cp2lc_score_sim;
+  std::vector<std::vector<uint32_t>> associatedcp_to_simlc;
   std::vector<std::vector<float>> lc2cp_score_sim;
+  std::vector<std::vector<uint32_t>> associatedsimlc_to_cp;
   
   TTree* layercluster_tree_;
   TTree* simlayercluster_tree_;
@@ -155,6 +167,8 @@ void LayerClusterDumper::clearVariables() {
   layercluster_energy.clear();
   layercluster_eta.clear();
   layercluster_phi.clear();
+  layercluster_seed_eta.clear();
+  layercluster_seed_phi.clear();
   caloparticle_energy.clear();
   caloparticle_eta.clear();
   caloparticle_phi.clear();
@@ -162,6 +176,10 @@ void LayerClusterDumper::clearVariables() {
   lc2cp_score.clear();
   cp2lc_score_sim.clear();
   lc2cp_score_sim.clear();
+  associatedcp_to_lc.clear();
+  associatedlc_to_cp.clear();
+  associatedcp_to_simlc.clear();
+  associatedsimlc_to_cp.clear();
   caloparticle_hit_eta.clear();
   caloparticle_hit_phi.clear();
   caloparticle_hit_energy.clear();
@@ -174,13 +192,19 @@ void LayerClusterDumper::clearVariables() {
   layercluster_hit_event.clear();
   layercluster_event.clear();
   layercluster_nhits.clear();
+  layercluster_resolution.clear();
+
+  seed_density.clear();
   simlayercluster_energy.clear();
   simlayercluster_eta.clear();
   simlayercluster_phi.clear();
+  simlayercluster_seed_eta.clear();
+  simlayercluster_seed_phi.clear();
   simlayercluster_hit_eta.clear();
   simlayercluster_hit_phi.clear();
   simlayercluster_hit_energy.clear();
   simlayercluster_nhits.clear();
+  simlayercluster_resolution.clear();
 }
 
 float LayerClusterDumper::distance (GlobalPoint point1, GlobalPoint point2) {
@@ -266,6 +290,10 @@ void LayerClusterDumper::beginJob() {
   layercluster_tree_->Branch("layerClusterHitEnergy", &layercluster_hit_energy);
   layercluster_tree_->Branch("layerClusterEvent", &layercluster_event);
   layercluster_tree_->Branch("layerClusterNumberOfHits", &layercluster_nhits);
+  layercluster_tree_->Branch("seedDensity", &seed_density);
+  layercluster_tree_->Branch("layerClusterResolution", &layercluster_resolution);
+  layercluster_tree_->Branch("layerClusterSeedEta", &layercluster_seed_eta);
+  layercluster_tree_->Branch("layerClusterSeedPhi", &layercluster_seed_phi);
 
   simlayercluster_tree_->Branch("simLayerClusterEnergy", &simlayercluster_energy);
   simlayercluster_tree_->Branch("simLayerClusterEta", &simlayercluster_eta);
@@ -273,6 +301,9 @@ void LayerClusterDumper::beginJob() {
   simlayercluster_tree_->Branch("simLayerClusterHitEnergy", &simlayercluster_hit_energy);
   simlayercluster_tree_->Branch("simLayerClusterHitEta", &simlayercluster_hit_eta);
   simlayercluster_tree_->Branch("simLayerClusterHitPhi", &simlayercluster_hit_phi);
+  simlayercluster_tree_->Branch("simLayerClusterResolution", &simlayercluster_resolution);
+  simlayercluster_tree_->Branch("simLayerClusterSeedEta", &simlayercluster_seed_eta);
+  simlayercluster_tree_->Branch("simLayerClusterSeedPhi", &simlayercluster_seed_phi);
 
   caloparticle_tree_->Branch("caloParticleEnergy", &caloparticle_energy);
   caloparticle_tree_->Branch("caloParticleEta", &caloparticle_eta);
@@ -285,8 +316,12 @@ void LayerClusterDumper::beginJob() {
 
   caloparticle_tree_->Branch("simToRecoAssociation", &cp2lc_score);
   caloparticle_tree_->Branch("recoToSimAssociationSim", &cp2lc_score_sim);
+  caloparticle_tree_->Branch("AssociatedLC", &associatedlc_to_cp);
+  caloparticle_tree_->Branch("AssociatedSimLC", &associatedsimlc_to_cp);
   layercluster_tree_->Branch("recoToSimAssociation", &lc2cp_score);
+  layercluster_tree_->Branch("AssociatedCP", &associatedcp_to_lc);
   simlayercluster_tree_->Branch("recoToSimAssociationSim", &lc2cp_score_sim);
+  simlayercluster_tree_->Branch("AssociatedCP", &associatedcp_to_simlc);
   event_index = 0;
 }
 
@@ -336,10 +371,17 @@ void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup&
   layercluster_hit_eta.resize(nclusters_);
   layercluster_hit_phi.resize(nclusters_);
   layercluster_hit_density.resize(nclusters_);
+  layercluster_resolution.resize(nclusters_);
+  seed_density.resize(nclusters_);
+  layercluster_seed_eta.resize(nclusters_);
+  layercluster_seed_phi.resize(nclusters_);
 
   simlayercluster_hit_energy.resize(nsimlayerclusters_);
   simlayercluster_hit_eta.resize(nsimlayerclusters_);
   simlayercluster_hit_phi.resize(nsimlayerclusters_);
+  simlayercluster_resolution.resize(nsimlayerclusters_);
+  simlayercluster_seed_eta.resize(nsimlayerclusters_);
+  simlayercluster_seed_phi.resize(nsimlayerclusters_);
 
   caloparticle_hit_energy.resize(ncaloparticles_);
   caloparticle_hit_eta.resize(ncaloparticles_);
@@ -347,11 +389,17 @@ void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup&
   caloparticle_hit_density.resize(ncaloparticles_);
 
   lc2cp_score.resize(nclusters_);
+  associatedcp_to_lc.resize(nclusters_);
   int lc_index = 0;
   for (auto lc_iterator = layer_clusters.begin(); lc_iterator != layer_clusters.end(); ++lc_iterator) {
     layercluster_energy.push_back(lc_iterator->energy());
     layercluster_eta.push_back(lc_iterator->eta());
     layercluster_phi.push_back(lc_iterator->phi());
+    DetId seedId = lc_iterator->seed();
+    float seedEta = (geom->getPosition(seedId)).eta();
+    float seedPhi = (geom->getPosition(seedId)).phi();
+    layercluster_seed_eta.push_back(seedEta);
+    layercluster_seed_phi.push_back(seedPhi);
     std::vector<std::pair<DetId, float>> hits_and_fractions = lc_iterator->hitsAndFractions();
     layercluster_nhits.push_back(hits_and_fractions.size());
     for (const auto& haf : hits_and_fractions) {
@@ -368,6 +416,8 @@ void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup&
       float eta = hit_and_density.first.first;
       float phi = hit_and_density.first.second;
       float density = hit_and_density.second;
+      if (eta == seedEta && phi == seedPhi) 
+	seed_density[lc_index].push_back(density);
 //      GlobalPoint position = geom->getPosition(hit);
       layercluster_hit_eta[lc_index].push_back(eta);
       layercluster_hit_phi[lc_index].push_back(phi);
@@ -380,6 +430,8 @@ void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup&
     if (cpsIt != recoToSim.end()) {
       const auto& cps = cpsIt->val;
       for (const auto& cpPair : cps) {
+	auto cp_id = (cpPair.first).get() - (edm::Ref<std::vector<CaloParticle>>(caloparticle_h, 0)).get();
+	associatedcp_to_lc[lc_index].push_back(cp_id);
 	lc2cp_score[lc_index].push_back(cpPair.second);
       }
     }
@@ -388,6 +440,8 @@ void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup&
 
   cp2lc_score.resize(caloparticles.size());
   cp2lc_score_sim.resize(caloparticles.size());
+  associatedlc_to_cp.resize(caloparticles.size());
+  associatedsimlc_to_cp.resize(caloparticles.size());
   int cp_index = 0;
   for (auto cp_iterator = caloparticles.begin(); cp_iterator != caloparticles.end(); ++cp_iterator) {
     float cp_energy = cp_iterator->energy();
@@ -428,12 +482,16 @@ void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup&
     if (lcsIt != simToReco.end()) {
       const auto& lcs = lcsIt->val;
       for (const auto& lcPair : lcs) {
+	auto lc_id = (lcPair.first).get() - (edm::Ref<std::vector<reco::CaloCluster>>(layer_clusters_h, 0)).get();
+	associatedlc_to_cp[cp_index].push_back(lc_id);
 	cp2lc_score[cp_index].push_back(lcPair.second.second);
       }
     }
     if (simlcsIt != simToRecoSim.end()) {
       const auto& simlcs = simlcsIt->val;
       for (const auto& simlcPair : simlcs) {
+	auto simlc_id = (simlcPair.first).get() - (edm::Ref<std::vector<reco::CaloCluster>>(sim_layer_clusters_h, 0)).get();
+	associatedsimlc_to_cp[cp_index].push_back(simlc_id);
 	cp2lc_score_sim[cp_index].push_back(simlcPair.second.second);
       }
     }
@@ -441,11 +499,17 @@ void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup&
   }
 
   lc2cp_score_sim.resize(nsimlayerclusters_);
+  associatedcp_to_simlc.resize(nsimlayerclusters_);
   int simlc_index = 0;
   for (auto simlc_iterator = sim_layer_clusters.begin(); simlc_iterator != sim_layer_clusters.end(); ++simlc_iterator) {
     simlayercluster_energy.push_back(simlc_iterator->energy());
     simlayercluster_phi.push_back(simlc_iterator->phi());
     simlayercluster_eta.push_back(simlc_iterator->eta());
+    DetId seedId = simlc_iterator->seed();
+    float seedEta = (geom->getPosition(seedId)).eta();
+    float seedPhi = (geom->getPosition(seedId)).phi();
+    simlayercluster_seed_eta.push_back(seedEta);
+    simlayercluster_seed_phi.push_back(seedPhi);
     std::vector<std::pair<DetId, float>> hitsAndFractions = simlc_iterator->hitsAndFractions();
     for (const auto& haf : hitsAndFractions) {
       GlobalPoint pos = geom->getPosition(haf.first);
@@ -460,9 +524,11 @@ void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup&
     if (cpsIt != recoToSimSim.end()) {
       const auto& cps = cpsIt->val;
       for (const auto& cpPair : cps) {
+	auto cp_id = (cpPair.first).get() - (edm::Ref<std::vector<CaloParticle>>(caloparticle_h, 0)).get();
+	associatedcp_to_simlc[simlc_index].push_back(cp_id);
 	lc2cp_score_sim[simlc_index].push_back(cpPair.second);
       }
-    }
+    }                                                                                                                    
     simlc_index++;
   }
   layercluster_tree_->Fill();
