@@ -497,7 +497,8 @@ void CaloTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup cons
       sc.clearHitsAndFractions();
       sc.clearHitsEnergy();
       for (auto &hAndE : hitsAndEnergies) {
-        const float totalenergy = m_detIdToTotalSimEnergy[hAndE.first];
+	if (hAndE.second < 1e-2) continue;
+	const float totalenergy = m_detIdToTotalSimEnergy[hAndE.first];
         float fraction = 0.;
         if (totalenergy > 0)
           fraction = hAndE.second / totalenergy;
