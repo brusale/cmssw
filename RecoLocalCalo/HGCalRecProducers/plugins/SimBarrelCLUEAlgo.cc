@@ -269,7 +269,6 @@ void SimBarrelCLUEAlgoT<T>::calculateLocalDensity(const T& lt, const unsigned in
 						       cellsOnLayer.eta[i] + delta, 
 						       cellsOnLayer.phi[i] - delta,
 						       cellsOnLayer.phi[i] + delta);
-    cellsOnLayer.rho[i] += cellsOnLayer.weight[i];
     for (int etaBin = search_box[0]; etaBin < search_box[1]; ++etaBin) {
       for (int phiBin = search_box[2]; phiBin < search_box[3]; ++phiBin) {
 	int phi = (phiBin % T::type::nRows);
