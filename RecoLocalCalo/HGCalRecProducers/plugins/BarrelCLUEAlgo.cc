@@ -1,9 +1,9 @@
 #include "RecoLocalCalo/HGCalRecProducers/plugins/BarrelCLUEAlgo.h"
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 #include "Geometry/CaloGeometry/interface/CaloSubdetectorGeometry.h"
 #include "DataFormats/CaloRecHit/interface/CaloID.h"
 #include "DataFormats/HcalDetId/interface/HcalDetId.h"
-
 
 #include "oneapi/tbb/task_arena.h"
 #include "oneapi/tbb.h"
@@ -253,12 +253,19 @@ void BarrelCLUEAlgoT<T>::calculateLocalDensity(const T& lt, const unsigned int l
                                                  cellsOnLayer.eta[i] + delta, 
                                                  cellsOnLayer.phi[i] - delta,
                                                  cellsOnLayer.phi[i] + delta);
+    LogDebug("BarrelCLUEAlgo") << "searchBox for cell " << i 
+			       << " cell eta: " << cellsOnLayer.eta[i]  << " cell phi: " << cellsOnLayer.phi[i]
+			       << " eta window: " << cellsOnLayer.eta[i] - delta << " -> " << cellsOnLayer.eta[i] + delta
+			       << " phi window: " << cellsOnLayer.phi[i] - delta << " -> " << cellsOnLayer.phi[i] + delta << "\n";
     for (int etaBin = search_box[0]; etaBin < search_box[1]; ++etaBin) {
       for (int phiBin = search_box[2]; phiBin < search_box[3]; ++phiBin) {
 	int phi = (phiBin % T::type::nRows);
 	int binId = lt.getGlobalBinByBin(etaBin, phi);
 	size_t binSize = lt[binId].size();
-
+	LogDebug("BarrelCLUEAlgo") << "Bin size for cell " << i << ": " << binSize
+				   << "	binId: " << binId  
+				   << "	etaBin: " << etaBin 
+				   << " phi: " << phi << "\n";
 	for (unsigned int j = 0; j < binSize; ++j) {
 	  unsigned int otherId = lt[binId][j];
 	  if (distance(i, otherId, layerId) < delta) {
@@ -315,6 +322,11 @@ void BarrelCLUEAlgoT<T>::calculateDistanceToHigher(const T& lt, const unsigned i
       cellsOnLayer.delta[i] = maxDelta;
       cellsOnLayer.nearestHigher[i] = -1;
     }
+    LogDebug("BarrelCLUEAlgo") << "Debugging calculateDistanceToHigher: \n"
+			       << " cell: " << i << " eta: " << cellsOnLayer.eta[i] << " phi: " << cellsOnLayer.phi[i]
+			       << " energy: " << cellsOnLayer.weight[i] << " density: " << cellsOnLayer.rho[i]
+			       << " nearest higher: " << cellsOnLayer.nearestHigher[i]
+			       << " distance: " << cellsOnLayer.delta[i] << "\n";
   }
 }
 
