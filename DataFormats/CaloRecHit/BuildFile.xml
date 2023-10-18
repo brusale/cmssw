@@ -2,8 +2,13 @@
 <use name="DataFormats/Math"/>
 <use name="DataFormats/DetId"/>
 <use name="FWCore/Utilities"/>
+<use name="DataFormats/Portable"/>
+<use name="DataFormats/SoATemplate"/>
+<use name="HeterogeneousCore/AlpakaInterface"/>
 <use name="rootmath"/>
 <use name="eigen"/>
+
+<flags ALPAKA_BACKENDS="1"/>
 <export>
   <lib name="1"/>
 </export>

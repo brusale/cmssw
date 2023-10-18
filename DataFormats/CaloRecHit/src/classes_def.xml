@@ -8,6 +8,9 @@
    <version ClassVersion="12" checksum="4229965835"/>
    <version ClassVersion="13" checksum="3477374013"/>
   </class>
+  <class name="reco::LayerClusters" ClassVersion="-1">
+    <version ClassVersion="-1" checksum="2673849722"/>
+  </class>
   <class name="edm::Wrapper<std::vector<std::pair<unsigned long,edm::Ptr<reco::CaloCluster> > > >"/>
   <class name="std::vector<std::pair<unsigned long,edm::Ptr<reco::CaloCluster> > >"/>
   <class name="std::pair<unsigned long, edm::Ptr<reco::CaloCluster> >"/>
@@ -31,4 +34,7 @@
   <class name="edm::ValueMap<reco::CaloClusterPtrVector>" />
   <class name="edm::Wrapper<edm::ValueMap<reco::CaloClusterPtr> >" />
   <class name="edm::Wrapper<edm::ValueMap<reco::CaloClusterPtrVector> >" />
+
+  <class name="edm::Ptr<reco::LayerClusters>"/>
+  <class name="edm::PtrVector<reco::LayerClusters>"/>
 </lcgdict>
