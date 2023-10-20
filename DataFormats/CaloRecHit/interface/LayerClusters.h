@@ -6,6 +6,8 @@
 #include "DataFormats/SoATemplate/interface/SoAView.h"
 #include "DataFormats/SoATemplate/interface/SoACommon.h"
 
+#include "HeterogeneousCore/AlpakaInterface/interface/OneToManyAssoc.h"
+
 namespace reco {
     
   GENERATE_SOA_LAYOUT(LayerClustersSoA,
@@ -14,11 +16,10 @@ namespace reco {
 		      SOA_COLUMN(float, z), 
 		      SOA_COLUMN(float, eta),
 		      SOA_COLUMN(float, phi),
-		      SOA_COLUMN(float, energy),
+		      SOA_COLUMN(float, radius),
 		      SOA_COLUMN(float, time),
 		      SOA_COLUMN(float, error),
-		      SOA_COLUMN(int, layerId), 
-		      SOA_COLUMN(int, clusterIndex)
+		      SOA_SCALAR(OneToManyAssoc, hitsAndFractions)
   )
 
   using LayerClusters = LayerClustersSoA<>;
