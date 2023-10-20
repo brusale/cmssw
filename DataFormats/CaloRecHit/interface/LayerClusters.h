@@ -8,18 +8,24 @@
 
 #include "HeterogeneousCore/AlpakaInterface/interface/OneToManyAssoc.h"
 
+struct HitAndFraction {
+  float fraction;
+  uint32_t hit;
+};
+
+using OneToManyHitAndFraction = cms::alpakatools::OneToManyAssoc<HitAndFraction, -1, -1>;
+
 namespace reco {
-    
+  
   GENERATE_SOA_LAYOUT(LayerClustersSoA,
 		      SOA_COLUMN(float, x),
 		      SOA_COLUMN(float, y),
 		      SOA_COLUMN(float, z), 
 		      SOA_COLUMN(float, eta),
 		      SOA_COLUMN(float, phi),
-		      SOA_COLUMN(float, radius),
 		      SOA_COLUMN(float, time),
-		      SOA_COLUMN(float, error),
-		      SOA_SCALAR(OneToManyAssoc, hitsAndFractions)
+		      SOA_COLUMN(float, err_pos),
+		      SOA_SCALAR(OneToManyHitAndFraction, hitsAndFractions)
   )
 
   using LayerClusters = LayerClustersSoA<>;
