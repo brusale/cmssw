@@ -38,11 +38,11 @@ void BarrelCLUEAlgoT<T>::populate(const reco::PFRecHitCollection& hits) {
     const GlobalPoint position = rhtools_.getPosition(detid);
     int layer = 0;
 
-    if (detid.det() == DetId::Hcal) {
+    if constexpr (std::is_same_v<T, HBLayerTiles> or std::is_same_v<T, HOLayerTiles>) {
       HcalDetId hid(detid);
       layer = hid.depth();
-      if (detid.subdetId() == HcalSubdetector::HcalOuter) 
-	layer += 1;
+      if constexpr (std::is_same_v<T, HOLayerTiles>) 
+        layer += 1;
     }
  
     cells_[layer].detid.push_back(detid);
@@ -86,9 +86,9 @@ void BarrelCLUEAlgoT<T>::makeClusters() {
       float delta_c;
       
       if constexpr (std::is_same_v<T, EBLayerTiles>)
-	delta_c = vecDeltas_[0];
+	      delta_c = vecDeltas_[0];
       else
-	delta_c = vecDeltas_[1];
+	      delta_c = vecDeltas_[1];
       float delta_r = vecDeltas_[2];
       
       calculateLocalDensity(lt, i, delta_c, delta_r);
@@ -96,8 +96,8 @@ void BarrelCLUEAlgoT<T>::makeClusters() {
       numberOfClustersPerLayer_[i] = findAndAssignClusters(i, delta_c, delta_r);
       
       if (doSharing_)
-	// Now running the sharing routine
-	passSharedClusterIndex(lt, i, delta_c);
+	      // Now running the sharing routine
+	      passSharedClusterIndex(lt, i, delta_c);
       });
     });
   for (unsigned int i = 0; i < maxlayer_ + 1; ++i) {
@@ -143,41 +143,41 @@ std::vector<reco::BasicCluster> BarrelCLUEAlgoT<T>::getClusters(bool) {
       else if (clusterIndex.size() > 1) {
         std::vector<float> fractions (clusterIndex.size());
         
-	for (unsigned int j = 0; j < clusterIndex.size(); j++) {
+        for (unsigned int j = 0; j < clusterIndex.size(); j++) {
           const auto& seed = clusterIndex[j];
-	  const auto& seedCell = cellsOnLayer.seedToCellIndex[seed];
-	  const auto& seedEnergy = cellsOnLayer.weight[seedCell];
-	  //std::cout << "Seed " << seed << std::endl;
-	  //std::cout << "seedToCellIndex[seed]" << cellsOnLayer.seedToCellIndex[seed] << std::endl;
+          const auto& seedCell = cellsOnLayer.seedToCellIndex[seed];
+          const auto& seedEnergy = cellsOnLayer.weight[seedCell];
+          //std::cout << "Seed " << seed << std::endl;
+          //std::cout << "seedToCellIndex[seed]" << cellsOnLayer.seedToCellIndex[seed] << std::endl;
           // compute the distance
-	  float dist = distance(i, seedCell, layerId) / T::type::cellWidthEta;
-	  //std::cout << "Distance in cells unit " << dist << std::endl;
+          float dist = distance(i, seedCell, layerId) / T::type::cellWidthEta;
+          //std::cout << "Distance in cells unit " << dist << std::endl;
           fractions[j] = seedEnergy * std::exp(-(std::pow(dist,2))/(2*std::pow(T::type::showerSigma,2)));
-	  //std::cout << "Cell " << i << " in cluster index " << j << " with fraction " << fractions[j] << std::endl;
+          //std::cout << "Cell " << i << " in cluster index " << j << " with fraction " << fractions[j] << std::endl;
         }
-	//std::cout << "==================\n";
+        //std::cout << "==================\n";
         auto tot_norm_fractions = std::accumulate(std::begin(fractions), std::end(fractions),  0.);
 
         for (unsigned int j = 0; j < clusterIndex.size(); j++) {
           float norm_fraction = fractions[j]/tot_norm_fractions;
-	  //std::cout << "Adding Cell " << i << " to cluster " << clusterIndex[j] << " with energy " << cellsOnLayer.weight[i]*norm_fraction  << " (fraction " << norm_fraction << ")" << std::endl;
-	  if (norm_fraction < fractionCutoff_) {
-	    auto clusterIndex_it = std::find(clusterIndex.begin(), clusterIndex.end(), clusterIndex[j]);
-	    auto fraction_it = std::find(fractions.begin(), fractions.end(), fractions[j]);
-	    clusterIndex.erase(clusterIndex_it);
-	    fractions.erase(fraction_it);
-	  }
-	  /*if (norm_fraction >= fractionCutoff_){
+          //std::cout << "Adding Cell " << i << " to cluster " << clusterIndex[j] << " with energy " << cellsOnLayer.weight[i]*norm_fraction  << " (fraction " << norm_fraction << ")" << std::endl;
+          if (norm_fraction < fractionCutoff_) {
+            auto clusterIndex_it = std::find(clusterIndex.begin(), clusterIndex.end(), clusterIndex[j]);
+            auto fraction_it = std::find(fractions.begin(), fractions.end(), fractions[j]);
+            clusterIndex.erase(clusterIndex_it);
+            fractions.erase(fraction_it);
+	        }
+	        /*if (norm_fraction >= fractionCutoff_){
             cellsIdInCluster[clusterIndex[j]].push_back(
               std::make_pair(i, norm_fraction));
-          }*/
+            }*/
         }
-	auto tot_norm_cleaned_fractions = std::accumulate(fractions.begin(), fractions.end(), 0.);
-	for (unsigned int j = 0; j < clusterIndex.size(); j++) {
-	  float norm_fraction = fractions[j]/tot_norm_cleaned_fractions;
-	  cellsIdInCluster[clusterIndex[j]].push_back(
-	      std::make_pair(i, norm_fraction));
-	}
+	      auto tot_norm_cleaned_fractions = std::accumulate(fractions.begin(), fractions.end(), 0.);
+	      for (unsigned int j = 0; j < clusterIndex.size(); j++) {
+	        float norm_fraction = fractions[j]/tot_norm_cleaned_fractions;
+	        cellsIdInCluster[clusterIndex[j]].push_back(
+	            std::make_pair(i, norm_fraction));
+	      }
       }
     }
 
@@ -189,23 +189,23 @@ std::vector<reco::BasicCluster> BarrelCLUEAlgoT<T>::getClusters(bool) {
       int seedDetId = -1;
 
       for (auto [cellIdx, fraction] : cl) {
-	energy += cellsOnLayer.weight[cellIdx]*fraction;
-	thisCluster.emplace_back(cellsOnLayer.detid[cellIdx], fraction);
-	if (cellsOnLayer.isSeed[cellIdx]) {
-	  seedDetId = cellsOnLayer.detid[cellIdx];
-	}
+	      energy += cellsOnLayer.weight[cellIdx]*fraction;
+	      thisCluster.emplace_back(cellsOnLayer.detid[cellIdx], fraction);
+	      if (cellsOnLayer.isSeed[cellIdx]) {
+	        seedDetId = cellsOnLayer.detid[cellIdx];
+	      }
       }
       auto globalClusterIndex = clIndex  + firstClusterIdx;
 
       if constexpr (std::is_same_v<T, EBLayerTiles>) {
-	clusters_v_[globalClusterIndex] = 
-	  reco::BasicCluster(energy, position, reco::CaloID::DET_ECAL_BARREL, thisCluster, algoId_);
+	      clusters_v_[globalClusterIndex] = 
+	        reco::BasicCluster(energy, position, reco::CaloID::DET_ECAL_BARREL, thisCluster, algoId_);
       } else if constexpr (std::is_same_v<T, HBLayerTiles>) {
-	  clusters_v_[globalClusterIndex] =
-	    reco::BasicCluster(energy, position, reco::CaloID::DET_HCAL_BARREL, thisCluster, algoId_);
+	        clusters_v_[globalClusterIndex] =
+	          reco::BasicCluster(energy, position, reco::CaloID::DET_HCAL_BARREL, thisCluster, algoId_);
       } else {
-	  clusters_v_[globalClusterIndex] = 
-	    reco::BasicCluster(energy, position, reco::CaloID::DET_HO, thisCluster, algoId_);
+	        clusters_v_[globalClusterIndex] = 
+	          reco::BasicCluster(energy, position, reco::CaloID::DET_HO, thisCluster, algoId_);
       }
       clusters_v_[globalClusterIndex].setSeed(seedDetId);
       thisCluster.clear();
