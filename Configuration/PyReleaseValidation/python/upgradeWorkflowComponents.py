@@ -477,13 +477,14 @@ class UpgradeWorkflow_displacedRegional(UpgradeWorkflowTracking):
     def setup__(self, step, stepName, stepDict, k, properties):
         if 'Reco' in step: stepDict[stepName][k] = merge([self.step3, stepDict[step][k]])
     def condition_(self, fragment, stepList, key, hasHarvest):
-        return '2021' in key
+        return ('2021' in key or '2023' in key or '2024' in key)
 upgradeWFs['displacedRegional'] = UpgradeWorkflow_displacedRegional(
     steps = [
         'Reco',
         'RecoFakeHLT',
         'RecoGlobal',
         'RecoNano',
+        'RecoNanoFakeHLT',
     ],
     PU = [],
     suffix = '_displacedRegional',
@@ -1742,6 +1743,24 @@ upgradeWFs['HLTwDIGI75e33'] = UpgradeWorkflow_HLTwDIGI75e33(
     ],
     suffix = '_HLTwDIGI75e33',
     offset = 0.76,
+)
+
+class UpgradeWorkflow_L1Complete(UpgradeWorkflow):
+    def setup_(self, step, stepName, stepDict, k, properties):
+        if 'Digi' in step:
+            stepDict[stepName][k] = merge([{'-s': 'DIGI:pdigi_valid,L1,L1TrackTrigger,L1P2GT,DIGI2RAW,HLT:@relval2026'}, stepDict[step][k]])
+    def condition(self, fragment, stepList, key, hasHarvest):
+        return '2026' in key
+
+upgradeWFs['L1Complete'] = UpgradeWorkflow_L1Complete(
+    steps = [
+        'DigiTrigger',
+    ],
+    PU = [
+        'DigiTrigger',
+    ],
+    suffix = '_L1Complete',
+    offset = 0.78
 )
 
 class UpgradeWorkflow_Neutron(UpgradeWorkflow):
