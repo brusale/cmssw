@@ -2,12 +2,13 @@
 #include "DataFormats/CaloRecHit/interface/CaloClusterFwd.h"
 
 //new LayerClusters
-#include "DataFormats/CaloRecHit/interface/LayerClusters.h"
+#include "DataFormats/CaloRecHit/interface/TICLLayerClusters.h"
 #include "DataFormats/CaloRecHit/interface/CaloClustersHostCollection.h"
-#include "DataFormats/CaloRecHit/interface/LayerClustersHostCollection.h"
-#include "DataFormats/CaloRecHit/interface/alpaka/LayerClustersDeviceCollection.h"
+#include "DataFormats/CaloRecHit/interface/TICLLayerClustersHostCollection.h"
+#include "DataFormats/CaloRecHit/interface/alpaka/TICLLayerClustersDeviceCollection.h"
 
 #include "HeterogeneousCore/AlpakaInterface/interface/OneToManyAssoc.h"
+#include "HeterogeneousCore/AlpakaInterface/interface/AtomicPairCounter.h"
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/stream/EDProducer.h"
@@ -46,16 +47,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       ~HGCalLayerCluster2SoAProducer() override {}
       
       struct hitAndFraction {
-	float fraction;
-	uint32_t hit;
-      }
+	      float fraction;
+	      uint32_t hit;
+      };
 
       static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
       void produce(device::Event& evt, device::EventSetup const&) override;
-      static void fillErrorEntry(reco::LayerClustersHostCollection::View::element& soa_element, reco::CaloCluster& cluster, const CaloGeometry* geom, hgcal::RecHitTools rhtools);
-      static void fillSoA(reco::LayerClustersHostCollection::View::element soa_element, reco::CaloCluster cluster, const CaloGeometry* geom, hgcal::RecHitTools rhtools);
-      static void fillOneToManyAssociation(reco::LayerClustersHostCollection::View::element& soa_element, reco::CaloCluster cluster);
+      static void fillErrorEntry(reco::TICLLayerClustersHostCollection::View::element& soa_element, reco::CaloCluster& cluster, const CaloGeometry* geom, hgcal::RecHitTools rhtools);
+      static void fillSoA(reco::TICLLayerClustersHostCollection::View::element soa_element, reco::CaloCluster cluster, const CaloGeometry* geom, hgcal::RecHitTools rhtools, cms::alpakatools::AtomicPairCounter& apc);
+      static void fillOneToManyAssociation(reco::TICLLayerClustersHostCollection::View::element& soa_element, reco::CaloCluster cluster, cms::alpakatools::AtomicPairCounter& apc);
 
     private:
       hgcal::RecHitTools rhtools_; //let's put this here for now
@@ -64,7 +65,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       edm::EDGetTokenT<reco::CaloClusterCollection> input_token_;
       //edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> time_token_;
       const edm::ESGetToken<CaloGeometry, CaloGeometryRecord> geometry_token_;
-      const device::EDPutToken<LayerClustersDeviceCollection> device_token_;
+      const device::EDPutToken<TICLLayerClustersDeviceCollection> device_token_;
 
       void beginRun(const edm::Run&, const edm::EventSetup&) override;
   };
@@ -80,7 +81,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       geometry_token_(esConsumes<CaloGeometry, CaloGeometryRecord, edm::Transition::BeginRun>()),
       device_token_(produces()) {}
 
-  void HGCalLayerCluster2SoAProducer::fillErrorEntry(reco::LayerClustersHostCollection::View::element& soa_element, reco::CaloCluster& cluster, const CaloGeometry* geom, hgcal::RecHitTools rhtools) {
+  void HGCalLayerCluster2SoAProducer::fillErrorEntry(reco::TICLLayerClustersHostCollection::View::element& soa_element, reco::CaloCluster& cluster, const CaloGeometry* geom, hgcal::RecHitTools rhtools) {
     float sum_x = 0.;
     float sum_y = 0.;
     float sum_sqr_x = 0.;
@@ -107,30 +108,30 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         //Silicon case
         radius_x = radius_y = rhtools.getRadiusToSide(detId);
       } else {
-	  auto const& position = rhtools.getPosition(detId);
-	  auto const& eta_phi_window = rhtools.getScintDEtaDPhi(detId);
-	  radius_x = radius_y = position.perp() * eta_phi_window.second;
+	        auto const& position = rhtools.getPosition(detId);
+	        auto const& eta_phi_window = rhtools.getScintDEtaDPhi(detId);
+          radius_x = radius_y = position.perp() * eta_phi_window.second;
       }
     }
-    soa_element.radius() = radius_x + radius_y;
+    soa_element.err_pos() = radius_x + radius_y;
   }
 
-void HGCalLayerCluster2SoAProducer::fillOneToManyAssociation(reco::LayerClustersHostCollection::View::element& soa_element, reco::CaloCluster cluster) {
+void HGCalLayerCluster2SoAProducer::fillOneToManyAssociation(reco::TICLLayerClustersHostCollection::View::element& soa_element, reco::CaloCluster cluster, cms::alpakatools::AtomicPairCounter& apc) {
   auto hits_and_fractions = cluster.hitsAndFractions();
   std::vector<hitAndFraction> haf;
   int nh = hits_and_fractions.size();
   haf.reserve(nh);
-  
+   
   for (int i = 0; i < nh; ++i) {
     haf[i].hit = hits_and_fractions[i].first;
     haf[i].fraction = hits_and_fractions[i].second;
   }
 
-  soa_element.hitsAndFractions().bulkFill(apc, haf, nh + 1); 
+  //soa_element.hitsAndFractions().bulkFill(apc, haf, nh + 1); 
   
 }
 
-  void HGCalLayerCluster2SoAProducer::fillSoA(reco::LayerClustersHostCollection::View::element soa_element, reco::CaloCluster cluster, const CaloGeometry* geom, hgcal::RecHitTools rhtools) {
+  void HGCalLayerCluster2SoAProducer::fillSoA(reco::TICLLayerClustersHostCollection::View::element soa_element, reco::CaloCluster cluster, const CaloGeometry* geom, hgcal::RecHitTools rhtools, cms::alpakatools::AtomicPairCounter& apc) {
     soa_element.x() = cluster.x();
     soa_element.y() = cluster.y();
     soa_element.z() = cluster.z();
@@ -138,7 +139,7 @@ void HGCalLayerCluster2SoAProducer::fillOneToManyAssociation(reco::LayerClusters
     soa_element.phi() = cluster.phi();
     soa_element.energy() = cluster.energy();
     fillErrorEntry(soa_element, cluster, geom, rhtools);
-    fillOneToManyAssociation(soa_element, cluster);
+    fillOneToManyAssociation(soa_element, cluster, apc);
   }
 
   void HGCalLayerCluster2SoAProducer::produce(device::Event& evt, device::EventSetup const& es) {
@@ -151,14 +152,15 @@ void HGCalLayerCluster2SoAProducer::fillOneToManyAssociation(reco::LayerClusters
     //auto& view = calo_clusters.view();
     int32_t num_clusters = input_h.size();
 										       
-    reco::LayerClustersHostCollection h_layer_clusters{num_clusters, evt.queue()};
+    reco::TICLLayerClustersHostCollection h_layer_clusters{num_clusters, evt.queue()};
     auto& h_layer_clusters_view = h_layer_clusters.view();
-										       
+		
+    cms::alpakatools::AtomicPairCounter apc(0);						       
     for (int i = 0; i < num_clusters; ++i) {
-      fillSoA(h_layer_clusters_view[i], (input_h)[i], geom_, rhtools_);
+      fillSoA(h_layer_clusters_view[i], (input_h)[i], geom_, rhtools_, apc);
     }
 										       
-    LayerClustersDeviceCollection d_layer_clusters{num_clusters, evt.queue()};
+    TICLLayerClustersDeviceCollection d_layer_clusters{num_clusters, evt.queue()};
     alpaka::memcpy(evt.queue(), d_layer_clusters.buffer(), h_layer_clusters.buffer());
     //synchronize
     //alpaka::wait(event.queue());
@@ -170,7 +172,7 @@ void HGCalLayerCluster2SoAProducer::fillOneToManyAssociation(reco::LayerClusters
   void HGCalLayerCluster2SoAProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
     edm::ParameterSetDescription desc;
     desc.add<edm::InputTag>("input_clusters", edm::InputTag("hgcalMergeLayerClusters"));
-    desc.add<edm::InputTag>("time_map", edm::InputTag("hgcalMergeLayerClusters", "timeLayerClusters"));
+    //desc.add<edm::InputTag>("time_map", edm::InputTag("hgcalMergeLayerClusters", "timeLayerClusters"));
 
     descriptions.addWithDefaultLabel(desc);
   }

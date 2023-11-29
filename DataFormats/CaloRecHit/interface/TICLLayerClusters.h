@@ -1,5 +1,5 @@
-#ifndef DataFormats_CaloRecHit_LayerClusters_h
-#define DataFormats_CaloRecHit_LayerClusters_h
+#ifndef DataFormats_CaloRecHit_TICLLayerClusters_h
+#define DataFormats_CaloRecHit_TICLLayerClusters_h
 
 // LayerClusters data format
 #include "DataFormats/SoATemplate/interface/SoALayout.h"
@@ -17,7 +17,7 @@ using OneToManyHitAndFraction = cms::alpakatools::OneToManyAssoc<HitAndFraction,
 
 namespace reco {
   
-  GENERATE_SOA_LAYOUT(LayerClustersSoA,
+  GENERATE_SOA_LAYOUT(TICLLayerClustersSoA,
 		      SOA_COLUMN(float, x),
 		      SOA_COLUMN(float, y),
 		      SOA_COLUMN(float, z), 
@@ -25,12 +25,13 @@ namespace reco {
 		      SOA_COLUMN(float, phi),
 		      SOA_COLUMN(float, time),
 		      SOA_COLUMN(float, err_pos),
+          SOA_COLUMN(float, energy),
 		      SOA_SCALAR(OneToManyHitAndFraction, hitsAndFractions)
   )
 
-  using LayerClusters = LayerClustersSoA<>;
-  using LayerClustersView = LayerClusters::View;
-  using LayerClustersConstView = LayerClusters::ConstView;
+  using TICLLayerClusters = TICLLayerClustersSoA<>;
+  using TICLLayerClustersView = TICLLayerClusters::View;
+  using TICLLayerClustersConstView = TICLLayerClusters::ConstView;
 
 } //namespace reco
 

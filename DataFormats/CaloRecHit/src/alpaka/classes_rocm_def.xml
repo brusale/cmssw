@@ -28,12 +28,8 @@
 -->
 
 <lcgdict>
-  <class name="reco::CaloClusterHostCollection"/>
-  <class name="edm::Wrapper<reco::CaloClusterCollection"/>
-  <class name="reco::LayerClustersHostCollection"/>
-  <class name="edm::Wrapper<reco::LayerClustersHostCollection"/>
-  <class name="PortableCollection<reco::LayerClustersSoA<>>"/>
-  <class name="PortableCollection<reco::CaloClusters>"/>
+  <class name="reco::TICLLayerClustersHostCollection"/>
+  <class name="edm::Wrapper<reco::TICLLayerClustersHostCollection>"/>
 </lcgdict>
 
 
@@ -42,4 +38,3 @@
 
 
 
-</lcgdict>

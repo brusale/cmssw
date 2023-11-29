@@ -3,10 +3,10 @@
 
 #include "DataFormats/Common/interface/Wrapper.h"
 
-#include "DataFormats/CaloRecHit/interface/LayerClusters.h"
-#include "DataFormats/CaloRecHit/interface/LayerClustersHostCollection.h"
+#include "DataFormats/CaloRecHit/interface/TICLLayerClusters.h"
+#include "DataFormats/CaloRecHit/interface/TICLLayerClustersHostCollection.h"
 #include "DataFormats/CaloRecHit/interface/CaloClustersHostCollection.h"
-#include "DataFormats/CaloRecHit/interface/alpaka/LayerClustersDeviceCollection.h"
+#include "DataFormats/CaloRecHit/interface/alpaka/TICLLayerClustersDeviceCollection.h"
 #include "DataFormats/CaloRecHit/interface/alpaka/CaloClustersDeviceCollection.h"
 
 #endif
