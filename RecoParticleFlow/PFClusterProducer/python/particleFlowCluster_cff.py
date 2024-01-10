@@ -86,6 +86,16 @@ phase2_timing.toReplaceWith(particleFlowClusterECALTask,
 phase2_timing.toModify(particleFlowClusterECAL,
                             inputECAL = 'particleFlowTimeAssignerECAL')
 
+#CLUE barrel
+from RecoParticleFlow.PFClusterProducer.barrelLayerClusters_cfi import barrelLayerClusters
+barrelLayerClustersTask = cms.Task(barrelLayerClusters)
+
+pfClusteringWithCLUETask = particleFlowClusterTask.copy()
+pfClusteringWithCLUETask.add(barrelLayerClustersTask)
+
+from Configuration.Eras.Modifier_phase2_common_cff import phase2_common
+phase2_common.toReplaceWith(particleFlowClusterTask, pfClusteringWithCLUETask)
+
 # Replace HBHE rechit and clustering with Alpaka modules
 
 from Configuration.ProcessModifiers.alpaka_cff import alpaka
