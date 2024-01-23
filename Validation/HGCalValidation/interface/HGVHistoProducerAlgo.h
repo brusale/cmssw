@@ -27,6 +27,7 @@
 #include "RecoLocalCalo/HGCalRecProducers/interface/HGCalClusteringAlgoBase.h"
 #include "SimDataFormats/Associations/interface/LayerClusterToCaloParticleAssociatorBaseImpl.h"
 #include "SimDataFormats/Associations/interface/LayerClusterToSimClusterAssociatorBaseImpl.h"
+#include "SimDataFormats/Associations/interface/TracksterToSimTracksterHitLCAssociatorBaseImpl.h"
 
 #include "DQMServices/Core/interface/DQMStore.h"
 
@@ -289,20 +290,19 @@ public:
                                     std::vector<HGCRecHit> const& hits) const;
   void tracksters_to_SimTracksters(const Histograms& histograms,
                                    const int count,
-                                   const ticl::TracksterCollection& Tracksters,
+                                   edm::Handle<ticl::TracksterCollection> trackstersHandle,
+                                   const ticl::TracksterCollection& tracksters,
                                    const reco::CaloClusterCollection& layerClusters,
                                    const ticl::TracksterCollection& simTS,
+                                   edm::Handle<ticl::TracksterCollection> simTSHandle,
                                    const validationType valType,
                                    const ticl::TracksterCollection& simTS_fromCP,
+                                   edm::Handle<ticl::TracksterCollection> simTS_fromCPHandle,
                                    std::map<uint, std::vector<uint>> const& simTrackstersMap,
-                                   std::vector<SimCluster> const& sC,
-                                   const edm::ProductID& cPHandle_id,
-                                   std::vector<CaloParticle> const& cP,
-                                   std::vector<size_t> const& cPIndices,
-                                   std::vector<size_t> const& cPSelectedIndices,
-                                   std::unordered_map<DetId, const unsigned int> const&,
-                                   unsigned int layers,
-                                   std::vector<HGCRecHit> const& hits) const;
+                                   const ticl::RecoToSimCollectionSimTracksters& rToSCPColl,
+                                   const ticl::SimToRecoCollectionSimTracksters& sToRCPColl,
+                                   const ticl::RecoToSimCollectionSimTracksters& rToSSCColl,
+                                   const ticl::SimToRecoCollectionSimTracksters& sToRSCColl) const;
   void fill_info_histos(const Histograms& histograms, unsigned int layers) const;
   void fill_caloparticle_histos(const Histograms& histograms,
                                 int pdgid,
@@ -346,19 +346,19 @@ public:
   void fill_cluster_histos(const Histograms& histograms, const int count, const reco::CaloCluster& cluster) const;
   void fill_trackster_histos(const Histograms& histograms,
                              const int count,
-                             const ticl::TracksterCollection& Tracksters,
+                             edm::Handle<ticl::TracksterCollection> trackstersHandle,
+                             const ticl::TracksterCollection& tracksters,
                              const reco::CaloClusterCollection& layerClusters,
                              const ticl::TracksterCollection& simTS,
+                             edm::Handle<ticl::TracksterCollection> simTSHandle,
                              const ticl::TracksterCollection& simTS_fromCP,
+                             edm::Handle<ticl::TracksterCollection> simTS_fromCPHandle,
                              std::map<uint, std::vector<uint>> const& simTrackstersMap,
-                             std::vector<SimCluster> const& sC,
-                             const edm::ProductID& cPHandle_id,
-                             std::vector<CaloParticle> const& cP,
-                             std::vector<size_t> const& cPIndices,
-                             std::vector<size_t> const& cPSelectedIndices,
-                             std::unordered_map<DetId, const unsigned int> const&,
-                             unsigned int layers,
-                             std::vector<HGCRecHit> const& hits) const;
+                             const ticl::RecoToSimCollectionSimTracksters& rToSCPColl,
+                             const ticl::SimToRecoCollectionSimTracksters& sToRCPColl,
+                             const ticl::RecoToSimCollectionSimTracksters& rToSSCColl,
+                             const ticl::SimToRecoCollectionSimTracksters& sToRSCColl,
+                             unsigned int layers) const;
   double distance2(const double x1, const double y1, const double x2, const double y2) const;
   double distance(const double x1, const double y1, const double x2, const double y2) const;
 
