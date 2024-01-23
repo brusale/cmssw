@@ -11,7 +11,7 @@ from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
 from RecoHGCal.TICL.iterativeTICL_cff import ticlIterLabels, ticlIterLabelsMerge
 
 labelTst = [cms.InputTag("ticlTracksters"+iteration) for iteration in ticlIterLabelsMerge]
-labelTst.extend([cms.InputTag("ticlSimTracksters", "fromCPs"), cms.InputTag("ticlSimTracksters")])
+#labelTst.extend([cms.InputTag("ticlSimTracksters", "fromCPs"), cms.InputTag("ticlSimTracksters")])
 lcInputMask = [cms.InputTag("ticlTracksters"+iteration) for iteration in ticlIterLabels]
 lcInputMask.extend([cms.InputTag("ticlSimTracksters", "fromCPs"), cms.InputTag("ticlSimTracksters")])
 hgcalValidator = DQMEDAnalyzer(
@@ -21,7 +21,7 @@ hgcalValidator = DQMEDAnalyzer(
     # selection of CP for evaluation of efficiency #
     CaloParticleSelectionForEfficiency,
 
-    hits = cms.VInputTag([cms.VInputTag("HGCalRecHit", "HGCEERecHits"), cms.InputTag("HGCalRecHit", "HGCHEFRecHits"), cms.InputTag("HGCalRecHit", "HGCHEBRecHits")]),
+    hits = cms.VInputTag([cms.InputTag("HGCalRecHit", "HGCEERecHits"), cms.InputTag("HGCalRecHit", "HGCHEFRecHits"), cms.InputTag("HGCalRecHit", "HGCHEBRecHits")]),
     ### reco input configuration ###
     #2DLayerClusters, PFClusters, Tracksters
     label_lcl = layerClusterCaloParticleAssociation.label_lc,
@@ -32,6 +32,12 @@ hgcalValidator = DQMEDAnalyzer(
     associator = cms.untracked.InputTag("layerClusterCaloParticleAssociationProducer"),
 
     associatorSim = cms.untracked.InputTag("layerClusterSimClusterAssociationProducer"),
+
+    trackstersAssociatorCP = cms.untracked.vstring(["tracksterSimTracksterAssociationLinkingbyCLUE3D",
+                                                    "tracksterSimTracksterAssociationLinking"]),
+    
+    trackstersAssociatorSC = cms.untracked.vstring(["tracksterSimTracksterAssociationPRbyCLUE3D",
+                                                    "tracksterSimTracksterAssociationPR"]), 
 
     #General info on layers etc.
     SaveGeneralInfo = cms.untracked.bool(True),

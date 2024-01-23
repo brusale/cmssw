@@ -28,6 +28,7 @@
 
 #include "SimDataFormats/Associations/interface/LayerClusterToCaloParticleAssociator.h"
 #include "SimDataFormats/Associations/interface/LayerClusterToSimClusterAssociator.h"
+#include "SimDataFormats/Associations/interface/TracksterToSimTracksterHitLCAssociatorBaseImpl.h"
 
 class PileupSummaryInfo;
 
@@ -66,6 +67,8 @@ protected:
   edm::InputTag label_simTS, label_simTSFromCP;
   edm::InputTag associator_;
   edm::InputTag associatorSim_;
+  std::vector<std::string> associator_tracksters_cp_;
+  std::vector<std::string> associator_tracksters_sc_;
   const bool SaveGeneralInfo_;
   const bool doCaloParticlePlots_;
   const bool doCaloParticleSelection_;
@@ -84,6 +87,10 @@ protected:
   std::vector<edm::EDGetTokenT<ticl::TracksterCollection>> label_tstTokens;
   edm::EDGetTokenT<ticl::TracksterCollection> simTracksters_;
   edm::EDGetTokenT<ticl::TracksterCollection> simTracksters_fromCPs_;
+  std::vector<edm::EDGetTokenT<ticl::RecoToSimCollectionSimTracksters>> associatorMapRtoS_tsSimTS_CP;
+  std::vector<edm::EDGetTokenT<ticl::SimToRecoCollectionSimTracksters>> associatorMapStoR_tsSimTS_CP;
+  std::vector<edm::EDGetTokenT<ticl::RecoToSimCollectionSimTracksters>> associatorMapRtoS_tsSimTS_SC;
+  std::vector<edm::EDGetTokenT<ticl::SimToRecoCollectionSimTracksters>> associatorMapStoR_tsSimTS_SC;
   edm::EDGetTokenT<std::map<uint, std::vector<uint>>> simTrackstersMap_;
   edm::EDGetTokenT<std::vector<CaloParticle>> label_cp_effic;
   edm::EDGetTokenT<std::vector<CaloParticle>> label_cp_fake;

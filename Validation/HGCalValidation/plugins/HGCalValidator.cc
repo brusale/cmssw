@@ -16,6 +16,10 @@ HGCalValidator::HGCalValidator(const edm::ParameterSet& pset)
       label_simTSFromCP(pset.getParameter<edm::InputTag>("label_simTSFromCP")),
       associator_(pset.getUntrackedParameter<edm::InputTag>("associator")),
       associatorSim_(pset.getUntrackedParameter<edm::InputTag>("associatorSim")),
+      //associator_tracksters_cp_(pset.getUntrackedParameter<std::vector<edm::InputTag>>("trackstersAssociatorCP")),
+      associator_tracksters_cp_(pset.getUntrackedParameter<std::vector<std::string>>("trackstersAssociatorCP")),
+      //associator_tracksters_sc_(pset.getUntrackedParameter<std::vector<edm::InputTag>>("trackstersAssociatorSC")),
+      associator_tracksters_sc_(pset.getUntrackedParameter<std::vector<std::string>>("trackstersAssociatorSC")),
       SaveGeneralInfo_(pset.getUntrackedParameter<bool>("SaveGeneralInfo")),
       doCaloParticlePlots_(pset.getUntrackedParameter<bool>("doCaloParticlePlots")),
       doCaloParticleSelection_(pset.getUntrackedParameter<bool>("doCaloParticleSelection")),
@@ -70,6 +74,23 @@ HGCalValidator::HGCalValidator(const edm::ParameterSet& pset)
   associatorMapRtS = consumes<ticl::RecoToSimCollection>(associator_);
   associatorMapStR = consumes<ticl::SimToRecoCollection>(associator_);
 
+  for (auto& associator : associator_tracksters_cp_) { 
+    //const edm::InputTag& reco_to_sim(associator, "recoToSim");
+    //const edm::InputTag& sim_to_reco(associator, "simToReco");
+    associatorMapRtoS_tsSimTS_CP.push_back(consumes<ticl::RecoToSimCollectionSimTracksters>(
+                                                      edm::InputTag(associator, "recoToSim")));
+    associatorMapStoR_tsSimTS_CP.push_back(consumes<ticl::SimToRecoCollectionSimTracksters>(
+                                                      edm::InputTag(associator, "simToReco")));
+  }
+  for (auto& associator : associator_tracksters_sc_) { 
+    //const edm::InputTag& reco_to_sim(associator, "recoToSim");
+    //const edm::InputTag& sim_to_reco(associator, "simToReco");
+    associatorMapRtoS_tsSimTS_SC.push_back(consumes<ticl::RecoToSimCollectionSimTracksters>(
+                                                      edm::InputTag(associator, "recoToSim")));
+    associatorMapStoR_tsSimTS_SC.push_back(consumes<ticl::SimToRecoCollectionSimTracksters>(
+                                                      edm::InputTag(associator, "simToReco")));
+  }
+  
   cpSelector = CaloParticleSelector(pset.getParameter<double>("ptMinCP"),
                                     pset.getParameter<double>("ptMaxCP"),
                                     pset.getParameter<double>("minRapidityCP"),
@@ -426,19 +447,52 @@ void HGCalValidator::dqmAnalyze(const edm::Event& event,
       event.getByToken(label_tstTokens[wml], tracksterHandle);
       const ticl::TracksterCollection& tracksters = *tracksterHandle;
 
+      std::vector<ticl::RecoToSimCollectionSimTracksters> recoToSimMapsLinking, recoToSimMapsPR;
+      std::vector<ticl::SimToRecoCollectionSimTracksters> simToRecoMapsLinking, simToRecoMapsPR;
+
+      for (unsigned int i = 0; i < associatorMapRtoS_tsSimTS_CP.size(); ++i) {
+        //associators with SimTS from CP
+        edm::Handle<ticl::RecoToSimCollectionSimTracksters> rToSCPHandle;
+        event.getByToken(associatorMapRtoS_tsSimTS_CP[i], rToSCPHandle);
+        //const ticl::RecoToSimCollectionSimTracksters& rToSCPMap = *rToSCPHandle;
+        recoToSimMapsLinking.push_back(*rToSCPHandle);
+
+        edm::Handle<ticl::SimToRecoCollectionSimTracksters> sToRCPHandle;
+        event.getByToken(associatorMapStoR_tsSimTS_CP[i], sToRCPHandle);
+        //const ticl::SimToRecoCollectionSimTracksters& sToRCPMap = *sToRCPHandle;
+        simToRecoMapsLinking.push_back(*sToRCPHandle);
+
+        //asspcoatprs with SimTS from SC
+        edm::Handle<ticl::RecoToSimCollectionSimTracksters> rToSSCHandle;
+        event.getByToken(associatorMapRtoS_tsSimTS_SC[i], rToSSCHandle);
+        //const ticl::RecoToSimCollectionSimTracksters& rToSSCMap = *rToSSCHandle;
+        recoToSimMapsPR.push_back(*rToSSCHandle);
+                                                                         
+        edm::Handle<ticl::SimToRecoCollectionSimTracksters> sToRSCHandle;
+        event.getByToken(associatorMapStoR_tsSimTS_SC[i], sToRSCHandle);
+        //const ticl::SimToRecoCollectionSimTracksters& sToRSCMap = *sToRSCHandle;
+        simToRecoMapsPR.push_back(*sToRSCHandle);
+      }
       //General Info on Tracksters
       LogTrace("HGCalValidator") << "\n# of Tracksters from " << label_tst[wml].process() << ":"
                                  << label_tst[wml].label() << ":" << label_tst[wml].instance() << ": "
                                  << tracksters.size() << "\n"
                                  << std::endl;
 
-      histoProducerAlgo_->fill_trackster_histos(histograms.histoProducerAlgo,
+     histoProducerAlgo_->fill_trackster_histos(histograms.histoProducerAlgo,
                                                 wml,
+                                                tracksterHandle,
                                                 tracksters,
                                                 clusters,
                                                 simTracksters,
+                                                simTracksterHandle,
                                                 simTrackstersFromCPs,
+                                                simTracksterFromCPHandle,
                                                 cpToSc_SimTrackstersMap,
+                                                recoToSimMapsLinking[wml],
+                                                simToRecoMapsLinking[wml],
+                                                recoToSimMapsPR[wml],
+                                                simToRecoMapsPR[wml],
                                                 simClusters,
                                                 caloParticleHandle.id(),
                                                 caloParticles,
