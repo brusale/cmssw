@@ -466,7 +466,6 @@ void HGCalValidator::dqmAnalyze(const edm::Event& event,
       edm::Handle<ticl::TracksterCollection> tracksterHandle;
       event.getByToken(label_tstTokens[wml], tracksterHandle);
       const ticl::TracksterCollection& tracksters = *tracksterHandle;
-
       //General Info on Tracksters
       LogTrace("HGCalValidator") << "\n# of Tracksters from " << label_tst[wml].process() << ":"
                                  << label_tst[wml].label() << ":" << label_tst[wml].instance() << ": "

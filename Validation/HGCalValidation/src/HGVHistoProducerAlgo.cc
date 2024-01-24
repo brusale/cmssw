@@ -2599,7 +2599,6 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(
   // only to the selected caloParaticles.
   for (unsigned int iSTS = 0; iSTS < nSimTracksters; ++iSTS) {
     const auto& sts = simTSs[iSTS];
-    
     if (sts.vertices().empty()) continue;
     const auto sts_eta = sts.barycenter().eta();
     const auto sts_phi = sts.barycenter().phi();
