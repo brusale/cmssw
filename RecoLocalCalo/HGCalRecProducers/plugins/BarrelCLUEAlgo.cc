@@ -338,7 +338,15 @@ int BarrelCLUEAlgoT<T>::findAndAssignClusters(const unsigned int layerId, float 
   std::vector<int> localStack;
   for (unsigned int i = 0; i < numberOfCells; ++i) {
     //float rho_c = rhoc_; //for testing purposes
+    int depth = 0;
+    if constexpr (!std::is_same_v<T, EBLayerTiles>) {
+      HcalDetId hid(cellsOnLayer.detid[i]);
+      depth = hid.depth();
+    }
     float rho_c = kappa_ * cellsOnLayer.sigmaNoise[i];
+    std::vector<double> hcalSeedingThresholds{0.125, 0.250, 0.350, 0.350};
+    if constexpr (!std::is_same_v<T, EBLayerTiles>) 
+      rho_c = kappa_ * hcalSeedingThresholds[depth-1];
     float delta = delta_c;
     // cellsOnLayer.clusterIndex[i] = -1;
     bool isSeed = (cellsOnLayer.delta[i] > delta) && (cellsOnLayer.rho[i] >= rho_c);
