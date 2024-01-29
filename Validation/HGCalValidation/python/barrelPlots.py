@@ -33,10 +33,10 @@ lastLayerHO = layerscheme['lastLayerHO']
 maxLayer = layerscheme['maxLayer']
 
 _common = {"stat":True, "drawStyle": "hist", "staty": 0.65 }
-_legend_common = {"legendDx": -0.3,
-		  "legendDy": -0.05,
-		  "legendDw": 0.1}
-
+#_legend_common = {"legendDx": -0.3,
+#		  "legendDy": -0.05,
+#		  "legendDw": 0.01}
+_legend_common = {}
 _SelectedCaloParticles = PlotGroup("SelectedCaloParticles", [
 	Plot("num_caloparticle_eta", xtitle="", **_common),
 	Plot("caloparticle_energy", xtitle="", **_common),
@@ -212,7 +212,7 @@ _common_fake["xbinlabelsize"] = 10.
 _fakeplots = [Plot("gloablEfficiencies", xtitle=_xtitle, ytitle="Fake rate", **_common_fake)]
 _fakes_eta = PlotGroup("FakeRate_vs_eta", _fakeplots_eta, ncols=6)
 _fakes_phi = PlotGroup("FakeRate_vs_phi", _fakeplots_phi, ncols=6)
-_fakes = PlotGroup("FakeRate_vs_layuer", _fakeplots, ncols=1)
+_fakes = PlotGroup("FakeRate_vs_layer", _fakeplots, ncols=1)
 
 _common_merge = {"stat": False, "legend": False, "ymin": 0.0, "ymax": 1.1}
 _mergeplots_eta = [Plot("merge_eta_layer{:02d}".format(i), xtitle="", **_common_merge) for i in range(lastLayerHO)]

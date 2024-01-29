@@ -34,7 +34,7 @@ HGCalValidator::HGCalValidator(const edm::ParameterSet& pset)
   //In this way we can easily generalize to associations between other objects also.
   const edm::InputTag& label_cp_effic_tag = pset.getParameter<edm::InputTag>("label_cp_effic");
   const edm::InputTag& label_cp_fake_tag = pset.getParameter<edm::InputTag>("label_cp_fake");
-
+  //prova
   label_cp_effic = consumes<std::vector<CaloParticle>>(label_cp_effic_tag);
   label_cp_fake = consumes<std::vector<CaloParticle>>(label_cp_fake_tag);
 

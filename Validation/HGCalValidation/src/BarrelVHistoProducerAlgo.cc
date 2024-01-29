@@ -1328,6 +1328,7 @@ void BarrelVHistoProducerAlgo::fill_caloparticle_histos(const Histograms& histog
                                                     std::vector<SimVertex> const& simVertices,
                                                     unsigned int layers,
                                                     std::unordered_map<DetId, const reco::PFRecHit*> const& hitMap) const {
+  
   const auto eta = getEta(caloParticle.eta());
   if (histograms.h_caloparticle_eta.count(pdgid)) {
     histograms.h_caloparticle_eta.at(pdgid)->Fill(eta);
@@ -1548,7 +1549,6 @@ void BarrelVHistoProducerAlgo::layerClusters_to_CaloParticles(const Histograms& 
                                                           const hgcal::RecoToSimCollection& cpsInLayerClusterMap,
                                                           const hgcal::SimToRecoCollection& cPOnLayerMap) const {
   const auto nLayerClusters = clusters.size();
-
   std::unordered_map<DetId, std::vector<BarrelVHistoProducerAlgo::detIdInfoInCluster>> detIdToCaloParticleId_Map;
   std::unordered_map<DetId, std::vector<BarrelVHistoProducerAlgo::detIdInfoInCluster>> detIdToLayerClusterId_Map;
 
@@ -1579,7 +1579,6 @@ void BarrelVHistoProducerAlgo::layerClusters_to_CaloParticles(const Histograms& 
       }
     }
   }
-
   for (unsigned int lcId = 0; lcId < nLayerClusters; ++lcId) {
     const auto& hits_and_fractions = clusters[lcId].hitsAndFractions();
     const auto numberOfHitsInLC = hits_and_fractions.size();
@@ -1648,7 +1647,6 @@ void BarrelVHistoProducerAlgo::layerClusters_to_CaloParticles(const Histograms& 
     }  // End loop over hits on a LayerCluster
 
   }  // End of loop over LayerClusters
-
   // Fill the plots to compute the different metrics linked to
   // reco-level, namely fake-rate an merge-rate. In this loop should *not*
   // restrict only to the selected caloParaticles.
@@ -1663,7 +1661,6 @@ void BarrelVHistoProducerAlgo::layerClusters_to_CaloParticles(const Histograms& 
     histograms.h_denom_layercl_eta_perlayer.at(lcLayerId)->Fill(clusters[lcId].eta());
     histograms.h_denom_layercl_phi_perlayer.at(lcLayerId)->Fill(clusters[lcId].phi());
     histograms.h_denom_layercl_energy_perlayer.at(lcLayerId)->Fill(clusters[lcId].energy());
-    //
     const edm::Ref<reco::CaloClusterCollection> lcRef(clusterHandle, lcId);
     const auto& cpsIt = cpsInLayerClusterMap.find(lcRef);
     if (cpsIt == cpsInLayerClusterMap.end())
@@ -2027,11 +2024,9 @@ void BarrelVHistoProducerAlgo::fill_generic_cluster_histos(const Histograms& his
   //a layer variable (layerid) that maps the layers in :
   //-z: 0->51
   //+z: 52->103
-
   //To keep track of total num of layer clusters per layer
   //tnlcpl[layerid]
   std::vector<int> tnlcpl(1000, 0);  //tnlcpl.clear(); tnlcpl.reserve(1000);
-
   layerClusters_to_CaloParticles(histograms,
                                  clusterHandle,
                                  clusters,

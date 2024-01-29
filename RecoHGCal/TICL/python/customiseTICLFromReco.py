@@ -10,6 +10,7 @@ from RecoHGCal.TICL.layerClusterDumper_cfi import layerClusterDumper
 from Validation.HGCalValidation.HGCalValidator_cfi import *
 from Validation.HGCalValidation.BarrelValidator_cfi import *
 from Validation.HGCalValidation.SimBarrelValidator_cfi import *
+from Validation.HGCalValidation.BarrelValidatorPFCluster_cfi import *
 
 from RecoLocalCalo.HGCalRecProducers.hgcalRecHitMapProducer_cfi import hgcalRecHitMapProducer
 from RecoLocalCalo.HGCalRecProducers.barrelRecHitMapProducer_cfi import barrelRecHitMapProducer
@@ -32,7 +33,7 @@ from SimCalorimetry.HGCalAssociatorProducers.BarrelLCToCPAssociation_cfi import 
 from SimCalorimetry.HGCalAssociatorProducers.SimBarrelLCToCPAssociation_cfi import simBarrelLayerClusterCaloParticleAssociation as simBarrelLayerClusterCaloParticleAssociationProdcuer
 from SimCalorimetry.HGCalAssociatorProducers.BarrelLCToSCAssociation_cfi import barrelLayerClusterSimClusterAssociation as barrelLayerClusterSimClusterAssociationProducer
 from SimCalorimetry.HGCalAssociatorProducers.SimBarrelLCToSCAssociation_cfi import simBarrelLayerClusterSimClusterAssociation as simBarrelSimClusterAssociationProducer
-
+from RecoHGCal.TICL.lcFromPFClusterProducer_cfi import lcFromPFClusterProducer
 
 def customiseTICLFromReco(process):
 # TensorFlow ESSource
@@ -78,13 +79,40 @@ def customiseTICLFromReco(process):
 
 def customiseTICLBarrelFromReco(process):
 
+    #process.lcFromPFClusterProducer = lcFromPFClusterProducer.clone()
+
     process.barrelLayerClustersTask = cms.Task(process.simBarrelLayerClusters,
-					       process.barrelLayerClusters)
+					       process.barrelLayerClusters,
+					       #process.particleFlowClusterECALUncorrected,
+					       process.lcFromPFClusterProducer
+					       )
     
     process.TICLBarrel = cms.Path(process.barrelLayerClustersTask)
 
+
+    process.barrelLCAssocByEnergyScoreProducerPFCluster = barrelLCAssocByEnergyScoreProducer.clone()
+    process.barrelSCAssocByEnergyScoreProducerPFCluster = barrelSCAssocByEnergyScoreProducer.clone()
+    process.barrelLayerClusterCaloParticleAssociationProducerPFCluster = barrelLayerClusterCaloParticleAssociationProducer.clone()
+    process.barrelLayerClusterSimClusterAssociationProducerPFCluster = barrelLayerClusterSimClusterAssociationProducer.clone()
+    
+    process.barrelLayerClusterCaloParticleAssociationProducerPFCluster.label_lc = cms.InputTag("lcFromPFClusterProducer")
+    process.barrelLayerClusterSimClusterAssociationProducerPFCluster.label_lcl = cms.InputTag("lcFromPFClusterProducer")
+    process.barrelLayerClusterCaloParticleAssociationProducerPFCluster.associator = cms.InputTag("barrelLCAssocByEnergyScoreProducerPFCluster")
+    process.barrelLayerClusterSimClusterAssociationProducerPFCluster.label_lc = cms.InputTag("lcFromPFClusterProducer")
+    process.barrelValidatorPFCluster = barrelValidatorPFCluster.clone()
+    process.barrelValidatorPFCluster.associator = cms.untracked.InputTag("barrelLayerClusterCaloParticleAssociationProducerPFCluster")
+    process.barrelValidatorPFCluster.associatorSim = cms.untracked.InputTag("barrelLayerClusterSimClusterAssociationProducerPFCluster")
+    process.barrelValidatorPFCluster.label_layerClusterPlots = cms.InputTag("lcFromPFClusterProducer")
+    process.barrelValidatorPFCluster.label_lcl = cms.InputTag("lcFromPFClusterProducer")
+
+    process.barrelValidatorPFCluster.dirName = cms.string('PFCluster/PFClusterValidator/')
+
     process.TICLBarrel_ValidationProducers = cms.Task(process.barrelRecHitMapProducer,
 						      process.simBarrelRecHitMapProducer,
+						      process.barrelLCAssocByEnergyScoreProducerPFCluster,
+						      process.barrelSCAssocByEnergyScoreProducerPFCluster,
+						      process.barrelLayerClusterCaloParticleAssociationProducerPFCluster,
+						      process.barrelLayerClusterSimClusterAssociationProducerPFCluster,
 						      process.barrelLCAssocByEnergyScoreProducer,
 						      process.barrelLayerClusterCaloParticleAssociationProducer,
 						      process.barrelSCAssocByEnergyScoreProducer,
@@ -94,11 +122,28 @@ def customiseTICLBarrelFromReco(process):
 						      process.simBarrelSCAssocByEnergyScoreProducer,
 						      process.simBarrelLayerClusterSimClusterAssociationProducer)
     process.TICLBarrel_Validator = cms.Task(process.barrelValidator,
-					   process.simBarrelValidator)
+					   process.simBarrelValidator, 
+					   process.barrelValidatorPFCluster
+					   )
     process.TICLBarrel_Validation = cms.Path(process.TICLBarrel_ValidationProducers,
 					     process.TICLBarrel_Validator)
 
-    process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput)
+    process.consumer = cms.EDAnalyzer("GenericConsumer",
+      eventProducers = cms.untracked.vstring('lcFromPFClusterProducer')
+    )
+    process.consumer2 = cms.EDAnalyzer("GenericConsumer",
+      eventProducers = cms.untracked.vstring('barrelLCAssocByEnergyScoreProducerPFCluster')
+    )
+    process.consumer3 = cms.EDAnalyzer("GenericConsumer",
+      eventProducers = cms.untracked.vstring("barrelSCAssocByEnergyScoreProducerPFCluster")
+    )
+    process.consumer4 = cms.EDAnalyzer("GenericConsumer",
+      eventProducers = cms.untracked.vstring("barrelLayerClusterCaloParticleAssociationProducerPFCluster")
+    )
+    process.consumer5 = cms.EDAnalyzer("GenericConsumer",
+      eventProducers = cms.untracked.vstring("barrelLayerClusterSimClusterAssociationProducerPFCluster")
+    )
+    process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput + process.consumer + process.consumer2 + process.consumer3 + process.consumer4 + process.consumer5)
     process.DQMoutput_step = cms.EndPath(process.DQMoutput)
 
     process.schedule = cms.Schedule(process.TICLBarrel,
@@ -119,7 +164,11 @@ def customiseTICLForLCDumper(process):
 				process.lcDumper = layerClusterDumper.clone()
 				process.lcDumper.layerclusters = cms.InputTag("barrelLayerClusters")
 				process.lcDumper.simlayerclusters = cms.InputTag("simBarrelLayerClusters")
+				process.lcDumperPF = layerClusterDumper.clone()
+				process.lcDumperPF.layerclusters = cms.InputTag("lcFromPFClusterProducer")
+				process.lcDumperPF.simToRecoCollection = cms.InputTag("barrelLayerClusterCaloParticleAssociationProducerPFCluster")
+				process.lcDumperPF.recoToSimCollection = cms.InputTag("barrelLayerClusterCaloParticleAssociationProducerPFCluster")
 				process.TFileService = cms.Service("TFileService", 
 								   fileName = cms.string("histo.root"))
-				process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput + process.lcDumper)
+				process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput + process.lcDumper + process.lcDumperPF)
 				return process

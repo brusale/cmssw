@@ -55,6 +55,7 @@ BarrelValidator::BarrelValidator(const edm::ParameterSet& pset)
 
   simClusters_ = consumes<std::vector<SimCluster>>(pset.getParameter<edm::InputTag>("label_scl"));
 
+  //layerclusters
   layerclusters_ = consumes<reco::CaloClusterCollection>(label_lcl);
 
   for (auto& itag : label_tst) {
