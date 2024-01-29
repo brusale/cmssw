@@ -22,6 +22,7 @@ from RecoParticleFlow.PFClusterProducer.particleFlowBadHcalPseudoCluster_cff imp
 
 from RecoLocalCalo.HGCalRecProducers.barrelLayerClusters_cff import *
 from RecoLocalCalo.HGCalRecProducers.simBarrelLayerClusters_cff import *
+from RecoHGCal.TICL.lcFromPFClusterProducer_cfi import *
 
 particleFlowClusterECALTask = cms.Task(particleFlowClusterECAL)
 particleFlowClusterECALSequence = cms.Sequence(particleFlowClusterECALTask)
@@ -66,7 +67,8 @@ particleFlowClusterTask = cms.Task(particleFlowBadHcalPseudoCluster,
 				   barrelLayerClusters,
 				   simBarrelLayerClusters)
 
-particleFlowCluster = cms.Sequence(particleFlowClusterTask)
+lcFromPFClusterTask = cms.Task(lcFromPFClusterProducer)
+particleFlowCluster = cms.Sequence(particleFlowClusterTask,lcFromPFClusterTask)
 
 #HGCal
 
@@ -86,6 +88,7 @@ from RecoParticleFlow.PFClusterProducer.particleFlowClusterTimeAssigner_cfi impo
 from RecoParticleFlow.PFSimProducer.ecalBarrelClusterFastTimer_cfi import ecalBarrelClusterFastTimer
 _phase2_timing_particleFlowClusterECALTask = particleFlowClusterECALTask.copy()
 _phase2_timing_particleFlowClusterECALTask.add(cms.Task(ecalBarrelClusterFastTimer,
+							lcFromPFClusterProducer,
                                                         particleFlowTimeAssignerECAL))
 
 from Configuration.Eras.Modifier_phase2_timing_cff import phase2_timing
