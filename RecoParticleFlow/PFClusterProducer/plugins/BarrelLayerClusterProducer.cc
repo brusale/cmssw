@@ -172,7 +172,7 @@ void BarrelLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup&
   //*ebclusters = ebalgo->getClusters(false);
   std::vector<reco::BasicCluster> ebclusters = ebalgo->getClusters(false);
 
-  /*hbalgo->getEventSetup(es, rhtools_);
+  hbalgo->getEventSetup(es, rhtools_);
   
   evt.getByToken(hbhits_token_, hbhits);
   hbalgo->populate(*hbhits);
@@ -185,19 +185,19 @@ void BarrelLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup&
   hoalgo->getEventSetup(es, rhtools_);
 
   evt.getByToken(hohits_token_, hohits);
-  //hoalgo->populate(*hohits);
+  hoalgo->populate(*hohits);
   for (auto& hit : *hohits) {
     hitmap[hit.detId()] = &(hit);
   }
-  //hoalgo->makeClusters();
+  hoalgo->makeClusters();
   //*hoclusters = hoalgo->getClusters(false);
-  //std::vector<reco::BasicCluster> hoclusters = hoalgo->getClusters(false);*/
+  std::vector<reco::BasicCluster> hoclusters = hoalgo->getClusters(false);
 
   std::unique_ptr<std::vector<reco::BasicCluster>> clusters(new std::vector<reco::BasicCluster>);
-  (*clusters).reserve(ebclusters.size());// + hbclusters.size());  + hoclusters.size());
+  (*clusters).reserve(ebclusters.size() + hbclusters.size()  + hoclusters.size());
   (*clusters).insert((*clusters).end(), ebclusters.begin(), ebclusters.end());
-  //(*clusters).insert((*clusters).end(), hbclusters.begin(), hbclusters.end());
-  //(*clusters).insert((*clusters).end(), hoclusters.begin(), hoclusters.end());
+  (*clusters).insert((*clusters).end(), hbclusters.begin(), hbclusters.end());
+  (*clusters).insert((*clusters).end(), hoclusters.begin(), hoclusters.end());
 
   auto clusterHandle = evt.put(std::move(clusters));
 
@@ -239,7 +239,6 @@ void BarrelLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup&
       timeCl = timeEstimator.fixSizeHighestDensity(timeClhits, timeErrorClhits, nHitsTime);
     }
     times.push_back(timeCl);
-    std::cout << "cluster " << i << ", time: " << timeCl.first << "\n";
   }
   //std::unique_ptr<std::vector<float>> layerClustersMask(new std::vector<float>);
   //layerClustersMask->resize(clusterHandle->size(), 1.0);
@@ -258,8 +257,8 @@ void BarrelLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup&
     }
   }*/
   ebalgo->reset();
-  //hbalgo->reset();
-  //hoalgo->reset();
+  hbalgo->reset();
+  hoalgo->reset();
 }
 
 #endif  //__RecoLocalCalo_HGCRecProducers_BarrelLayerClusterProducer_H__

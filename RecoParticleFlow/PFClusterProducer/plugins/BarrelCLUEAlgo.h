@@ -93,7 +93,7 @@ public:
     if (isEcal_)
       iDesc.add<double>("deltac", 0.0175);
     else
-      iDesc.add<double>("deltac", 5*0.087);
+      iDesc.add<double>("deltac", 3*0.087);
     iDesc.add<double>("fractionCutoff", 0.);
     iDesc.add<bool>("doSharing", false);
   }
