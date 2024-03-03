@@ -125,9 +125,9 @@ void BarrelLayerClusterProducer::fillDescriptions(edm::ConfigurationDescriptions
   desc.add<edm::ParameterSetDescription>("hbplugin", hbpluginDesc);
   desc.add<edm::ParameterSetDescription>("hoplugin", hopluginDesc);
 
-  desc.add<edm::InputTag>("EBInput", edm::InputTag("particleFlowRecHitECAL", ""));
-  desc.add<edm::InputTag>("HBInput", edm::InputTag("particleFlowRecHitHBHE", ""));
-  desc.add<edm::InputTag>("HOInput", edm::InputTag("particleFlowRecHitHO", ""));	
+  desc.add<edm::InputTag>("EBInput", edm::InputTag("particleFlowRecHitECAL", "Cleaned"));
+  desc.add<edm::InputTag>("HBInput", edm::InputTag("particleFlowRecHitHBHE", "Cleaned"));
+  desc.add<edm::InputTag>("HOInput", edm::InputTag("particleFlowRecHitHO", "Cleaned"));	
  
   edm::ParameterSetDescription timeResolutionCalcDesc;
   timeResolutionCalcDesc.addNode(edm::ParameterDescription<double>("noiseTerm", 1.10889, true) and
@@ -171,6 +171,7 @@ void BarrelLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup&
   ebalgo->makeClusters();
   //*ebclusters = ebalgo->getClusters(false);
   std::vector<reco::BasicCluster> ebclusters = ebalgo->getClusters(false);
+  
 
   hbalgo->getEventSetup(es, rhtools_);
   

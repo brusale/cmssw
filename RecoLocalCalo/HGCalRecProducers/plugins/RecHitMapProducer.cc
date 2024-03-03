@@ -53,10 +53,10 @@ void RecHitMapProducer::fillDescriptions(edm::ConfigurationDescriptions& descrip
   desc.add<edm::InputTag>("EEInput", {"HGCalRecHit", "HGCEERecHits"});
   desc.add<edm::InputTag>("FHInput", {"HGCalRecHit", "HGCHEFRecHits"});
   desc.add<edm::InputTag>("BHInput", {"HGCalRecHit", "HGCHEBRecHits"});
-  desc.add<edm::InputTag>("EBInput", {"particleFlowRecHitECAL", ""});
-  desc.add<edm::InputTag>("HBInput", {"particleFlowRecHitHBHE", ""});
-  desc.add<edm::InputTag>("HOInput", {"particleFlowRecHitHO", ""});
-  desc.add<bool>("hgcalOnly", true);
+  desc.add<edm::InputTag>("EBInput", {"particleFlowRecHitECAL", "Cleaned"});
+  desc.add<edm::InputTag>("HBInput", {"particleFlowRecHitHBHE", "Cleaned"});
+  desc.add<edm::InputTag>("HOInput", {"particleFlowRecHitHO", "Cleaned"});
+  desc.add<bool>("hgcalOnly", false);
   descriptions.add("recHitMapProducer", desc);
 }
 
@@ -87,12 +87,10 @@ void RecHitMapProducer::produce(edm::StreamID, edm::Event& evt, const edm::Event
     const auto& eb_hits = evt.get(hits_eb_token_);
     const auto& hb_hits = evt.get(hits_hb_token_);
     const auto& ho_hits = evt.get(hits_ho_token_);
-    size = 0;
-
     for (unsigned int i = 0; i < eb_hits.size(); ++i) {
       hitMapBarrel->emplace(eb_hits[i].detId(), i);
     }
-    size += eb_hits.size();
+    auto size = eb_hits.size();
 
     for (unsigned int i = 0; i < hb_hits.size(); ++i) {
       hitMapBarrel->emplace(hb_hits[i].detId(), i + size);

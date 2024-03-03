@@ -38,19 +38,20 @@ void BarrelCLUEAlgoT<T>::populate(const reco::PFRecHitCollection& hits) {
     const GlobalPoint position = rhtools_.getPosition(detid);
     int layer = 0;
 
-    if (!isEcal_) {
+    if (detid.det() == DetId::Hcal) {
       HcalDetId hid(detid);
       layer = hid.depth();
-      if (isHcalOuter_)
-        layer += 1;
+      if (detid.subdetId() == HcalSubdetector::HcalOuter) 
+	layer += 1;
     }
+ 
     cells_[layer].detid.push_back(detid);
     cells_[layer].eta.push_back(position.eta());
     cells_[layer].phi.push_back(position.phi());
     cells_[layer].weight.push_back(hit.energy());
     cells_[layer].r.push_back(position.mag());
     float sigmaNoise = 0.f;
-    if (isEcal_) {
+    if (detid.det() == DetId::Ecal) {
       sigmaNoise = (*ebThresholds_)[detid];
     } else { 
       const HcalPFCut* item = (*hcalThresholds_).getValues(detid);
@@ -84,14 +85,19 @@ void BarrelCLUEAlgoT<T>::makeClusters() {
       lt.fill(cells_[i].eta, cells_[i].phi);
       float delta_c;
       
-      delta_c = deltac_;
+      if constexpr (std::is_same_v<T, EBLayerTiles>)
+	delta_c = vecDeltas_[0];
+      else
+	delta_c = vecDeltas_[1];
+      float delta_r = vecDeltas_[2];
       
-      calculateLocalDensity(lt, i, delta_c);
-      calculateDistanceToHigher(lt, i, delta_c);
-      numberOfClustersPerLayer_[i] = findAndAssignClusters(i, delta_c);
+      calculateLocalDensity(lt, i, delta_c, delta_r);
+      calculateDistanceToHigher(lt, i, delta_c, delta_r);
+      numberOfClustersPerLayer_[i] = findAndAssignClusters(i, delta_c, delta_r);
+      
       if (doSharing_)
-	      // Now running the sharing routine
-	      passSharedClusterIndex(lt, i, delta_c);
+	// Now running the sharing routine
+	passSharedClusterIndex(lt, i, delta_c);
       });
     });
   for (unsigned int i = 0; i < maxlayer_ + 1; ++i) {
@@ -106,7 +112,7 @@ std::vector<reco::BasicCluster> BarrelCLUEAlgoT<T>::getClusters(bool) {
 
   int maxClustersOnLayer = numberOfClustersPerLayer_[0];
 
-  if (!isEcal_) {
+  if constexpr (!std::is_same_v<T, EBLayerTiles>) {
     for (unsigned layerId = 1; layerId < offsets.size(); ++layerId) {
       offsets[layerId] = offsets[layerId - 1] + numberOfClustersPerLayer_[layerId - 1];
       maxClustersOnLayer = std::max(maxClustersOnLayer, numberOfClustersPerLayer_[layerId]);
@@ -136,30 +142,39 @@ std::vector<reco::BasicCluster> BarrelCLUEAlgoT<T>::getClusters(bool) {
       else if (clusterIndex.size() > 1) {
         std::vector<float> fractions (clusterIndex.size());
         
-        for (unsigned int j = 0; j < clusterIndex.size(); j++) {
+	for (unsigned int j = 0; j < clusterIndex.size(); j++) {
           const auto& seed = clusterIndex[j];
-          const auto& seedCell = cellsOnLayer.seedToCellIndex[seed];
-          const auto& seedEnergy = cellsOnLayer.weight[seedCell];
-          float dist = distance(i, seedCell, layerId) / T::type::cellWidthEta;
+	  const auto& seedCell = cellsOnLayer.seedToCellIndex[seed];
+	  const auto& seedEnergy = cellsOnLayer.weight[seedCell];
+          // compute the distance
+	  float dist = distance(i, seedCell, layerId) / T::type::cellWidthEta;
+	  //std::cout << "Distance in cells unit " << dist << std::endl;
           fractions[j] = seedEnergy * std::exp(-(std::pow(dist,2))/(2*std::pow(T::type::showerSigma,2)));
+	  //std::cout << "Cell " << i << " in cluster index " << j << " with fraction " << fractions[j] << std::endl;
         }
+	//std::cout << "==================\n";
         auto tot_norm_fractions = std::accumulate(std::begin(fractions), std::end(fractions),  0.);
 
         for (unsigned int j = 0; j < clusterIndex.size(); j++) {
           float norm_fraction = fractions[j]/tot_norm_fractions;
-          if (norm_fraction < fractionCutoff_) {
-            auto clusterIndex_it = std::find(clusterIndex.begin(), clusterIndex.end(), clusterIndex[j]);
-            auto fraction_it = std::find(fractions.begin(), fractions.end(), fractions[j]);
-            clusterIndex.erase(clusterIndex_it);
-            fractions.erase(fraction_it);
-	        }
+	  //std::cout << "Adding Cell " << i << " to cluster " << clusterIndex[j] << " with energy " << cellsOnLayer.weight[i]*norm_fraction  << " (fraction " << norm_fraction << ")" << std::endl;
+	  if (norm_fraction < fractionCutoff_) {
+	    auto clusterIndex_it = std::find(clusterIndex.begin(), clusterIndex.end(), clusterIndex[j]);
+	    auto fraction_it = std::find(fractions.begin(), fractions.end(), fractions[j]);
+	    clusterIndex.erase(clusterIndex_it);
+	    fractions.erase(fraction_it);
+	  }
+	  /*if (norm_fraction >= fractionCutoff_){
+            cellsIdInCluster[clusterIndex[j]].push_back(
+              std::make_pair(i, norm_fraction));
+          }*/
         }
-	      auto tot_norm_cleaned_fractions = std::accumulate(fractions.begin(), fractions.end(), 0.);
-	      for (unsigned int j = 0; j < clusterIndex.size(); j++) {
-	        float norm_fraction = fractions[j]/tot_norm_cleaned_fractions;
-	        cellsIdInCluster[clusterIndex[j]].push_back(
-	            std::make_pair(i, norm_fraction));
-	      }
+	auto tot_norm_cleaned_fractions = std::accumulate(fractions.begin(), fractions.end(), 0.);
+	for (unsigned int j = 0; j < clusterIndex.size(); j++) {
+	  float norm_fraction = fractions[j]/tot_norm_cleaned_fractions;
+	  cellsIdInCluster[clusterIndex[j]].push_back(
+	      std::make_pair(i, norm_fraction));
+	}
       }
     }
 
@@ -171,29 +186,29 @@ std::vector<reco::BasicCluster> BarrelCLUEAlgoT<T>::getClusters(bool) {
       int seedDetId = -1;
 
       for (auto [cellIdx, fraction] : cl) {
-	      energy += cellsOnLayer.weight[cellIdx]*fraction;
-	      thisCluster.emplace_back(cellsOnLayer.detid[cellIdx], fraction);
-	      if (cellsOnLayer.isSeed[cellIdx]) {
-	        seedDetId = cellsOnLayer.detid[cellIdx];
-	      }
+	energy += cellsOnLayer.weight[cellIdx]*fraction;
+	thisCluster.emplace_back(cellsOnLayer.detid[cellIdx], fraction);
+	if (cellsOnLayer.isSeed[cellIdx]) {
+	  seedDetId = cellsOnLayer.detid[cellIdx];
+	}
       }
       auto globalClusterIndex = clIndex  + firstClusterIdx;
-      if (isEcal_) {
-	      clusters_v_[globalClusterIndex] = 
-	        reco::BasicCluster(energy, position, reco::CaloID::DET_ECAL_BARREL, thisCluster, algoId_);
-      } else if (isHcal_) {
-	        clusters_v_[globalClusterIndex] =
-	          reco::BasicCluster(energy, position, reco::CaloID::DET_HCAL_BARREL, thisCluster, algoId_);
+
+      if constexpr (std::is_same_v<T, EBLayerTiles>) {
+	clusters_v_[globalClusterIndex] = 
+	  reco::BasicCluster(energy, position, reco::CaloID::DET_ECAL_BARREL, thisCluster, algoId_);
+      } else if constexpr (std::is_same_v<T, HBLayerTiles>) {
+	  clusters_v_[globalClusterIndex] =
+	    reco::BasicCluster(energy, position, reco::CaloID::DET_HCAL_BARREL, thisCluster, algoId_);
       } else {
-	        clusters_v_[globalClusterIndex] = 
-	          reco::BasicCluster(energy, position, reco::CaloID::DET_HO, thisCluster, algoId_);
+	  clusters_v_[globalClusterIndex] = 
+	    reco::BasicCluster(energy, position, reco::CaloID::DET_HO, thisCluster, algoId_);
       }
       clusters_v_[globalClusterIndex].setSeed(seedDetId);
       thisCluster.clear();
     }
     cellsIdInCluster.clear();
   }
-
   return clusters_v_;
 }
 
@@ -207,7 +222,7 @@ math::XYZPoint BarrelCLUEAlgoT<T>::calculatePosition(const std::vector<std::pair
 
   
   auto& cellsOnLayer = cells_[layerId];
-  for (const auto& [i, fraction] : v) {
+  for (const auto & [i, fraction] : v) {
     float rhEnergy = cellsOnLayer.weight[i] * fraction;
     total_weight += rhEnergy;
     float theta = 2 * std::atan(std::exp(-cellsOnLayer.eta[i]));
@@ -225,7 +240,7 @@ math::XYZPoint BarrelCLUEAlgoT<T>::calculatePosition(const std::vector<std::pair
 }
 
 template <typename T>
-void BarrelCLUEAlgoT<T>::calculateLocalDensity(const T& lt, const unsigned int layerId, float delta_c) {
+void BarrelCLUEAlgoT<T>::calculateLocalDensity(const T& lt, const unsigned int layerId, float delta_c, float delta_r) {
   auto& cellsOnLayer = cells_[layerId];
   unsigned int numberOfCells = cellsOnLayer.detid.size();
 
@@ -241,26 +256,26 @@ void BarrelCLUEAlgoT<T>::calculateLocalDensity(const T& lt, const unsigned int l
 			       << " phi window: " << cellsOnLayer.phi[i] - delta << " -> " << cellsOnLayer.phi[i] + delta << "\n";
     for (int etaBin = search_box[0]; etaBin < search_box[1]; ++etaBin) {
       for (int phiBin = search_box[2]; phiBin < search_box[3]; ++phiBin) {
-	      int phi = (phiBin % T::type::nRows);
-	      int binId = lt.getGlobalBinByBin(etaBin, phi);
-        size_t binSize = lt[binId].size();
-        LogDebug("BarrelCLUEAlgo") << "Bin size for cell " << i << ": " << binSize
-                 << "	binId: " << binId  
-                 << "	etaBin: " << etaBin 
-                 << " phi: " << phi << "\n";
-	      for (unsigned int j = 0; j < binSize; ++j) {
-	        unsigned int otherId = lt[binId][j];
-	        if (distance(i, otherId, layerId) < delta) {
-	          cellsOnLayer.rho[i] += (i == otherId ? 1.f : 0.5f) * cellsOnLayer.weight[otherId];
-	        }
-	      }
+	int phi = (phiBin % T::type::nRows);
+	int binId = lt.getGlobalBinByBin(etaBin, phi);
+	size_t binSize = lt[binId].size();
+	LogDebug("BarrelCLUEAlgo") << "Bin size for cell " << i << ": " << binSize
+				   << "	binId: " << binId  
+				   << "	etaBin: " << etaBin 
+				   << " phi: " << phi << "\n";
+	for (unsigned int j = 0; j < binSize; ++j) {
+	  unsigned int otherId = lt[binId][j];
+	  if (distance(i, otherId, layerId) < delta) {
+	    cellsOnLayer.rho[i] += (i == otherId ? 1.f : 0.5f) * cellsOnLayer.weight[otherId];
+	  }
+	}
       }
     }
   }
 }
 
 template <typename T>
-void BarrelCLUEAlgoT<T>::calculateDistanceToHigher(const T& lt, const unsigned int layerId, float delta_c) {
+void BarrelCLUEAlgoT<T>::calculateDistanceToHigher(const T& lt, const unsigned int layerId, float delta_c, float delta_r) {
   auto& cellsOnLayer = cells_[layerId];
   unsigned int numberOfCells = cellsOnLayer.detid.size();
 
@@ -279,21 +294,21 @@ void BarrelCLUEAlgoT<T>::calculateDistanceToHigher(const T& lt, const unsigned i
 
     for (int etaBin = search_box[0]; etaBin < search_box[1]; ++etaBin) {
       for (int phiBin = search_box[2]; phiBin < search_box[3]; ++phiBin) {
-        int phi = (phiBin % T::type::nRows);
-        size_t binId = lt.getGlobalBinByBin(etaBin, phi);
-        size_t binSize = lt[binId].size();
+	int phi = (phiBin % T::type::nRows);
+	size_t binId = lt.getGlobalBinByBin(etaBin, phi);
+	size_t binSize = lt[binId].size();
 	
-	      for (unsigned int j = 0; j < binSize; ++j) {
-	        int otherId = lt[binId][j];
-	        float dist = distance(i, otherId, layerId);
-	        bool foundHigher = (cellsOnLayer.rho[otherId] > cellsOnLayer.rho[i]) ||
-			                       (cellsOnLayer.rho[otherId] == cellsOnLayer.rho[i] &&
-			                        cellsOnLayer.detid[otherId] > cellsOnLayer.detid[i]);
-	        if (foundHigher && dist <= i_delta) {
-	          i_delta = dist;
-	          i_nearestHigher = otherId;
-	        }
-	      }
+	for (unsigned int j = 0; j < binSize; ++j) {
+	  int otherId = lt[binId][j];
+	  float dist = distance(i, otherId, layerId);
+	  bool foundHigher = (cellsOnLayer.rho[otherId] > cellsOnLayer.rho[i]) ||
+			     (cellsOnLayer.rho[otherId] == cellsOnLayer.rho[i] &&
+			     cellsOnLayer.detid[otherId] > cellsOnLayer.detid[i]);
+	  if (foundHigher && dist <= i_delta) {
+	    i_delta = dist;
+	    i_nearestHigher = otherId;
+	  }
+	}
       }
     }
     bool foundNearestHigherInSearchBox = (i_delta != maxDelta);
@@ -313,13 +328,22 @@ void BarrelCLUEAlgoT<T>::calculateDistanceToHigher(const T& lt, const unsigned i
 }
 
 template <typename T>
-int BarrelCLUEAlgoT<T>::findAndAssignClusters(const unsigned int layerId, float delta_c) {
+int BarrelCLUEAlgoT<T>::findAndAssignClusters(const unsigned int layerId, float delta_c, float delta_r) {
   unsigned int nClustersOnLayer = 0;
   auto& cellsOnLayer = cells_[layerId];
   unsigned int numberOfCells = cellsOnLayer.detid.size();
   std::vector<int> localStack;
   for (unsigned int i = 0; i < numberOfCells; ++i) {
+    //float rho_c = rhoc_; //for testing purposes
+    int depth = 0;
+    if constexpr (!std::is_same_v<T, EBLayerTiles>) {
+      HcalDetId hid(cellsOnLayer.detid[i]);
+      depth = hid.depth();
+    }
     float rho_c = kappa_ * cellsOnLayer.sigmaNoise[i];
+    std::vector<double> hcalSeedingThresholds{0.125, 0.250, 0.350, 0.350};
+    if constexpr (!std::is_same_v<T, EBLayerTiles>) 
+      rho_c = kappa_ * hcalSeedingThresholds[depth-1];
     float delta = delta_c;
     // cellsOnLayer.clusterIndex[i] = -1;
     bool isSeed = (cellsOnLayer.delta[i] > delta) && (cellsOnLayer.rho[i] >= rho_c);
