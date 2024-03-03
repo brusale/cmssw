@@ -4,14 +4,18 @@ from SimCalorimetry.HGCalSimProducers.hgcHitAssociation_cfi import lcAssocByEner
 from SimCalorimetry.HGCalAssociatorProducers.simTracksterAssociatorByEnergyScore_cfi import simTracksterAssociatorByEnergyScore as simTsAssocByEnergyScoreProducer
 from SimCalorimetry.HGCalAssociatorProducers.layerClusterSimTracksterAssociatorByEnergyScore_cfi import layerClusterSimTracksterAssociatorByEnergyScore as lcSimTSAssocByEnergyScoreProducer
 from SimCalorimetry.HGCalAssociatorProducers.LCToCPAssociation_cfi import layerClusterCaloParticleAssociation as layerClusterCaloParticleAssociationProducer
+from SimCalorimetry.HGCalAssociatorProducers.LCToCPAssociation_cfi import barrelLayerClusterCaloParticleAssociation as barrelLayerClusterCaloParticleAssociationProducer
 from SimCalorimetry.HGCalAssociatorProducers.simTracksterHitLCAssociatorByEnergyScore_cfi import simTracksterHitLCAssociatorByEnergyScore as simTracksterHitLCAssociatorByEnergyScoreProducer
 from SimCalorimetry.HGCalAssociatorProducers.LCToSCAssociation_cfi import layerClusterSimClusterAssociation as layerClusterSimClusterAssociationProducer
+from SimCalorimetry.HGCalAssociatorProducers.LCToSCAssociation_cfi import barrelLayerClusterSimClusterAssociation as barrelLayerClusterSimClusterAssociationProducer
 from SimCalorimetry.HGCalAssociatorProducers.LCToSimTSAssociation_cfi import layerClusterSimTracksterAssociation as layerClusterSimTracksterAssociationProducer
 from SimCalorimetry.HGCalAssociatorProducers.LCToCPAssociation_cfi import layerClusterCaloParticleAssociationHFNose as layerClusterCaloParticleAssociationProducerHFNose
 from SimCalorimetry.HGCalAssociatorProducers.LCToSCAssociation_cfi import layerClusterSimClusterAssociationHFNose as layerClusterSimClusterAssociationProducerHFNose
 from SimCalorimetry.HGCalAssociatorProducers.TSToSimTSAssociation_cfi import tracksterSimTracksterAssociationLinking, tracksterSimTracksterAssociationPR,tracksterSimTracksterAssociationLinkingbyCLUE3D, tracksterSimTracksterAssociationPRbyCLUE3D, tracksterSimTracksterAssociationLinkingPU, tracksterSimTracksterAssociationPRPU
 from SimCalorimetry.HGCalAssociatorProducers.SimTauProducer_cfi import *
 
+from SimCalorimetry.HGCalAssociatorProducers.barrelLCToCPAssociatorByEnergyScoreProducer_cfi import barrelLCToCPAssociatorByEnergyScoreProducer
+from SimCalorimetry.HGCalAssociatorProducers.barrelLCToSCAssociatorByEnergyScoreProducer_cfi import barrelLCToSCAssociatorByEnergyScoreProducer
 from Validation.HGCalValidation.simhitValidation_cff    import *
 from Validation.HGCalValidation.digiValidation_cff      import *
 from Validation.HGCalValidation.rechitValidation_cff    import *
@@ -35,6 +39,8 @@ hgcalPFJetValidation = _hgcalPFJetValidation.clone(BenchmarkLabel = 'PFJetValida
 
 hgcalAssociators = cms.Task(lcAssocByEnergyScoreProducer, layerClusterCaloParticleAssociationProducer,
                             scAssocByEnergyScoreProducer, layerClusterSimClusterAssociationProducer,
+                            barrelLCToCPAssociatorByEnergyScoreProducer, barrelLayerClusterCaloParticleAssociationProducer,
+                            barrelLCToSCAssociatorByEnergyScoreProducer, barrelLayerClusterSimClusterAssociationProducer, 
                             lcSimTSAssocByEnergyScoreProducer, layerClusterSimTracksterAssociationProducer,
                             simTsAssocByEnergyScoreProducer,  simTracksterHitLCAssociatorByEnergyScoreProducer,
                             tracksterSimTracksterAssociationLinking, tracksterSimTracksterAssociationPR,

@@ -1,5 +1,5 @@
-#ifndef RecoLocalCalo_HGCalRecProducers_BarrelCLUEAlgo_h
-#define RecoLocalCalo_HGCalRecProducers_BarrelCLUEAlgo_h
+#ifndef RecoParticleFlow_PFClusterProducer_BarrelCLUEAlgo_h
+#define RecoParticleFlow_PFClusterProducer_BarrelCLUEAlgo_h
 
 #include "RecoLocalCalo/HGCalRecProducers/interface/HGCalClusteringAlgoBase.h"
 
@@ -42,13 +42,12 @@ public:
       : HGCalClusteringAlgoBase(
             (HGCalClusteringAlgoBase::VerbosityLevel)ps.getUntrackedParameter<unsigned int>("verbosity", 3),
             reco::CaloCluster::undefined),
-	deltac_(ps.getParameter<double>("deltac")),
+	vecDeltas_(ps.getParameter<std::vector<double>>("deltac")),
         kappa_(ps.getParameter<double>("kappa")),
 	rhoc_(ps.getParameter<double>("rhoc")),
         fractionCutoff_(ps.getParameter<double>("fractionCutoff")),
 	maxLayerIndex_(ps.getParameter<int>("maxLayerIndex")),
-        outlierDeltaFactor_
-(ps.getParameter<double>("outlierDeltaFactor")),
+        outlierDeltaFactor_(ps.getParameter<double>("outlierDeltaFactor")),
 	doSharing_(ps.getParameter<bool>("doSharing")) {}
   ~BarrelCLUEAlgoT() override {}
 
@@ -88,12 +87,14 @@ public:
   static void fillPSetDescription(edm::ParameterSetDescription& iDesc) {
     iDesc.add<double>("outlierDeltaFactor", 2.);
     iDesc.add<double>("kappa", 1.34);
-    iDesc.add<int>("maxLayerIndex", 1);
-    iDesc.add<double>("rhoc", 1.);
-    if (isEcal_)
-      iDesc.add<double>("deltac", 0.0175);
-    else
-      iDesc.add<double>("deltac", 3*0.087);
+    iDesc.add<int>("maxLayerIndex", 0);
+    iDesc.add<double>("rhoc", 1);
+    iDesc.add<std::vector<double>>("deltac",
+                                   {
+                                       0.0175,
+                                       5*0.087,
+                                       5*0.087
+                                   });
     iDesc.add<double>("fractionCutoff", 0.);
     iDesc.add<bool>("doSharing", false);
   }
@@ -109,7 +110,7 @@ private:
   edm::ESGetToken<HcalPFCuts, HcalPFCutsRcd> tok_hcalThresholds_;
   const HcalPFCuts* hcalThresholds_;
   // The two parameters used to identify clusters
-  double deltac_;
+  std::vector<double> vecDeltas_;
   double kappa_;
   double rhoc_;
   double fractionCutoff_;
@@ -118,11 +119,7 @@ private:
   bool doSharing_;
   Density density_;
   // For keeping the density per hit
-  
-  // check subdetector at compile time
-  static constexpr bool isEcal_ = std::is_same_v<TILE, EBLayerTiles>;
-  static constexpr bool isHcal_ = std::is_same_v<TILE, HBLayerTiles>;
-  static constexpr bool isHcalOuter_ = std::is_same_v<TILE, HOLayerTiles>; 
+
 
   struct BarrelCellsOnLayer {
     std::vector<DetId> detid;
@@ -191,9 +188,10 @@ private:
   void prepareDataStructures(const unsigned int layerId);
   void calculateLocalDensity(const TILE& lt,
                              const unsigned int layerId,
-                             float delta_c); //return max density
-  void calculateDistanceToHigher(const TILE& lt, const unsigned int layerId, float delta_c);
-  int findAndAssignClusters(const unsigned int layerId, float delta_c);
+                             float delta_c,
+                             float delta_r);  // return max density
+  void calculateDistanceToHigher(const TILE& lt, const unsigned int layerId, float delta_c, float delta_r);
+  int findAndAssignClusters(const unsigned int layerId, float delta_c, float delta_r);
   void passSharedClusterIndex(const TILE& lt, const unsigned int layerId, float delta_c);
   math::XYZPoint calculatePosition(const std::vector<std::pair<int,float>>& v, const unsigned int layerId) const;
   void setDensity(const unsigned int layerId);
