@@ -64,9 +64,9 @@ void LCToSCAssociatorByEnergyScoreProducer<HIT>::fillDescriptions(edm::Configura
   } else {
     desc.add<edm::InputTag>("hitMapTag", edm::InputTag("recHitMapProducer", "barrelRecHitMap"));
     desc.add<std::vector<edm::InputTag>>("hits",
-                                         {edm::InputTag("particleFlowRecHitECAL", ""),
-                                          edm::InputTag("particleFlowRecHitHBHE", ""),
-                                          edm::InputTag("particleFlowRecHitHO", "")});
+                                         {edm::InputTag("particleFlowRecHitECAL", "Cleaned"),
+                                          edm::InputTag("particleFlowRecHitHBHE", "Cleaned"),
+                                          edm::InputTag("particleFlowRecHitHO", "Cleaned")});
   }
   cfg.addWithDefaultLabel(desc);
 }

@@ -90,7 +90,7 @@ phase2_timing.toModify(particleFlowClusterECAL,
                             inputECAL = 'particleFlowTimeAssignerECAL')
 
 #CLUE barrel
-from RecoParticleFlow.PFClusterProducer.barrelLayerClusters_cfi import barrelLayerClusters
+from RecoParticleFlow.PFClusterProducer.barrelLayerClusters_cff import barrelLayerClusters
 barrelLayerClustersTask = cms.Task(barrelLayerClusters)
 
 pfClusteringWithCLUETask = particleFlowClusterTask.copy()
