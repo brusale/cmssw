@@ -471,8 +471,8 @@ void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup&
     layercluster_layer.push_back(layerId);
     float seedEta = (geom->getPosition(seedId)).eta();
     float seedPhi = (geom->getPosition(seedId)).phi();
-    layercluster_seed_eta.push_back(seedEta);
-    layercluster_seed_phi.push_back(seedPhi);
+    layercluster_seed_eta[lc_index] = seedEta;
+    layercluster_seed_phi[lc_index] = seedPhi;
     std::vector<std::pair<DetId, float>> hits_and_fractions = lc_iterator->hitsAndFractions();
     layercluster_nhits.push_back(hits_and_fractions.size());
     float pu_contribution_to_cluster = 0.f;
