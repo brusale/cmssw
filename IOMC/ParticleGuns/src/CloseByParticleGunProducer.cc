@@ -44,6 +44,9 @@ CloseByParticleGunProducer::CloseByParticleGunProducer(const ParameterSet& pset)
     if (fRMax <= fRMin)
       LogError("CloseByParticleGunProducer") << " Please fix RMin and RMax values in the configuration";
   }
+  if (fFixedR)
+    fRMin = pgun_params.getParameter<double>("RMin");
+  
   fZMax = pgun_params.getParameter<double>("ZMax");
   fZMin = pgun_params.getParameter<double>("ZMin");
   fDelta = pgun_params.getParameter<double>("Delta");
@@ -99,6 +102,7 @@ void CloseByParticleGunProducer::fillDescriptions(ConfigurationDescriptions& des
     psd0.add<bool>("Pointing", true);
     psd0.add<double>("RMax", 120);
     psd0.add<double>("RMin", 60);
+    psd0.add<bool>("FixedR", false);
     psd0.add<bool>("RandomShoot", false);
     psd0.add<double>("ZMax", 321);
     psd0.add<double>("ZMin", 320);
@@ -132,6 +136,7 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
   double fZ = CLHEP::RandFlat::shoot(engine, fZMin, fZMax);
   double fR, fEta;
   double fT;
+  double fEta;
 
   if (!fControlledByEta) {
     fR = CLHEP::RandFlat::shoot(engine, fRMin, fRMax);
