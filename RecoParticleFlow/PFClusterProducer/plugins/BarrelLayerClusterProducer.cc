@@ -35,9 +35,9 @@
 #include "DataFormats/Common/interface/ValueMap.h"
 
 #include "RecoParticleFlow/PFClusterProducer/plugins/BarrelCLUEAlgo.h"
-#include "RecoParticleFlow/PFClusterProducer/interface/EBTilesConstants.h"
-#include "RecoParticleFlow/PFClusterProducer/interface/HBTilesConstants.h"
-#include "RecoParticleFlow/PFClusterProducer/interface/HOTilesConstants.h"
+#include "RecoLocalCalo/HGCalRecProducers/interface/EBTilesConstants.h"
+#include "RecoLocalCalo/HGCalRecProducers/interface/HBTilesConstants.h"
+#include "RecoLocalCalo/HGCalRecProducers/interface/HOTilesConstants.h"
 
 
 using Density = hgcal_clustering::Density;

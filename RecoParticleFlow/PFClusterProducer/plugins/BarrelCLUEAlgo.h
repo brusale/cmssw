@@ -16,7 +16,7 @@
 #include "DataFormats/Math/interface/Point3D.h"
 #include "DataFormats/Math/interface/deltaPhi.h"
 
-#include "RecoParticleFlow/PFClusterProducer/interface/BarrelLayerTiles.h"
+#include "RecoLocalCalo/HGCalRecProducers/interface/HGCalLayerTiles.h"
 
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 
