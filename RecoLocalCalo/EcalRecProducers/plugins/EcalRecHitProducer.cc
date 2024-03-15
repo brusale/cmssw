@@ -261,6 +261,21 @@ void EcalRecHitProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
   LogInfo("EcalRecHitInfo") << "total # EB calibrated rechits: " << ebRecHits->size();
   LogInfo("EcalRecHitInfo") << "total # EE calibrated rechits: " << eeRecHits->size();
 
+  EBDetId max_id; // to be used in the loop on rechits to print Eta, Phi, Energy
+  float max_energy = 0;
+  
+  for (auto it = ebRecHits->begin(); it != ebRecHits->end(); ++it) {
+    EBDetId eb_id(it->id());
+    //std::cout << "EBDetId CALIBRATED: " << eb_id << " Eta: " << eb_id.ieta() << " Phi: " << eb_id.iphi() 
+    // 	      << "Energy: " << it->energy() << std::endl;
+    if (it->energy() > max_energy) {
+			max_energy = it->energy();
+			max_id = eb_id;
+		}
+
+  }
+  std::cout << "Max RechitEnergy energy (calibrated): " << max_energy << " at EBDetId: " << max_id << std::endl;
+
   evt.put(ebRecHitToken_, std::move(ebRecHits));
   evt.put(eeRecHitToken_, std::move(eeRecHits));
 }

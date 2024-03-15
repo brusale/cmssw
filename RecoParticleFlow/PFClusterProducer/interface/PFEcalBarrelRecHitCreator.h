@@ -59,6 +59,9 @@ public:
 
     const EcalBarrelGeometry* ecalGeo = dynamic_cast<const EcalBarrelGeometry*>(gTmp);
 
+    EBDetId max_id; // to be used in the loop on rechits to print Eta, Phi, Energy
+    float max_energy = 0;
+  
     iEvent.getByToken(recHitToken_, recHitHandle);
     for (const auto& erh : *recHitHandle) {
       const DetId& detid = erh.detid();
@@ -77,6 +80,16 @@ public:
       out->emplace_back(thisCell, detid.rawId(), PFLayer::ECAL_BARREL, energy, flags);
 
       auto& rh = out->back();
+
+      EBDetId eb_id(detid);
+    //std::cout << "EBDetId CALIBRATED: " << eb_id << " Eta: " << eb_id.ieta() << " Phi: " << eb_id.iphi() 
+    // 	      << "Energy: " << it->energy() << std::endl;
+    if (rh.energy() > max_energy) {
+			max_energy = rh.energy();
+			max_id = eb_id;
+    }
+      //Print rh energy
+      //std::cout << "PFEcalBarrelRecHitCreator: " << rh.energy() << std::endl;
 
       bool rcleaned = false;
       bool keep = true;
@@ -97,6 +110,8 @@ public:
         out->pop_back();
       }
     }
+
+    std::cout << "Max PFRechit energy: " << max_energy << "  detid: " << max_id << std::endl;
   }
 
   void init(const edm::EventSetup& es) override { triggerTowerMap_ = &es.getData(towerToken_); }
