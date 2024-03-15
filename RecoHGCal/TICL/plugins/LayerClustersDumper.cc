@@ -35,7 +35,8 @@
 #include "DataFormats/ParticleFlowReco/interface/PFRecHit.h"
 #include "SimDataFormats/CaloAnalysis/interface/CaloParticle.h"
 #include "SimDataFormats/CaloAnalysis/interface/SimCluster.h"
-
+#include "Geometry/EcalAlgo/interface/EcalBarrelGeometry.h"
+#include "DataFormats/EcalDetId/interface/EBDetId.h"
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 //#include "TrackingTools/TrajectoryState/interface/TrajectoryStateTransform.h"
 //#include "TrackingTools/GeomPropagators/interface/Propagator.h"
@@ -119,8 +120,11 @@ private:
   std::vector<float> pfrechit_phi;
   std::vector<float> pfrechit_energy;
   std::vector<float> pfrechit_time;
-
+  std::vector<int> pfrechit_ieta;
+  std::vector<int> pfrechit_iphi;
+  
   std::vector<float> layercluster_energy;
+  std::vector<float> layercluster_et;
   std::vector<float> layercluster_eta;
   std::vector<float> layercluster_phi;
   std::vector<float> layercluster_seed_eta;
@@ -178,6 +182,7 @@ private:
 
 void LayerClusterDumper::clearVariables() {
   layercluster_energy.clear();
+  layercluster_et.clear();
   layercluster_eta.clear();
   layercluster_phi.clear();
   layercluster_seed_eta.clear();
@@ -207,6 +212,8 @@ void LayerClusterDumper::clearVariables() {
   layercluster_resolution.clear();
   pfrechit_eta.clear();
   pfrechit_phi.clear();
+  pfrechit_ieta.clear();
+  pfrechit_iphi.clear();
   pfrechit_energy.clear();
   pfrechit_time.clear();
   simcl_energy.clear();
@@ -303,7 +310,11 @@ void LayerClusterDumper::beginJob() {
   pfrechit_tree_->Branch("pfrechitPhi", &pfrechit_phi);
   pfrechit_tree_->Branch("pfrechitEnergy", &pfrechit_energy);
   pfrechit_tree_->Branch("pfrechitTime", &pfrechit_time);
+  pfrechit_tree_->Branch("pfrechitIEta", &pfrechit_ieta);
+  pfrechit_tree_->Branch("pfrechitIPhi", &pfrechit_iphi);
+  
   layercluster_tree_->Branch("layerClusterEnergy", &layercluster_energy);
+  layercluster_tree_->Branch("layerClusterEt", &layercluster_et);
   layercluster_tree_->Branch("layerClusterEta", &layercluster_eta);
   layercluster_tree_->Branch("layerClusterPhi", &layercluster_phi);
   layercluster_tree_->Branch("layerClusterHitEta", &layercluster_hit_eta);
@@ -395,10 +406,12 @@ void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup&
   ncaloparticles_ = caloparticles.size(); 
   npfrechits_ = pfrechits.size();
   nsimclusters_ = simclusters.size();
-  /*pfrechit_eta.resize(npfrechits_);
-  pfrechit_phi.resize(npfrechits_);
-  pfrechit_energy.resize(npfrechits_);
-  pfrechit_time.resize(npfrechits_);*/
+  pfrechit_eta.reserve(npfrechits_);
+  pfrechit_phi.reserve(npfrechits_);
+  pfrechit_ieta.reserve(npfrechits_);
+  pfrechit_iphi.reserve(npfrechits_);
+  pfrechit_energy.reserve(npfrechits_);
+  pfrechit_time.reserve(npfrechits_);
 
   layercluster_hit_energy.resize(nclusters_);
   layercluster_hit_eta.resize(nclusters_);
@@ -419,13 +432,21 @@ void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup&
   std::unordered_map<DetId, float> hitmap;
   for (auto pfrechits_iterator = pfrechits.begin(); pfrechits_iterator != pfrechits.end(); ++pfrechits_iterator) {
     DetId id(pfrechits_iterator->detId());
-    //GlobalPoint position = geom->getPosition(id);
-    //pfrechit_eta.push_back(position.eta());
-    //pfrechit_phi.push_back(position.phi());
+    GlobalPoint position = geom->getPosition(id);
+    pfrechit_eta.push_back(position.eta());
+    pfrechit_phi.push_back(position.phi());
     float energy = pfrechits_iterator->energy();
-    //pfrechit_energy.push_back(energy);
-    //pfrechit_time.push_back(pfrechits_iterator->time());
+    pfrechit_energy.push_back(energy);
+    pfrechit_time.push_back(pfrechits_iterator->time());
     hitmap.insert(std::make_pair(id, energy));
+
+    
+    if(id.subdetId()==EcalBarrel){
+      EBDetId eb_id(id);
+      pfrechit_ieta.push_back(eb_id.ieta());
+      pfrechit_iphi.push_back(eb_id.iphi());
+    }
+
   }
 
   std::vector<size_t> cPIndices;
@@ -458,6 +479,7 @@ void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup&
   int lc_index = 0;
   for (auto lc_iterator = layer_clusters.begin(); lc_iterator != layer_clusters.end(); ++lc_iterator) {
     layercluster_energy.push_back(lc_iterator->energy());
+    layercluster_et.push_back(lc_iterator->energy()/std::cosh(lc_iterator->eta()));
     layercluster_eta.push_back(lc_iterator->eta());
     layercluster_phi.push_back(lc_iterator->phi());
     DetId seedId = lc_iterator->seed();

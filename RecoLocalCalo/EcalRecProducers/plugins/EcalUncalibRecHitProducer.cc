@@ -17,6 +17,8 @@
 #include "RecoLocalCalo/EcalRecProducers/interface/EcalUncalibRecHitFillDescriptionWorkerFactory.h"
 #include "RecoLocalCalo/EcalRecProducers/interface/EcalUncalibRecHitWorkerBaseClass.h"
 #include "RecoLocalCalo/EcalRecProducers/interface/EcalUncalibRecHitWorkerFactory.h"
+#include "DataFormats/EcalDetId/interface/EBDetId.h"
+#include <iostream>
 
 class EcalUncalibRecHitProducer : public edm::stream::EDProducer<> {
 public:
@@ -128,6 +130,22 @@ void EcalUncalibRecHitProducer::produce(edm::Event& evt, const edm::EventSetup& 
   // loop over EB digis
   if (ebDigis)
     worker_->run(evt, *ebDigis, *ebUncalibRechits);
+      
+  // EBDetId max_id; // to be used in the loop on rechits to print Eta, Phi, Energy
+  // float max_energy = 0;
+  
+  // for (auto it = ebUncalibRechits->begin(); it != ebUncalibRechits->end(); ++it) {
+  //   EBDetId eb_id(it->id());
+  //   //std::cout << "EBDetId: " << eb_id << " Eta: " << eb_id.ieta() << " Phi: " << eb_id.iphi() 
+  //   //	      << "Energy: " << it->amplitude() << std::endl;
+  //   if (it->amplitude() > max_energy) {
+  // 			max_energy = it->amplitude();
+  // 			max_id = eb_id;
+  // 		}
+
+  // }
+  // std::cout << "Max RechitEnergy UNCALIB amplitude: " << max_energy << " at EBDetId: " << max_id << std::endl;
+
 
   // loop over EB digis
   if (eeDigis)
