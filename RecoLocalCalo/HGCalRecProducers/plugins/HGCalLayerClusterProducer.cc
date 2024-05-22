@@ -13,6 +13,8 @@
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 #include "FWCore/ParameterSet/interface/PluginDescription.h"
 
+#include "HeterogeneousCore/AlpakaInterface/interface/host.h"
+
 #include "RecoParticleFlow/PFClusterProducer/interface/RecHitTopologicalCleanerBase.h"
 #include "RecoParticleFlow/PFClusterProducer/interface/SeedFinderBase.h"
 #include "RecoParticleFlow/PFClusterProducer/interface/InitialClusteringStepBase.h"
@@ -28,6 +30,7 @@
 #include "Geometry/HGCalGeometry/interface/HGCalGeometry.h"
 
 #include "DataFormats/ParticleFlowReco/interface/PFCluster.h"
+#include "DataFormats/HGCalReco/interface/LayerClustersHostCollection.h"
 #include "DataFormats/Common/interface/ValueMap.h"
 
 #include "FWCore/Framework/interface/ConsumesCollector.h"
@@ -101,6 +104,15 @@ private:
   std::pair<float, float> calculateTime(std::unordered_map<uint32_t, const HGCRecHit*>& hitmap,
                                         const std::vector<std::pair<DetId, float>>& hitsAndFractions,
                                         size_t sizeCluster);
+
+  /**
+   * @brief Compute position error for a given cluster
+   *
+   * @param[in] hitsAndFractions of a clusters
+   * @return error on the cluster position
+  */
+  float calculatePositionError(const float ref_x, const float ref_y,
+                               const std::vector<std::pair<DetId, float>>& hitsAndFractions); 
 };
 
 HGCalLayerClusterProducer::HGCalLayerClusterProducer(const edm::ParameterSet& ps)
@@ -126,6 +138,7 @@ HGCalLayerClusterProducer::HGCalLayerClusterProducer(const edm::ParameterSet& ps
 
   produces<std::vector<float>>("InitialLayerClustersMask");
   produces<std::vector<reco::BasicCluster>>();
+  produces<LayerClustersCollection>();
   //time for layer clusters
   produces<edm::ValueMap<std::pair<float, float>>>(timeClname_);
 }
@@ -225,11 +238,49 @@ std::pair<float, float> HGCalLayerClusterProducer::calculateTime(
   }
   return timeCl;
 }
+
+float HGCalLayerClusterProducer::calculatePositionError(
+    float ref_x, 
+    float ref_y,
+    const std::vector<std::pair<DetId, float>>& hitsAndFractions) {
+  float sum_x = 0.;
+  float sum_y = 0.;
+  float sum_sqr_x = 0.;
+  float sum_sqr_y = 0.;
+  float invClsize = 1. / hitsAndFractions.size();
+  auto detId = hitsAndFractions[0].first;
+  for (auto const& haf : hitsAndFractions) {
+    auto const &point = rhtools_.getPosition(haf.first);
+    sum_x += point.x() - ref_x;
+    sum_sqr_x += (point.x() - ref_x) * (point.x() - ref_x);
+    sum_y += point.y() - ref_y;
+    sum_sqr_y += (point.y() - ref_y) * (point.y() - ref_y);
+  }
+  // The variance of X for X uniform in circle of radius R^2/4,
+  // therefore we multiply the sqrt(var) by 2 to have a rough estimate of the
+  // radius. On the other hand, while averaging the x and y rafiusd, we would 
+  // end up dividing by 2. Hence we omit the value here and in the average
+  // below, too.
+  float radius_x = sqrt((sum_sqr_x - (sum_x * sum_y) * invClsize) * invClsize);
+  float radius_y = sqrt((sum_sqr_y - (sum_y * sum_y) * invClsize) * invClsize);
+  
+  if (invClsize == 1.) {
+    if (rhtools_.isSilicon(detId)) {
+      radius_x = radius_y = rhtools_.getRadiusToSide(detId);
+    } 
+  } else {
+      auto const &point = rhtools_.getPosition(detId);
+      auto const &eta_phi_window = rhtools_.getScintDEtaDPhi(detId);
+      radius_x = radius_y = point.perp() * eta_phi_window.second;
+  }
+  return radius_x + radius_y;
+}
+
+
 void HGCalLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
   edm::Handle<HGCRecHitCollection> hits;
 
   std::unique_ptr<std::vector<reco::BasicCluster>> clusters(new std::vector<reco::BasicCluster>);
-
   edm::ESHandle<CaloGeometry> geom = es.getHandle(caloGeomToken_);
   rhtools_.setGeometry(*geom);
   algo_->getEventSetup(es, rhtools_);
@@ -251,6 +302,9 @@ void HGCalLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup& 
   std::vector<std::pair<float, float>> times;
   times.reserve(clusters->size());
 
+  auto layerClusters = std::make_unique<LayerClustersCollection>(clusters->size(), cms::alpakatools::host());
+  auto& layerClustersView = layerClusters->view();
+
   for (unsigned i = 0; i < clusters->size(); ++i) {
     reco::CaloCluster& sCl = (*clusters)[i];
     if (!calculatePositionInAlgo_) {
@@ -261,9 +315,29 @@ void HGCalLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup& 
     } else {
       times.push_back(std::pair<float, float>(-99.f, -1.f));
     }
-  }
+
+    // fill LayerClustersSoA
+    layerClustersView.energy()[i] = sCl.energy();
+    layerClustersView.x()[i] = sCl.x();
+    layerClustersView.y()[i] = sCl.y();
+    layerClustersView.z()[i] = sCl.z();
+    layerClustersView.eta()[i] = sCl.eta();
+    layerClustersView.phi()[i] = sCl.phi();
+    layerClustersView.r_over_absz()[i] = sqrt(sCl.x() * sCl.x() + sCl.y() * sCl.y()) / std::abs(sCl.z());
+    layerClustersView.seed()[i] = sCl.seed().rawId();
+    layerClustersView.cells()[i] = sCl.hitsAndFractions().size();
+    layerClustersView.algoId()[i] = sCl.algoID();     
+    layerClustersView.clusterIndex()[i] = i;
+    layerClustersView.layerId()[i] = rhtools_.getLayerWithOffset(sCl.seed());
+    layerClustersView.isSilicon()[i] = rhtools_.isSilicon(sCl.seed());
+ 
+    float error = calculatePositionError(sCl.x(), sCl.y(), sCl.hitsAndFractions()); 
+    layerClustersView.error()[i] = error; 
+ }
 
   auto clusterHandle = evt.put(std::move(clusters));
+  evt.put(std::move(layerClusters));
+  
 
   if (detector_ == "HFNose") {
     std::unique_ptr<std::vector<float>> layerClustersMask(new std::vector<float>);
