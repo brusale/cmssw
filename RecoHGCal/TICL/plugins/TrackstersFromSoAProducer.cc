@@ -14,7 +14,7 @@
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 #include "FWCore/ParameterSet/interface/PluginDescription.h"
 
-#include "DataFormats/CaloRecHit/interface/CaloCluster.h"
+#include "DataFormats/HGCalReco/interface/LayerClustersHostCollection.h"
 #include "DataFormats/ParticleFlowReco/interface/PFCluster.h"
 
 #include "DataFormats/HGCalReco/interface/Trackster.h"
@@ -31,10 +31,10 @@
 
 using namespace ticl;
 
-class TrackstersProducer : public edm::stream::EDProducer<> {
+class TrackstersFromSoAProducer : public edm::stream::EDProducer<> {
 public:
-  explicit TrackstersProducer(const edm::ParameterSet&);
-  ~TrackstersProducer() override {}
+  explicit TrackstersFromSoAProducer(const edm::ParameterSet&);
+  ~TrackstersFromSoAProducer() override {}
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
   void produce(edm::Event&, const edm::EventSetup&) override;
@@ -49,10 +49,10 @@ private:
   const std::string tfDnnLabel_;
   const edm::ESGetToken<TfGraphDefWrapper, TfGraphRecord> tfDnnToken_;
   const tensorflow::Session* tfSession_;
-  std::unique_ptr<PatternRecognitionAlgoBaseT<TICLLayerTiles>> myAlgo_;
-  std::unique_ptr<PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>> myAlgoHFNose_;
+  std::unique_ptr<PatternRecognitionAlgoBaseFromSoAT<TICLLayerTiles>> myAlgo_;
+  std::unique_ptr<PatternRecognitionAlgoBaseFromSoAT<TICLLayerTilesHFNose>> myAlgoHFNose_;
 
-  const edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_token_;
+  const edm::EDGetTokenT<std::vector<LayerClustersCollection>> clusters_token_;
   const edm::EDGetTokenT<std::vector<float>> filtered_layerclusters_mask_token_;
   const edm::EDGetTokenT<std::vector<float>> original_layerclusters_mask_token_;
   const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTime_token_;
@@ -62,15 +62,15 @@ private:
   const std::string itername_;
   ticl::Trackster::IterationIndex iterIndex_ = ticl::Trackster::IterationIndex(0);
 };
-DEFINE_FWK_MODULE(TrackstersProducer);
+DEFINE_FWK_MODULE(TrackstersFromSoAProducer);
 
-TrackstersProducer::TrackstersProducer(const edm::ParameterSet& ps)
+TrackstersFromSoAProducer::TrackstersFromSoAProducer(const edm::ParameterSet& ps)
     : detector_(ps.getParameter<std::string>("detector")),
       doNose_(detector_ == "HFNose"),
       tfDnnLabel_(ps.getParameter<std::string>("tfDnnLabel")),
       tfDnnToken_(esConsumes(edm::ESInputTag("", tfDnnLabel_))),
       tfSession_(nullptr),
-      clusters_token_(consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_clusters"))),
+      clusters_token_(consumes<std::vector<LayerClustersCollection>>(ps.getParameter<edm::InputTag>("layer_clusters"))),
       filtered_layerclusters_mask_token_(consumes<std::vector<float>>(ps.getParameter<edm::InputTag>("filtered_mask"))),
       original_layerclusters_mask_token_(consumes<std::vector<float>>(ps.getParameter<edm::InputTag>("original_mask"))),
       clustersTime_token_(
@@ -80,16 +80,9 @@ TrackstersProducer::TrackstersProducer(const edm::ParameterSet& ps)
       itername_(ps.getParameter<std::string>("itername")) {
   auto plugin = ps.getParameter<std::string>("patternRecognitionBy");
   auto pluginPSet = ps.getParameter<edm::ParameterSet>("pluginPatternRecognitionBy" + plugin);
-  if (doNose_) {
-    myAlgoHFNose_ = PatternRecognitionHFNoseFactory::get()->create(
-        ps.getParameter<std::string>("patternRecognitionBy"), pluginPSet, consumesCollector());
-    layer_clusters_tiles_hfnose_token_ =
-        consumes<TICLLayerTilesHFNose>(ps.getParameter<edm::InputTag>("layer_clusters_hfnose_tiles"));
-  } else {
-    myAlgo_ = PatternRecognitionFactory::get()->create(
-        ps.getParameter<std::string>("patternRecognitionBy"), pluginPSet, consumesCollector());
-    layer_clusters_tiles_token_ = consumes<TICLLayerTiles>(ps.getParameter<edm::InputTag>("layer_clusters_tiles"));
-  }
+  myAlgo_ = PatternRecognitionFromSoAFactory::get()->create(
+      ps.getParameter<std::string>("patternRecognitionBy"), pluginPSet, consumesCollector());
+  layer_clusters_tiles_token_ = consumes<TICLLayerTiles>(ps.getParameter<edm::InputTag>("layer_clusters_tiles"));
 
   if (itername_ == "TrkEM")
     iterIndex_ = ticl::Trackster::TRKEM;
@@ -106,7 +99,7 @@ TrackstersProducer::TrackstersProducer(const edm::ParameterSet& ps)
   produces<std::vector<float>>();  // Mask to be applied at the next iteration
 }
 
-void TrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+void TrackstersFromSoAProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   // hgcalMultiClusters
   edm::ParameterSetDescription desc;
   desc.add<std::string>("detector", "HGCAL");
@@ -125,21 +118,21 @@ void TrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descri
   edm::ParameterSetDescription pluginDesc;
   pluginDesc.addNode(edm::PluginDescription<PatternRecognitionFactory>("type", "CA", true));
   desc.add<edm::ParameterSetDescription>("pluginPatternRecognitionByCA", pluginDesc);
-  //
+  
   // CLUE3D Plugin
-  //edm::ParameterSetDescription pluginDescClue3D;
-  //pluginDescClue3D.addNode(edm::PluginDescription<PatternRecognitionFactory>("type", "CLUE3D", true));
-  //desc.add<edm::ParameterSetDescription>("pluginPatternRecognitionByCLUE3D", pluginDescClue3D);
+  edm::ParameterSetDescription pluginDescClue3D;
+  pluginDescClue3D.addNode(edm::PluginDescription<PatternRecognitionFromSoAFactory>("type", "CLUE3D", true));
+  desc.add<edm::ParameterSetDescription>("pluginPatternRecognitionByCLUE3D", pluginDescClue3D);
 
   // FastJet Plugin
   edm::ParameterSetDescription pluginDescFastJet;
   pluginDescFastJet.addNode(edm::PluginDescription<PatternRecognitionFactory>("type", "FastJet", true));
   desc.add<edm::ParameterSetDescription>("pluginPatternRecognitionByFastJet", pluginDescFastJet);
 
-  descriptions.add("trackstersProducer", desc);
+  descriptions.add("trackstersFromSoAProducer", desc);
 }
 
-void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
+void TrackstersFromSoAProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
   auto result = std::make_unique<std::vector<Trackster>>();
   auto output_mask = std::make_unique<std::vector<float>>();
 
@@ -162,20 +155,20 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
 
   if (doNose_) {
     const auto& layer_clusters_hfnose_tiles = evt.get(layer_clusters_tiles_hfnose_token_);
-    const typename PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>::Inputs inputHFNose(evt,
-                                                                                         es,
-                                                                                         layerClusters,
-                                                                                         inputClusterMask,
-                                                                                         layerClustersTimes,
-                                                                                         layer_clusters_hfnose_tiles,
-                                                                                         seeding_regions,
-                                                                                         tfSession_);
+    const typename PatternRecognitionAlgoBaseFromSoAT<TICLLayerTilesHFNose>::Inputs inputHFNose(evt,
+                                                                                                es,
+                                                                                                layerClusters,
+                                                                                                inputClusterMask,
+                                                                                                layerClustersTimes,
+                                                                                                layer_clusters_hfnose_tiles,
+                                                                                                seeding_regions,
+                                                                                                tfSession_);
 
     myAlgoHFNose_->makeTracksters(inputHFNose, *result, seedToTrackstersAssociation);
 
   } else {
     const auto& layer_clusters_tiles = evt.get(layer_clusters_tiles_token_);
-    const typename PatternRecognitionAlgoBaseT<TICLLayerTiles>::Inputs input(
+    const typename PatternRecognitionAlgoBaseFromSoAT<TICLLayerTiles>::Inputs input(
         evt, es, layerClusters, inputClusterMask, layerClustersTimes, layer_clusters_tiles, seeding_regions, tfSession_);
 
     myAlgo_->makeTracksters(input, *result, seedToTrackstersAssociation);

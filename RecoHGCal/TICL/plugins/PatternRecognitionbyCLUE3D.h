@@ -4,21 +4,24 @@
 #ifndef __RecoHGCal_TICL_PRbyCLUE3D_H__
 #define __RecoHGCal_TICL_PRbyCLUE3D_H__
 #include <memory>  // unique_ptr
-#include "RecoHGCal/TICL/interface/PatternRecognitionAlgoBase.h"
+//#include "RecoHGCal/TICL/interface/PatternRecognitionAlgoBase.h"
+#include "RecoHGCal/TICL/interface/PatternRecognitionAlgoBaseFromSoA.h"
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 
 namespace ticl {
   template <typename TILES>
-  class PatternRecognitionbyCLUE3D final : public PatternRecognitionAlgoBaseT<TILES> {
+  class PatternRecognitionbyCLUE3D final : public PatternRecognitionAlgoBaseFromSoAT<TILES> {
   public:
     PatternRecognitionbyCLUE3D(const edm::ParameterSet& conf, edm::ConsumesCollector);
     ~PatternRecognitionbyCLUE3D() override = default;
 
-    void makeTracksters(const typename PatternRecognitionAlgoBaseT<TILES>::Inputs& input,
+    void makeTracksters(const typename PatternRecognitionAlgoBaseFromSoAT<TILES>::Inputs& input,
                         std::vector<Trackster>& result,
                         std::unordered_map<int, std::vector<int>>& seedToTracksterAssociation) override;
 
-    void energyRegressionAndID(const std::vector<reco::CaloCluster>& layerClusters,
+    void energyRegressionAndID(const std::vector<LayerClustersCollection> &layerClusters,
+                               const std::unordered_map<int, std::pair<int, int>> &globalIdx2localIdxlayerId,
+                               //const std::vector<reco::CaloCluster>& layerClusters,
                                const tensorflow::Session*,
                                std::vector<Trackster>& result);
 
@@ -26,17 +29,17 @@ namespace ticl {
 
   private:
     struct ClustersOnLayer {
-      std::vector<float> x;
-      std::vector<float> y;
-      std::vector<float> z;
-      std::vector<float> r_over_absz;
-      std::vector<float> radius;
-      std::vector<float> eta;
-      std::vector<float> phi;
-      std::vector<int> cells;
+      //std::vector<float> x;
+      //std::vector<float> y;
+      //std::vector<float> z;
+      //std::vector<float> r_over_absz;
+      //std::vector<float> radius;
+      //std::vector<float> eta;
+      //std::vector<float> phi;
+      //std::vector<int> cells;
       std::vector<uint8_t> isSilicon;
 
-      std::vector<float> energy;
+      //std::vector<float> energy;
       std::vector<float> rho;
       std::vector<float> z_extension;
 
@@ -48,16 +51,16 @@ namespace ticl {
       std::vector<bool> isSeed;
 
       void clear() {
-        x.clear();
-        y.clear();
-        z.clear();
-        r_over_absz.clear();
-        radius.clear();
-        eta.clear();
-        phi.clear();
-        cells.clear();
+        //x.clear();
+        //y.clear();
+        //z.clear();
+        //r_over_absz.clear();
+        //radius.clear();
+        //eta.clear();
+        //phi.clear();
+        //cells.clear();
         isSilicon.clear();
-        energy.clear();
+        //energy.clear();
         rho.clear();
         z_extension.clear();
         delta.clear();
@@ -69,16 +72,16 @@ namespace ticl {
       }
 
       void shrink_to_fit() {
-        x.shrink_to_fit();
-        y.shrink_to_fit();
-        z.shrink_to_fit();
-        r_over_absz.shrink_to_fit();
-        radius.shrink_to_fit();
-        eta.shrink_to_fit();
-        phi.shrink_to_fit();
-        cells.shrink_to_fit();
+        //x.shrink_to_fit();
+        //y.shrink_to_fit();
+        //z.shrink_to_fit();
+        //r_over_absz.shrink_to_fit();
+        //radius.shrink_to_fit();
+        //eta.shrink_to_fit();
+        //phi.shrink_to_fit();
+        //cells.shrink_to_fit();
         isSilicon.shrink_to_fit();
-        energy.shrink_to_fit();
+        //energy.shrink_to_fit();
         rho.shrink_to_fit();
         z_extension.shrink_to_fit();
         delta.shrink_to_fit();
@@ -96,13 +99,24 @@ namespace ticl {
         c.shrink_to_fit();
       }
     }
-    void calculateLocalDensity(const TILES&, const int layerId, const std::vector<std::pair<int, int>>&);
-    void calculateDistanceToHigher(const TILES&, const int layerId, const std::vector<std::pair<int, int>>&);
-    int findAndAssignTracksters(const TILES&, const std::vector<std::pair<int, int>>&);
+    void calculateLocalDensity(const TILES&, 
+                               const std::vector<LayerClustersCollection>&,
+                               const int layerId, 
+                               const std::vector<std::pair<int, int>>&);
+    void calculateDistanceToHigher(const TILES&, 
+                                   const std::vector<LayerClustersCollection>&,
+                                   const int layerId, 
+                                   const std::vector<std::pair<int, int>>&);
+    int findAndAssignTracksters(const TILES&, 
+                                const std::vector<LayerClustersCollection>&,
+                                const std::vector<std::pair<int, int>>&);
     void dumpClusters(const TILES& tiles,
+                      const std::vector<LayerClustersCollection> &layerClusters,
                       const std::vector<std::pair<int, int>>& layerIdx2layerandSoa,
                       const int) const;
     void dumpTracksters(const std::vector<std::pair<int, int>>& layerIdx2layerandSoa,
+                        const std::unordered_map<int, std::pair<int, int>> &,
+                        const std::vector<LayerClustersCollection> &,
                         const int,
                         const std::vector<Trackster>&) const;
     void dumpTiles(const TILES&) const;

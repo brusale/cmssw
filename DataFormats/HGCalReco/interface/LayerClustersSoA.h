@@ -10,14 +10,12 @@ GENERATE_SOA_LAYOUT(LayerClustersSoALayout,
                     SOA_COLUMN(float, eta),
                     SOA_COLUMN(float, phi),
                     SOA_COLUMN(float, energy),
-                    SOA_COLUMN(float, error),
+                    SOA_COLUMN(float, position_error),
                     SOA_COLUMN(float, r_over_absz),
                     SOA_COLUMN(uint32_t, seed),
                     SOA_COLUMN(int, cells),
                     SOA_COLUMN(int, layerId),
-                    SOA_COLUMN(int, clusterIndex),
-                    SOA_COLUMN(int, algoId),
-                    SOA_COLUMN(bool, isSilicon)
+                    SOA_COLUMN(int, algoId)
 )
 
 using LayerClustersSoA = LayerClustersSoALayout<>;

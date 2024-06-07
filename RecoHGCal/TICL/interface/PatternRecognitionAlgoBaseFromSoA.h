@@ -1,8 +1,8 @@
 // Author: Felice Pantaleo - felice.pantaleo@cern.ch
 // Date: 09/2018
 
-#ifndef RecoHGCal_TICL_PatternRecognitionAlgoBase_H__
-#define RecoHGCal_TICL_PatternRecognitionAlgoBase_H__
+#ifndef RecoHGCal_TICL_PatternRecognitionAlgoBaseFromSoA_H__
+#define RecoHGCal_TICL_PatternRecognitionAlgoBaseFromSoA_H__
 
 #include <memory>
 #include <vector>
@@ -25,16 +25,17 @@ namespace edm {
 
 namespace ticl {
   template <typename TILES>
-  class PatternRecognitionAlgoBaseT {
+  class PatternRecognitionAlgoBaseFromSoAT {
   public:
-    PatternRecognitionAlgoBaseT(const edm::ParameterSet& conf, edm::ConsumesCollector)
+    PatternRecognitionAlgoBaseFromSoAT(const edm::ParameterSet& conf, edm::ConsumesCollector)
         : algo_verbosity_(conf.getParameter<int>("algo_verbosity")) {}
-    virtual ~PatternRecognitionAlgoBaseT(){};
+    virtual ~PatternRecognitionAlgoBaseFromSoAT(){};
 
     struct Inputs {
       const edm::Event& ev;
       const edm::EventSetup& es;
-      const std::vector<reco::CaloCluster>& layerClusters;
+      const std::vector<LayerClustersCollection>& layerClusters;
+      //const std::vector<reco::CaloCluster>& layerClusters;
       const std::vector<float>& mask;
       const edm::ValueMap<std::pair<float, float>>& layerClustersTime;
       const TILES& tiles;
@@ -43,7 +44,8 @@ namespace ticl {
 
       Inputs(const edm::Event& eV,
              const edm::EventSetup& eS,
-             const std::vector<reco::CaloCluster>& lC,
+             const std::vector<LayerClustersCollection>& lC,
+             //const std::vector<reco::CaloCluster>& lC,
              const std::vector<float>& mS,
              const edm::ValueMap<std::pair<float, float>>& lT,
              const TILES& tL,

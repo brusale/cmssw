@@ -138,7 +138,7 @@ HGCalLayerClusterProducer::HGCalLayerClusterProducer(const edm::ParameterSet& ps
 
   produces<std::vector<float>>("InitialLayerClustersMask");
   produces<std::vector<reco::BasicCluster>>();
-  produces<LayerClustersCollection>();
+  produces<std::vector<LayerClustersCollection>>();
   //time for layer clusters
   produces<edm::ValueMap<std::pair<float, float>>>(timeClname_);
 }
@@ -281,6 +281,7 @@ void HGCalLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup& 
   edm::Handle<HGCRecHitCollection> hits;
 
   std::unique_ptr<std::vector<reco::BasicCluster>> clusters(new std::vector<reco::BasicCluster>);
+  std::unique_ptr<std::vector<LayerClustersCollection>> layerClusters(new std::vector<LayerClustersCollection>);
   edm::ESHandle<CaloGeometry> geom = es.getHandle(caloGeomToken_);
   rhtools_.setGeometry(*geom);
   algo_->getEventSetup(es, rhtools_);
@@ -302,11 +303,15 @@ void HGCalLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup& 
   std::vector<std::pair<float, float>> times;
   times.reserve(clusters->size());
 
-  auto layerClusters = std::make_unique<LayerClustersCollection>(clusters->size(), cms::alpakatools::host());
-  auto& layerClustersView = layerClusters->view();
+  //auto layerClusters = std::make_unique<LayerClustersCollection>(clusters->size(), cms::alpakatools::host());
+  layerClusters->resize(2 * rhtools_.lastLayer(false));
+  std::vector<std::vector<int>> clustersOnLayers;
+  clustersOnLayers.resize(2 * rhtools_.lastLayer(false));
+  //auto& layerClustersView = layerClusters->view();
 
   for (unsigned i = 0; i < clusters->size(); ++i) {
     reco::CaloCluster& sCl = (*clusters)[i];
+    clustersOnLayers[rhtools_.getLayerWithOffset(sCl.seed())].push_back(i);
     if (!calculatePositionInAlgo_) {
       sCl.setPosition(calculatePosition(hitmap, sCl.hitsAndFractions()));
     }
@@ -315,29 +320,32 @@ void HGCalLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup& 
     } else {
       times.push_back(std::pair<float, float>(-99.f, -1.f));
     }
+  }
 
-    // fill LayerClustersSoA
-    layerClustersView.energy()[i] = sCl.energy();
-    layerClustersView.x()[i] = sCl.x();
-    layerClustersView.y()[i] = sCl.y();
-    layerClustersView.z()[i] = sCl.z();
-    layerClustersView.eta()[i] = sCl.eta();
-    layerClustersView.phi()[i] = sCl.phi();
-    layerClustersView.r_over_absz()[i] = sqrt(sCl.x() * sCl.x() + sCl.y() * sCl.y()) / std::abs(sCl.z());
-    layerClustersView.seed()[i] = sCl.seed().rawId();
-    layerClustersView.cells()[i] = sCl.hitsAndFractions().size();
-    layerClustersView.algoId()[i] = sCl.algoID();     
-    layerClustersView.clusterIndex()[i] = i;
-    layerClustersView.layerId()[i] = rhtools_.getLayerWithOffset(sCl.seed());
-    layerClustersView.isSilicon()[i] = rhtools_.isSilicon(sCl.seed());
+  for (unsigned int layerIdx = 0; layerIdx < 2 * rhtools_.lastLayer(false); ++layerIdx) {
+    auto clusterOnLayerIdx = 0;
+    std::vector<int> clustersOnLayer = clustersOnLayers[layerIdx];
+    auto layerClustersView = layerClusters->at(layerIdx).view();
+    for (auto& clusterIndex : clustersOnLayer) {
+      reco::CaloCluster& sCl = (*clusters)[clusterIndex];
+      layerClustersView.energy()[clusterOnLayerIdx] = sCl.energy();
+      layerClustersView.x()[clusterOnLayerIdx] = sCl.x();
+      layerClustersView.y()[clusterOnLayerIdx] = sCl.y();
+      layerClustersView.z()[clusterOnLayerIdx] = sCl.z();
+      layerClustersView.eta()[clusterOnLayerIdx] = sCl.eta();
+      layerClustersView.phi()[clusterOnLayerIdx] = sCl.phi();
+      layerClustersView.r_over_absz()[clusterOnLayerIdx] = 
+        sqrt(sCl.x() * sCl.x() + sCl.y() * sCl.y()) / std::abs(sCl.z());
+      layerClustersView.seed()[clusterOnLayerIdx] = sCl.seed().rawId();
+      layerClustersView.cells()[clusterOnLayerIdx] = sCl.hitsAndFractions().size();
+      layerClustersView.algoId()[clusterOnLayerIdx] = sCl.algoID();
+      layerClustersView.layerId()[clusterOnLayerIdx] = rhtools_.getLayerWithOffset(sCl.seed());
+      clusterOnLayerIdx++;
+    }
+  }
  
-    float error = calculatePositionError(sCl.x(), sCl.y(), sCl.hitsAndFractions()); 
-    layerClustersView.error()[i] = error; 
- }
-
   auto clusterHandle = evt.put(std::move(clusters));
   evt.put(std::move(layerClusters));
-  
 
   if (detector_ == "HFNose") {
     std::unique_ptr<std::vector<float>> layerClustersMask(new std::vector<float>);
