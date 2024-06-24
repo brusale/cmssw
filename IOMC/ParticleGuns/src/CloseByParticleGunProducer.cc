@@ -26,6 +26,7 @@ CloseByParticleGunProducer::CloseByParticleGunProducer(const ParameterSet& pset)
     : BaseFlatGunProducer(pset), m_fieldToken(esConsumes()) {
   ParameterSet pgun_params = pset.getParameter<ParameterSet>("PGunParameters");
   fControlledByEta = pgun_params.getParameter<bool>("ControlledByEta");
+  fFixedR = pgun_params.getParameter<bool>("FixedR");
   fEnMax = pgun_params.getParameter<double>("EnMax");
   fEnMin = pgun_params.getParameter<double>("EnMin");
   if (fEnMin < 1)
@@ -44,6 +45,9 @@ CloseByParticleGunProducer::CloseByParticleGunProducer(const ParameterSet& pset)
     if (fRMax <= fRMin)
       LogError("CloseByParticleGunProducer") << " Please fix RMin and RMax values in the configuration";
   }
+  if (fFixedR)
+    fRMin = pgun_params.getParameter<double>("RMin");
+  
   fZMax = pgun_params.getParameter<double>("ZMax");
   fZMin = pgun_params.getParameter<double>("ZMin");
   fDelta = pgun_params.getParameter<double>("Delta");
@@ -95,6 +99,7 @@ void CloseByParticleGunProducer::fillDescriptions(ConfigurationDescriptions& des
     psd0.add<bool>("Pointing", true);
     psd0.add<double>("RMax", 120);
     psd0.add<double>("RMin", 60);
+    psd0.add<bool>("FixedR", false);
     psd0.add<bool>("RandomShoot", false);
     psd0.add<double>("ZMax", 321);
     psd0.add<double>("ZMin", 320);
@@ -125,15 +130,27 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
   unsigned int numParticles = fRandomShoot ? CLHEP::RandFlat::shoot(engine, 1, fNParticles) : fNParticles;
 
   double phi = CLHEP::RandFlat::shoot(engine, fPhiMin, fPhiMax);
-  double fZ = CLHEP::RandFlat::shoot(engine, fZMin, fZMax);
-  double fR;
+  double fZ = 0.;
+  double fR = 0.;
+  if (fFixedR)
+    fR = fRMin;
+    // z will be computed after eta is samples
+  else
+    fZ = CLHEP::RandFlat::shoot(engine, fZMin, fZMax);
+
   double fT;
+  double fEta;
 
   if (!fControlledByEta) {
     fR = CLHEP::RandFlat::shoot(engine, fRMin, fRMax);
   } else {
-    double fEta = CLHEP::RandFlat::shoot(engine, fEtaMin, fEtaMax);
-    fR = (fZ / sinh(fEta));
+    fEta = CLHEP::RandFlat::shoot(engine, fEtaMin, fEtaMax);
+
+    if (fFixedR){
+      fZ = fR * sinh(fEta);
+    }else{
+      fR = (fZ / sinh(fEta));
+    }
   }
 
   if (fUseDeltaT) {
