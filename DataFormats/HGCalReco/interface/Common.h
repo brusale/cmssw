@@ -28,6 +28,25 @@ namespace ticl {
     static constexpr int nBins = nEtaBins * nPhiBins;
   };
 
+  struct TileConstantsECAL {
+    static constexpr float minEta = 0.f;
+    static constexpr float maxEta = 1.5f;
+    static constexpr int nEtaBins = 34;
+    static constexpr int nPhiBins = 36;
+    static constexpr int nLayers = 1;
+    static constexpr int iterations = 1;
+    static constexpr int nBins = nEtaBins * nPhiBins;
+  };
+
+  struct TileConstantsHCAL {
+    static constexpr float minEta = 0.f;
+    static constexpr float maxEta = 1.5f;
+    static constexpr int nEtaBins = 5;
+    static constexpr int nPhiBins = 6;
+    static constexpr int nLayers = 4;
+    static constexpr int iterations = 1;
+    static constexpr int nBins = nEtaBins * nPhiBins;
+  };
 }  // namespace ticl
 
 namespace ticl {
