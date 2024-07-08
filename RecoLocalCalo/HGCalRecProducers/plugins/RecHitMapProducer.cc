@@ -53,9 +53,9 @@ void RecHitMapProducer::fillDescriptions(edm::ConfigurationDescriptions& descrip
   desc.add<edm::InputTag>("EEInput", {"HGCalRecHit", "HGCEERecHits"});
   desc.add<edm::InputTag>("FHInput", {"HGCalRecHit", "HGCHEFRecHits"});
   desc.add<edm::InputTag>("BHInput", {"HGCalRecHit", "HGCHEBRecHits"});
-  desc.add<edm::InputTag>("EBInput", {"particleFlowRecHitECAL", "Cleaned"});
-  desc.add<edm::InputTag>("HBInput", {"particleFlowRecHitHBHE", "Cleaned"});
-  desc.add<edm::InputTag>("HOInput", {"particleFlowRecHitHO", "Cleaned"});
+  desc.add<edm::InputTag>("EBInput", {"particleFlowRecHitECAL", ""});
+  desc.add<edm::InputTag>("HBInput", {"particleFlowRecHitHBHE", ""});
+  desc.add<edm::InputTag>("HOInput", {"particleFlowRecHitHO", ""});
   desc.add<bool>("hgcalOnly", false);
   descriptions.add("recHitMapProducer", desc);
 }
@@ -90,15 +90,15 @@ void RecHitMapProducer::produce(edm::StreamID, edm::Event& evt, const edm::Event
     for (unsigned int i = 0; i < eb_hits.size(); ++i) {
       hitMapBarrel->emplace(eb_hits[i].detId(), i);
     }
-    auto size = eb_hits.size();
+    auto barrel_size = eb_hits.size();
 
     for (unsigned int i = 0; i < hb_hits.size(); ++i) {
-      hitMapBarrel->emplace(hb_hits[i].detId(), i + size);
+      hitMapBarrel->emplace(hb_hits[i].detId(), i + barrel_size);
     }
-    size += hb_hits.size();
+    barrel_size += hb_hits.size();
 
     for (unsigned int i = 0; i < ho_hits.size(); ++i) {
-      hitMapBarrel->emplace(ho_hits[i].detId(), i + size);
+      hitMapBarrel->emplace(ho_hits[i].detId(), i + barrel_size);
     }
     evt.put(std::move(hitMapBarrel), "barrelRecHitMap");
   }

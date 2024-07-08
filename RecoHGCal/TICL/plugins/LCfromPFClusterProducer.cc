@@ -2,7 +2,7 @@
 
 #include "DataFormats/CaloRecHit/interface/CaloCluster.h"
 #include "DataFormats/ParticleFlowReco/interface/PFCluster.h"
-
+#include "DataFormats/HcalDetId/interface/HcalSubdetector.h"
 // user include files
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -16,16 +16,16 @@
 #include "FWCore/Framework/interface/ConsumesCollector.h"
 
 class LCfromPFClusterProducer : public edm::stream::EDProducer<> {
-  public:
-    LCfromPFClusterProducer(const edm::ParameterSet&);
-    ~LCfromPFClusterProducer() override {}
+public:
+  LCfromPFClusterProducer(const edm::ParameterSet&);
+  ~LCfromPFClusterProducer() override {}
 
-    static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+  static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
-    void produce(edm::Event&, const edm::EventSetup&) override;
+  void produce(edm::Event&, const edm::EventSetup&) override;
 
-  private:
-    edm::EDGetTokenT<std::vector<reco::PFCluster>> ecalpfcluster_token_, hcalpfcluster_token_;
+private:
+  edm::EDGetTokenT<std::vector<reco::PFCluster>> ecalpfcluster_token_, hcalpfcluster_token_;
 };
 
 LCfromPFClusterProducer::LCfromPFClusterProducer(const edm::ParameterSet& ps) {
@@ -36,34 +36,34 @@ LCfromPFClusterProducer::LCfromPFClusterProducer(const edm::ParameterSet& ps) {
 }
 
 void LCfromPFClusterProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
-    edm::Handle<std::vector<reco::PFCluster>> ecalpfcluster_h, hcalpfcluster_h;
-    evt.getByToken(ecalpfcluster_token_, ecalpfcluster_h);
-    const auto ecalpfclusters = *ecalpfcluster_h;
+  edm::Handle<std::vector<reco::PFCluster>> ecalpfcluster_h, hcalpfcluster_h;
+  evt.getByToken(ecalpfcluster_token_, ecalpfcluster_h);
+  const auto ecalpfclusters = *ecalpfcluster_h;
 
-    evt.getByToken(hcalpfcluster_token_, hcalpfcluster_h);
-    const auto hcalpfclusters = *hcalpfcluster_h;
+  evt.getByToken(hcalpfcluster_token_, hcalpfcluster_h);
+  const auto hcalpfclusters = *hcalpfcluster_h;
 
-    auto clusters = std::make_unique<std::vector<reco::CaloCluster>>();
+  auto clusters = std::make_unique<std::vector<reco::CaloCluster>>();
 
-    for (const auto& pfcl : ecalpfclusters) {
-      reco::CaloCluster calocluster = pfcl;
-      clusters->push_back(calocluster);
-    }
-    
-    for (const auto& pfcl : hcalpfclusters) {
-      reco::CaloCluster calocluster = pfcl;
-      clusters->push_back(calocluster);
-    }
+  for (const auto& pfcl : ecalpfclusters) {
+    reco::CaloCluster calocluster = pfcl;
+    clusters->push_back(calocluster);
+  }
 
+  for (const auto& pfcl : hcalpfclusters) {
+    reco::CaloCluster calocluster = pfcl;
+    if (calocluster.seed().subdetId() == HcalEndcap) continue;
+    clusters->push_back(calocluster);
+  }
 
-    evt.put(std::move(clusters));
+  evt.put(std::move(clusters));
 }
 
 void LCfromPFClusterProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
-  
-  desc.add<edm::InputTag>("ecalpfclusters", edm::InputTag("particleFlowClusterECALUncorrected"));
-  desc.add<edm::InputTag>("hcalpfclusters", edm::InputTag("particleFlowClusterHCAL"));
+
+  desc.add<edm::InputTag>("ecalpfclusters", edm::InputTag("particleFlowClusterECAL"));
+  desc.add<edm::InputTag>("hcalpfclusters", edm::InputTag("particleFlowClusterHBHE"));
   descriptions.add("lcFromPFClusterProducer", desc);
 }
 
