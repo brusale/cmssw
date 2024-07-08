@@ -85,6 +85,10 @@ namespace ticl {
   using TilesHFNose = std::array<TICLLayerTileHFNose, TileConstantsHFNose::nLayers>;
   using TracksterTilesHFNose = std::array<TICLLayerTileHFNose, TileConstantsHFNose::iterations>;
 
+  using TICLLayerTileHCAL = TICLLayerTileT<TileConstantsHCAL>;
+  using TilesHCAL = std::array<TICLLayerTileHCAL, TileConstantsHCAL::nLayers>;
+  using TracksterTilesHCAL = std::array<TICLLayerTileHCAL, TileConstantsHCAL::iterations>;
+
 }  // namespace ticl
 
 template <typename T>
