@@ -98,9 +98,9 @@ def customiseTICLBarrelFromReco(process):
 					       )
 
     process.barrelHcalPatternRecognition = _trackstersProducer.clone(
-        layer_clusters = "hcalLayerClusters",
-        time_layerclusters = "timeLayerCluster_hcal",
-        filtered_mask = "filteredLayerClustersHcalFastJet:FastJet",
+        layer_clusters = "barrelLayerClusters:hcalLayerClusters",
+        time_layerclusters = "barrelLayerClusters:timeLayerClusterHcal",
+        filtered_mask = "barrelLayerClusters:InitialLayerClustersMaskHCAL",
         seeding_regions = "ticlSeedingGlobal",
         itername = "FastJet",
         patternRecognitionBy = "FastJet",
@@ -110,9 +110,9 @@ def customiseTICLBarrelFromReco(process):
     )
 
     process.barrelEcalPatternRecognition = _trackstersProducer.clone(
-        layer_clusters = "ecalLayerClusters",
-        time_layerclusters = "timeLayerCluster_ecal",
-        filtered_mask = "filteredLayerClustersEcalFastJet:FastJet",
+        layer_clusters = "barrelLayerClusters:ecalLayerClusters",
+        time_layerclusters = "barrelLayerClusters:timeLayerClusterEcal",
+        filtered_mask = "barrelLayerClusters:InitialLayerClustersMaskECAL",
         seeding_regions = "ticlSeedingGlobal",
         itername = "CLUE2D",
         patternRecognitionBy = "FastJet", #"CLUE2D",
@@ -121,9 +121,8 @@ def customiseTICLBarrelFromReco(process):
         )
     )
     
-    process.hcalPatternRecognitionTask = cms.Task(barrelHcalPatternRecognition) # + process.barrelEcalPatternRecognition
-    
-    process.TICLBarrel = cms.Path(process.barrelLayerClustersTask)
+    process.hcalPatternRecognitionTask = cms.Task(process.barrelHcalPatternRecognition) # + process.barrelEcalPatternRecognition
+    process.TICLBarrel = cms.Path(process.ticlSeedingGlobal, process.barrelLayerClustersTask, process.hcalPatternRecognitionTask)
 
     # We want to run CLUE on not -cleaned Rechit collections
     process.recHitMapProducer.EBInput = cms.InputTag("particleFlowRecHitECAL")
@@ -199,8 +198,11 @@ def customiseTICLBarrelFromReco(process):
     process.consumer5 = cms.EDAnalyzer("GenericConsumer",
       eventProducts = cms.untracked.vstring("barrelLayerClusterSimClusterAssociationProducerPFCluster")
     )
+    process.consumer6 = cms.EDAnalyzer("GenericConsumer",
+      eventProducts = cms.untracked.vstring("barrelHcalPatternRecognition")
+    )
     process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput+
-                                                  process.consumer + process.consumer2 + process.consumer3 + process.consumer4 + process.consumer5+
+                                                  process.consumer + process.consumer2 + process.consumer3 + process.consumer4 + process.consumer5+process.consumer6+
                                                    process.lcDumper+process.lcDumperPF + 
                                                   process.recHitDumper
                                                   )

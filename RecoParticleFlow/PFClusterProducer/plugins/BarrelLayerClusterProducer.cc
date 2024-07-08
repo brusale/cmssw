@@ -100,8 +100,8 @@ BarrelLayerClusterProducer::BarrelLayerClusterProducer(const edm::ParameterSet& 
   //density
   //produces<Density>();
   //time for layer clusters
-  produces<edm::ValueMap<std::pair<float, float>>>(timeClname+"_ecal");
-  produces<edm::ValueMap<std::pair<float, float>>>(timeClname+"_hcal");
+  produces<edm::ValueMap<std::pair<float, float>>>(timeClname+"Ecal");
+  produces<edm::ValueMap<std::pair<float, float>>>(timeClname+"Hcal");
 }
 
 void BarrelLayerClusterProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
@@ -284,13 +284,13 @@ void BarrelLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup&
   edm::ValueMap<std::pair<float, float>>::Filler filler_ecal(*timeCl_ecal);
   filler_ecal.insert(clusterHandleEcal, times_ecal.begin(), times_ecal.end());
   filler_ecal.fill();
-  evt.put(std::move(timeCl_ecal), timeClname+"_ecal");
+  evt.put(std::move(timeCl_ecal), timeClname+"Ecal");
 
    auto timeCl_hcal = std::make_unique<edm::ValueMap<std::pair<float, float>>>();
    edm::ValueMap<std::pair<float, float>>::Filler filler_hcal(*timeCl_hcal);
    filler_hcal.insert(clusterHandleHcal, times_hcal.begin(), times_hcal.end());
    filler_hcal.fill();
-   evt.put(std::move(timeCl_hcal), timeClname+"_hcal");
+   evt.put(std::move(timeCl_hcal), timeClname+"Hcal");
    
   /*if (doSharing) {
     for (unsigned i = 0; i < clusterHandleSharing->size(); ++i) {
