@@ -3,6 +3,8 @@
 # Revision: 1.19 
 # Source: /local/reps/CMSSW/CMSSW/Configuration/Applications/python/ConfigBuilder.py,v 
 # with command line options: step3 -s RAW2DIGI,RECO,RECOSIM,PAT,VALIDATION:@phase2Validation+@miniAODValidation,DQM:@phase2+@miniAODDQM --conditions auto:phase2_realistic_T21 --datatier GEN-SIM-RECO,MINIAODSIM,DQMIO -n 4 --eventcontent FEVTDEBUGHLT,MINIAODSIM,DQM --geometry Extended2026D88 --era Run3 --filein file:step2.root --fileout /ceph/abrusamolino/CLUEBarrel/SinglePion0PU/step3.root --no_exec
+import os
+
 import FWCore.ParameterSet.Config as cms
 
 from Configuration.Eras.Era_Phase2C17I13M9_cff import Phase2C17I13M9
@@ -44,8 +46,16 @@ process.maxEvents = cms.untracked.PSet(
 )
 
 # Input source
+inputFileEOS  = 'file:/eos/user/a/abrusamo/SinglePion0PU_RECO.root'
+inputFileCEPH = 'file:/ceph/abrusamolino/CLUEBarrel/SinglePion0PU/step3.root'
+if  (os.path.exists(inputFileEOS .split('file:')[-1])):
+    inputFile = inputFileEOS
+elif(os.path.exists(inputFileCEPH.split('file:')[-1])):
+    inputFile = inputFileCEPH
+else:
+    raise RuntimeError('Could not open either "%s" or "%s"' %(inputFileEOS, inputFileCEPH))
 process.source = cms.Source("PoolSource",
-        fileNames = cms.untracked.vstring('file:/ceph/abrusamolino/CLUEBarrel/SinglePion0PU/step3.root'),
+        fileNames = cms.untracked.vstring(inputFile),
     secondaryFileNames = cms.untracked.vstring()
 )
 
