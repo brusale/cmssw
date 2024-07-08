@@ -29,3 +29,26 @@ ticlFastJetStepTask = cms.Task(ticlSeedingGlobal
     ,filteredLayerClustersFastJet
     ,ticlTrackstersFastJet)
 
+ticlTrackstersHcalFastJet = _trackstersProducer.clone(
+    layer_clusters = "hcalLayerClusters",
+    time_layerclusters = "timeLayerCluster_hcal",
+    filtered_mask = "filteredLayerClustersHcalFastJet:FastJet",
+    seeding_regions = "ticlSeedingGlobal",
+    itername = "FastJet",
+    patternRecognitionBy = "FastJet",
+    pluginPatternRecognitionByFastJet = dict (
+        algo_verbosity = 2
+    )
+)
+
+ticlTrackstersEcalFastJet = _trackstersProducer.clone(
+    layer_clusters = "ecalLayerClusters",
+    time_layerclusters = "timeLayerCluster_ecal",
+    filtered_mask = "filteredLayerClustersEcalFastJet:FastJet",
+    seeding_regions = "ticlSeedingGlobal",
+    itername = "FastJet",
+    patternRecognitionBy = "FastJet",
+    pluginPatternRecognitionByFastJet = dict (
+        algo_verbosity = 2
+    )
+)
