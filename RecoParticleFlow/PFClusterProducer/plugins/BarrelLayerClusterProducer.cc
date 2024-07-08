@@ -93,7 +93,8 @@ BarrelLayerClusterProducer::BarrelLayerClusterProducer(const edm::ParameterSet& 
                         consumesCollector().esConsumes<HcalPFCuts, HcalPFCutsRcd>());
 
   timeResolutionCalc_ = std::make_unique<CaloRecHitResolutionProvider>(ps.getParameterSet("timeResolutionCalc"));
-  //produces<std::vector<float>>("InitialLayerClustersMask");
+  produces<std::vector<float>>("InitialLayerClustersMaskECAL");
+  produces<std::vector<float>>("InitialLayerClustersMaskHCAL");
   produces<std::vector<reco::BasicCluster>>("ecalLayerClusters");
   produces<std::vector<reco::BasicCluster>>("hcalLayerClusters");
   //density
@@ -271,10 +272,14 @@ void BarrelLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup&
     times_hcal.push_back(timeCl);
   }
 
-  //std::unique_ptr<std::vector<float>> layerClustersMask(new std::vector<float>);
-  //layerClustersMask->resize(clusterHandle->size(), 1.0);
-  //evt.put(std::move(layerClustersMask), "InitialLayerClustersMask");
+  std::unique_ptr<std::vector<float>> layerClustersMaskEcal(new std::vector<float>);
+  layerClustersMaskEcal->resize(clusterHandleEcal->size(), 1.0);
+  evt.put(std::move(layerClustersMaskEcal), "InitialLayerClustersMaskECAL");
 
+  std::unique_ptr<std::vector<float>> layerClustersMaskHcal(new std::vector<float>);
+  layerClustersMaskHcal->resize(clusterHandleHcal->size(), 1.0);
+  evt.put(std::move(layerClustersMaskHcal), "InitialLayerClustersMaskHCAL");
+    
   auto timeCl_ecal = std::make_unique<edm::ValueMap<std::pair<float, float>>>();
   edm::ValueMap<std::pair<float, float>>::Filler filler_ecal(*timeCl_ecal);
   filler_ecal.insert(clusterHandleEcal, times_ecal.begin(), times_ecal.end());
