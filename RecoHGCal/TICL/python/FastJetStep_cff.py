@@ -31,7 +31,7 @@ ticlFastJetStepTask = cms.Task(ticlSeedingGlobal
 
 ticlTrackstersHcalFastJet = _trackstersProducer.clone(
     layer_clusters = "hcalLayerClusters",
-    time_layerclusters = "timeLayerCluster_hcal",
+    time_layerclusters = "timeLayerClusterHcal",
     filtered_mask = "filteredLayerClustersHcalFastJet:FastJet",
     seeding_regions = "ticlSeedingGlobal",
     itername = "FastJet",
