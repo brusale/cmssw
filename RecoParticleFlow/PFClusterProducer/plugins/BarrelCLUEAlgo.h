@@ -42,22 +42,22 @@ public:
       : HGCalClusteringAlgoBase(
             (HGCalClusteringAlgoBase::VerbosityLevel)ps.getUntrackedParameter<unsigned int>("verbosity", 3),
             reco::CaloCluster::undefined),
-	vecDeltas_(ps.getParameter<std::vector<double>>("deltac")),
+        vecDeltas_(ps.getParameter<std::vector<double>>("deltac")),
         kappa_(ps.getParameter<double>("kappa")),
-	rhoc_(ps.getParameter<double>("rhoc")),
+        rhoc_(ps.getParameter<double>("rhoc")),
         fractionCutoff_(ps.getParameter<double>("fractionCutoff")),
-	maxLayerIndex_(ps.getParameter<int>("maxLayerIndex")),
+        maxLayerIndex_(ps.getParameter<int>("maxLayerIndex")),
         outlierDeltaFactor_(ps.getParameter<double>("outlierDeltaFactor")),
-	doSharing_(ps.getParameter<bool>("doSharing")) {}
+        doSharing_(ps.getParameter<bool>("doSharing")) {}
   ~BarrelCLUEAlgoT() override {}
 
   void getEventSetupPerAlgorithm(const edm::EventSetup& es) override;
   void setThresholds(edm::ESGetToken<EcalPFRecHitThresholds, EcalPFRecHitThresholdsRcd>,
-                     edm::ESGetToken<HcalPFCuts, HcalPFCutsRcd> ) override;
+                     edm::ESGetToken<HcalPFCuts, HcalPFCutsRcd>) override;
 
-  void populate(const HGCRecHitCollection& hits) override {};
+  void populate(const HGCRecHitCollection& hits) override{};
   void populate(const reco::PFRecHitCollection& hits) override;
-  void populate(const edm::PCaloHitContainer& hits) override {};
+  void populate(const edm::PCaloHitContainer& hits) override{};
   // this is the method that will start the clusterisation (it is possible to invoke this method
   // more than once - but make sure it is with different hit collections (or else use reset)
 
@@ -89,12 +89,7 @@ public:
     iDesc.add<double>("kappa", 1.34);
     iDesc.add<int>("maxLayerIndex", 0);
     iDesc.add<double>("rhoc", 1);
-    iDesc.add<std::vector<double>>("deltac",
-                                   {
-                                       0.0175,
-                                       5*0.087,
-                                       5*0.087
-                                   });
+    iDesc.add<std::vector<double>>("deltac", {0.0175, 5 * 0.087, 5 * 0.087});
     iDesc.add<double>("fractionCutoff", 0.);
     iDesc.add<bool>("doSharing", false);
   }
@@ -119,7 +114,6 @@ private:
   bool doSharing_;
   Density density_;
   // For keeping the density per hit
-
 
   struct BarrelCellsOnLayer {
     std::vector<DetId> detid;
@@ -193,7 +187,7 @@ private:
   void calculateDistanceToHigher(const TILE& lt, const unsigned int layerId, float delta_c, float delta_r);
   int findAndAssignClusters(const unsigned int layerId, float delta_c, float delta_r);
   void passSharedClusterIndex(const TILE& lt, const unsigned int layerId, float delta_c);
-  math::XYZPoint calculatePosition(const std::vector<std::pair<int,float>>& v, const unsigned int layerId) const;
+  math::XYZPoint calculatePosition(const std::vector<std::pair<int, float>>& v, const unsigned int layerId) const;
   void setDensity(const unsigned int layerId);
 };
 

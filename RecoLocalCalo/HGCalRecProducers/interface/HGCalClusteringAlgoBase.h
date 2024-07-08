@@ -60,7 +60,7 @@ public:
   HGCalClusteringAlgoBase(VerbosityLevel v, reco::CaloCluster::AlgoId algo) : verbosity_(v), algoId_(algo) {}
   virtual ~HGCalClusteringAlgoBase() {}
 
-  virtual void populate(const reco::PFRecHitCollection& hits) = 0;
+  virtual void populate(const reco::PFRecHitCollection &hits) = 0;
   virtual void populate(const HGCRecHitCollection &hits) = 0;
   virtual void populate(const edm::PCaloHitContainer &hits) = 0;
   virtual void makeClusters() = 0;
@@ -84,7 +84,7 @@ public:
     isNose_ = isNose;
   }
   virtual void setThresholds(edm::ESGetToken<EcalPFRecHitThresholds, EcalPFRecHitThresholdsRcd>,
-                     edm::ESGetToken<HcalPFCuts, HcalPFCutsRcd> ){};
+                             edm::ESGetToken<HcalPFCuts, HcalPFCutsRcd>){};
 
   //max number of layers
   unsigned int maxlayer_;

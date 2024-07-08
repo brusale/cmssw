@@ -126,7 +126,7 @@ using HGCalSiliconLayerTiles = HGCalLayerTilesT<HGCalSiliconTilesConstants, NoPh
 using HGCalScintillatorLayerTiles = HGCalLayerTilesT<HGCalScintillatorTilesConstants, PhiWrapper>;
 using HFNoseLayerTiles = HGCalLayerTilesT<HFNoseTilesConstants, NoPhiWrapper>;
 
-// Tiles for TICL in barrel  
+// Tiles for TICL in barrel
 using EBLayerTiles = HGCalLayerTilesT<EBTilesConstants, PhiWrapper>;
 using HBLayerTiles = HGCalLayerTilesT<HBTilesConstants, PhiWrapper>;
 using HOLayerTiles = HGCalLayerTilesT<HOTilesConstants, PhiWrapper>;

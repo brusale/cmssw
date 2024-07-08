@@ -64,6 +64,8 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 
+#define MAX_LAYERS 6
+
 class LayerClusterDumper : public edm::one::EDAnalyzer<edm::one::WatchRuns, edm::one::SharedResources> {
 public:
   explicit LayerClusterDumper(const edm::ParameterSet&);
@@ -83,7 +85,9 @@ private:
   void endRun(edm::Run const& iEvent, edm::EventSetup const&) override{};
   void endJob() override;
 
-  const edm::EDGetTokenT<reco::PFRecHitCollection> pfrechit_token_;
+  std::vector<edm::InputTag> pfrechits_tags_;
+  std::vector<edm::EDGetTokenT<reco::PFRecHitCollection>> pfrechits_tokens_;
+
   //LCs
   const edm::EDGetTokenT<std::vector<reco::CaloCluster>> layer_clusters_token_;
   //CPs
@@ -98,16 +102,18 @@ private:
   const edm::EDGetTokenT<ticl::RecoToSimCollectionWithSimClusters> recotosim_simcl_token_;
   //Geometry
   const edm::ESGetToken<CaloGeometry, CaloGeometryRecord> geometry_token_;
-  
+
   void clearVariables();
 
-  std::vector<std::pair<std::pair<float, float>, float>> addHitsAndDensities(std::vector<std::pair<DetId, float>> hits_and_energies, const CaloGeometry* geom, float totalEnergy);
-  std::vector<std::pair<std::pair<float, float>, float>> addHitsAndDensities(std::vector<std::pair<uint32_t, float>> hits_and_fractions, const CaloGeometry* geom, float totalEnergy);
+  std::vector<std::pair<std::pair<float, float>, float>> addHitsAndDensities(
+      std::vector<std::pair<DetId, float>> hits_and_energies, const CaloGeometry* geom, float totalEnergy);
+  std::vector<std::pair<std::pair<float, float>, float>> addHitsAndDensities(
+      std::vector<std::pair<uint32_t, float>> hits_and_fractions, const CaloGeometry* geom, float totalEnergy);
 
   float distance(GlobalPoint point1, GlobalPoint point2);
   unsigned int event_index;
   TTree* tree_;
-  
+
   const CaloGeometry* geom;
 
   unsigned int ev_event_;
@@ -115,20 +121,25 @@ private:
   unsigned int ncaloparticles_;
   unsigned int npfrechits_;
   unsigned int nsimclusters_;
-
+  
   std::vector<float> pfrechit_eta;
   std::vector<float> pfrechit_phi;
   std::vector<float> pfrechit_energy;
   std::vector<float> pfrechit_time;
   std::vector<int> pfrechit_ieta;
   std::vector<int> pfrechit_iphi;
-  
+  std::vector<int> pfrechit_det;
+  std::vector<int> pfrechit_subdetId;
+  std::vector<int> pfrechit_depth;
+
   std::vector<float> layercluster_energy;
   std::vector<float> layercluster_et;
   std::vector<float> layercluster_eta;
   std::vector<float> layercluster_phi;
   std::vector<float> layercluster_seed_eta;
   std::vector<float> layercluster_seed_phi;
+  std::vector<float> layercluster_e_energy;
+  std::vector<float> layercluster_h_energy;
   std::vector<std::vector<float>> layercluster_hit_eta;
   std::vector<std::vector<float>> layercluster_hit_phi;
   std::vector<std::vector<float>> layercluster_hit_density;
@@ -139,16 +150,18 @@ private:
   std::vector<int> layercluster_layer;
   std::vector<float> layercluster_pu_contribution;
 
-
   std::vector<float> caloparticle_energy;
   std::vector<float> caloparticle_eta;
   std::vector<float> caloparticle_phi;
+  std::vector<float> caloparticle_e_energy;
+  std::vector<float> caloparticle_h_energy;
   std::vector<std::vector<float>> caloparticle_hit_eta;
   std::vector<std::vector<float>> caloparticle_hit_phi;
   std::vector<std::vector<float>> caloparticle_hit_density;
   std::vector<std::vector<float>> caloparticle_hit_energy;
   std::vector<std::vector<float>> shared_energy;
   std::vector<int> caloparticle_bx;
+  std::vector<std::vector<float>> caloparticle_layerenergy;
 
   std::vector<float> simcl_energy;
   std::vector<float> simcl_eta;
@@ -156,19 +169,17 @@ private:
   std::vector<std::vector<float>> simcl_shared_energy;
   std::vector<int> simcl_layer;
 
-
   std::vector<int> layercluster_event;
   std::vector<int> layercluster_hit_event;
 
   std::vector<int> caloparticle_event;
   std::vector<int> caloparticle_hit_event;
 
-
   std::vector<std::vector<float>> cp2lc_score;
   std::vector<std::vector<uint32_t>> associatedcp_to_lc;
   std::vector<std::vector<float>> lc2cp_score;
   std::vector<std::vector<uint32_t>> associatedlc_to_cp;
- 
+
   std::vector<std::vector<float>> sc2lc_score;
   std::vector<std::vector<uint32_t>> associatedsc_to_lc;
   std::vector<std::vector<float>> lc2sc_score;
@@ -201,6 +212,9 @@ void LayerClusterDumper::clearVariables() {
   caloparticle_hit_energy.clear();
   caloparticle_hit_event.clear();
   caloparticle_event.clear();
+  caloparticle_e_energy.clear();
+  caloparticle_h_energy.clear();
+  caloparticle_layerenergy.clear();
   shared_energy.clear();
   layercluster_hit_eta.clear();
   layercluster_hit_phi.clear();
@@ -210,12 +224,18 @@ void LayerClusterDumper::clearVariables() {
   layercluster_event.clear();
   layercluster_nhits.clear();
   layercluster_resolution.clear();
+  layercluster_e_energy.clear();
+  layercluster_h_energy.clear();
   pfrechit_eta.clear();
   pfrechit_phi.clear();
   pfrechit_ieta.clear();
   pfrechit_iphi.clear();
   pfrechit_energy.clear();
   pfrechit_time.clear();
+  pfrechit_det.clear();
+  pfrechit_subdetId.clear();
+  pfrechit_depth.clear();
+
   simcl_energy.clear();
   simcl_eta.clear();
   simcl_phi.clear();
@@ -230,18 +250,19 @@ void LayerClusterDumper::clearVariables() {
   seed_density.clear();
 }
 
-float LayerClusterDumper::distance (GlobalPoint point1, GlobalPoint point2) {
+float LayerClusterDumper::distance(GlobalPoint point1, GlobalPoint point2) {
   float deltaEta = point1.eta() - point2.eta();
-  auto o2pi = 1./(2*M_PI);
+  auto o2pi = 1. / (2 * M_PI);
   float deltaPhi = point1.phi() - point2.phi();
   if (std::abs(deltaPhi) > M_PI) {
-    auto n = std::round(deltaPhi*o2pi);
-    deltaPhi = deltaPhi - n*M_PI;
+    auto n = std::round(deltaPhi * o2pi);
+    deltaPhi = deltaPhi - n * M_PI;
   }
-  return std::sqrt(deltaEta*deltaEta + deltaPhi*deltaPhi);
+  return std::sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
 }
 
-std::vector<std::pair<std::pair<float, float>, float>> LayerClusterDumper::addHitsAndDensities(std::vector<std::pair<uint32_t, float>> hits_and_energies, const CaloGeometry* geom, float totalEnergy) {
+std::vector<std::pair<std::pair<float, float>, float>> LayerClusterDumper::addHitsAndDensities(
+    std::vector<std::pair<uint32_t, float>> hits_and_energies, const CaloGeometry* geom, float totalEnergy) {
   std::vector<std::pair<std::pair<float, float>, float>> hits_and_densities;
   hits_and_densities.resize(hits_and_energies.size());
   for (const auto& hit_and_energy : hits_and_energies) {
@@ -251,19 +272,21 @@ std::vector<std::pair<std::pair<float, float>, float>> LayerClusterDumper::addHi
     float density = energy;
     for (const auto& other_hit_and_energy : hits_and_energies) {
       uint32_t other_hit = other_hit_and_energy.first;
-      if (other_hit == hit ) continue;
+      if (other_hit == hit)
+        continue;
       float other_energy = other_hit_and_energy.second;
       GlobalPoint other_position = geom->getPosition(DetId(other_hit));
-      if (distance(position, other_position) < 1.5*0.0175)
-	density += 0.5*other_energy;
+      if (distance(position, other_position) < 1.5 * 0.0175)
+        density += 0.5 * other_energy;
     }
     //density *= totalEnergy;
     hits_and_densities.push_back(std::make_pair(std::make_pair(position.eta(), position.phi()), density));
- }
- return hits_and_densities;
+  }
+  return hits_and_densities;
 }
 
-std::vector<std::pair<std::pair<float, float>, float>> LayerClusterDumper::addHitsAndDensities(std::vector<std::pair<DetId, float>> hits_and_fractions, const CaloGeometry* geom, float totalEnergy) {
+std::vector<std::pair<std::pair<float, float>, float>> LayerClusterDumper::addHitsAndDensities(
+    std::vector<std::pair<DetId, float>> hits_and_fractions, const CaloGeometry* geom, float totalEnergy) {
   std::vector<std::pair<std::pair<float, float>, float>> hits_and_densities;
   hits_and_densities.resize(hits_and_fractions.size());
   for (const auto& hit_and_fraction : hits_and_fractions) {
@@ -273,28 +296,34 @@ std::vector<std::pair<std::pair<float, float>, float>> LayerClusterDumper::addHi
     float density = fraction;
     for (const auto& other_hit_and_fraction : hits_and_fractions) {
       DetId other_hit = other_hit_and_fraction.first;
-      if (other_hit == hit ) continue;
+      if (other_hit == hit)
+        continue;
       float other_fraction = other_hit_and_fraction.second;
       GlobalPoint other_position = geom->getPosition(other_hit);
-      if (distance(position, other_position) < 1.5*0.0175)
-	density += 0.5*other_fraction;
+      if (distance(position, other_position) < 1.5 * 0.0175)
+        density += 0.5 * other_fraction;
     }
     density *= totalEnergy;
     hits_and_densities.push_back(std::make_pair(std::make_pair(position.eta(), position.phi()), density));
- }
- return hits_and_densities;
+  }
+  return hits_and_densities;
 }
 
 LayerClusterDumper::LayerClusterDumper(const edm::ParameterSet& ps)
-  : pfrechit_token_(consumes<reco::PFRecHitCollection>(ps.getParameter<edm::InputTag>("pfrechits"))),
-    layer_clusters_token_(consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layerclusters"))),
-    caloparticles_token_(consumes<std::vector<CaloParticle>>(ps.getParameter<edm::InputTag>("caloparticles"))), 
-    simclusters_token_(consumes<std::vector<SimCluster>>(ps.getParameter<edm::InputTag>("caloparticles"))), 
-    simtoreco_token_(consumes<ticl::SimToRecoCollection>(ps.getParameter<edm::InputTag>("simToRecoCollection"))),
-    recotosim_token_(consumes<ticl::RecoToSimCollection>(ps.getParameter<edm::InputTag>("recoToSimCollection"))),
-    simtoreco_simcl_token_(consumes<ticl::SimToRecoCollectionWithSimClusters>(ps.getParameter<edm::InputTag>("simToRecoCollectionSC"))),
-    recotosim_simcl_token_(consumes<ticl::RecoToSimCollectionWithSimClusters>(ps.getParameter<edm::InputTag>("recoToSimCollectionSC"))),
-    geometry_token_(esConsumes<CaloGeometry, CaloGeometryRecord, edm::Transition::BeginRun>()) {
+    : pfrechits_tags_(ps.getParameter<std::vector<edm::InputTag>>("pfrechits")),
+      layer_clusters_token_(consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layerclusters"))),
+      caloparticles_token_(consumes<std::vector<CaloParticle>>(ps.getParameter<edm::InputTag>("caloparticles"))),
+      simclusters_token_(consumes<std::vector<SimCluster>>(ps.getParameter<edm::InputTag>("caloparticles"))),
+      simtoreco_token_(consumes<ticl::SimToRecoCollection>(ps.getParameter<edm::InputTag>("simToRecoCollection"))),
+      recotosim_token_(consumes<ticl::RecoToSimCollection>(ps.getParameter<edm::InputTag>("recoToSimCollection"))),
+      simtoreco_simcl_token_(
+          consumes<ticl::SimToRecoCollectionWithSimClusters>(ps.getParameter<edm::InputTag>("simToRecoCollectionSC"))),
+      recotosim_simcl_token_(
+          consumes<ticl::RecoToSimCollectionWithSimClusters>(ps.getParameter<edm::InputTag>("recoToSimCollectionSC"))),
+      geometry_token_(esConsumes<CaloGeometry, CaloGeometryRecord, edm::Transition::BeginRun>()) {
+  for (const auto& tag : pfrechits_tags_) {
+    pfrechits_tokens_.push_back(consumes<reco::PFRecHitCollection>(tag));
+  }
 };
 
 LayerClusterDumper::~LayerClusterDumper() { clearVariables(); };
@@ -312,7 +341,10 @@ void LayerClusterDumper::beginJob() {
   pfrechit_tree_->Branch("pfrechitTime", &pfrechit_time);
   pfrechit_tree_->Branch("pfrechitIEta", &pfrechit_ieta);
   pfrechit_tree_->Branch("pfrechitIPhi", &pfrechit_iphi);
-  
+  pfrechit_tree_->Branch("pfrechitDet", &pfrechit_det);
+  pfrechit_tree_->Branch("pfrechitSubdetId", &pfrechit_subdetId);
+  pfrechit_tree_->Branch("pfrechitDepth", &pfrechit_depth);
+
   layercluster_tree_->Branch("layerClusterEnergy", &layercluster_energy);
   layercluster_tree_->Branch("layerClusterEt", &layercluster_et);
   layercluster_tree_->Branch("layerClusterEta", &layercluster_eta);
@@ -329,6 +361,8 @@ void LayerClusterDumper::beginJob() {
   layercluster_tree_->Branch("layerClusterSeedPhi", &layercluster_seed_phi);
   layercluster_tree_->Branch("layerClusterLayer", &layercluster_layer);
   layercluster_tree_->Branch("layerClusterPUContribution", &layercluster_pu_contribution);
+  layercluster_tree_->Branch("layerClusterEenergy", &layercluster_e_energy);
+  layercluster_tree_->Branch("layerClusterHenergy", &layercluster_h_energy);
 
   caloparticle_tree_->Branch("caloParticleEnergy", &caloparticle_energy);
   caloparticle_tree_->Branch("caloParticleEta", &caloparticle_eta);
@@ -338,8 +372,11 @@ void LayerClusterDumper::beginJob() {
   caloparticle_tree_->Branch("caloParticleHitDensity", &caloparticle_hit_density);
   caloparticle_tree_->Branch("caloParticleHitEnergy", &caloparticle_hit_energy);
   caloparticle_tree_->Branch("caloParticleEvent", &caloparticle_event);
-  caloparticle_tree_->Branch("caloParticleBX", &caloparticle_bx); 
+  caloparticle_tree_->Branch("caloParticleBX", &caloparticle_bx);
   caloparticle_tree_->Branch("sharedEnergy", &shared_energy);
+  caloparticle_tree_->Branch("caloParticleEenergy", &caloparticle_e_energy);
+  caloparticle_tree_->Branch("caloParticleHenergy", &caloparticle_h_energy);
+  caloparticle_tree_->Branch("caloParticleEnergyPerLayer", &caloparticle_layerenergy);
 
   simcluster_tree_->Branch("simClusterEnergy", &simcl_energy);
   simcluster_tree_->Branch("simClusterEta", &simcl_eta);
@@ -358,22 +395,26 @@ void LayerClusterDumper::beginJob() {
   event_index = 0;
 }
 
-void LayerClusterDumper::beginRun(edm::Run const&, edm::EventSetup const& es) {
-  geom = &(es.getData(geometry_token_));
-}
+void LayerClusterDumper::beginRun(edm::Run const&, edm::EventSetup const& es) { geom = &(es.getData(geometry_token_)); }
 
 void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) {
   event_index++;
   clearVariables();
 
-  edm::Handle<reco::PFRecHitCollection> pfrechits_h;
-  event.getByToken(pfrechit_token_, pfrechits_h);
-  const auto& pfrechits = *pfrechits_h;
-  
+  std::vector<reco::PFRecHit> pfrechits;
+  for (const auto& token : pfrechits_tokens_) {
+    edm::Handle<reco::PFRecHitCollection> pfrechits_h;
+    event.getByToken(token, pfrechits_h);
+    pfrechits.insert(pfrechits.end(), (*pfrechits_h).begin(), (*pfrechits_h).end());
+  }
+
+  //edm::Handle<reco::PFRecHitCollection> pfrechits_h;
+  //event.getByToken(pfrechit_token_, pfrechits_h);
+  //const auto& pfrechits = *pfrechits_h;
+
   edm::Handle<std::vector<reco::CaloCluster>> layer_clusters_h;
   event.getByToken(layer_clusters_token_, layer_clusters_h);
   const auto& layer_clusters = *layer_clusters_h;
-
 
   edm::Handle<std::vector<CaloParticle>> caloparticle_h;
   event.getByToken(caloparticles_token_, caloparticle_h);
@@ -390,12 +431,11 @@ void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup&
   edm::Handle<ticl::RecoToSimCollection> recoToSim_h;
   event.getByToken(recotosim_token_, recoToSim_h);
   const auto& recoToSim = *recoToSim_h;
- 
 
   edm::Handle<ticl::SimToRecoCollectionWithSimClusters> simToReco_scl_h;
   event.getByToken(simtoreco_simcl_token_, simToReco_scl_h);
   const auto& simToReco_simcl = *simToReco_scl_h;
-						       
+
   edm::Handle<ticl::RecoToSimCollectionWithSimClusters> recoToSim_scl_h;
   event.getByToken(recotosim_simcl_token_, recoToSim_scl_h);
   const auto& recoToSim_simcl = *recoToSim_scl_h;
@@ -403,7 +443,7 @@ void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup&
   ev_event_ = event_index;
   nclusters_ = layer_clusters.size();
 
-  ncaloparticles_ = caloparticles.size(); 
+  ncaloparticles_ = caloparticles.size();
   npfrechits_ = pfrechits.size();
   nsimclusters_ = simclusters.size();
   pfrechit_eta.reserve(npfrechits_);
@@ -412,6 +452,9 @@ void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup&
   pfrechit_iphi.reserve(npfrechits_);
   pfrechit_energy.reserve(npfrechits_);
   pfrechit_time.reserve(npfrechits_);
+  pfrechit_det.reserve(npfrechits_);
+  pfrechit_subdetId.reserve(npfrechits_);
+  pfrechit_depth.reserve(npfrechits_);
 
   layercluster_hit_energy.resize(nclusters_);
   layercluster_hit_eta.resize(nclusters_);
@@ -422,31 +465,50 @@ void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup&
   seed_density.resize(nclusters_);
   layercluster_seed_eta.resize(nclusters_);
   layercluster_seed_phi.resize(nclusters_);
+  layercluster_nhits.resize(nclusters_);
+  layercluster_layer.resize(nclusters_);
+  layercluster_eta.resize(nclusters_);
+  layercluster_phi.resize(nclusters_);
+  layercluster_energy.resize(nclusters_);
+  layercluster_et.resize(nclusters_);
+  layercluster_e_energy.resize(nclusters_);
+  layercluster_h_energy.resize(nclusters_);
 
   caloparticle_hit_energy.resize(ncaloparticles_);
   caloparticle_hit_eta.resize(ncaloparticles_);
   caloparticle_hit_phi.resize(ncaloparticles_);
   caloparticle_hit_density.resize(ncaloparticles_);
+  caloparticle_e_energy.resize(ncaloparticles_);
+  caloparticle_h_energy.resize(ncaloparticles_);
+  caloparticle_layerenergy.resize(ncaloparticles_);
+
   shared_energy.resize(ncaloparticles_);
 
   std::unordered_map<DetId, float> hitmap;
   for (auto pfrechits_iterator = pfrechits.begin(); pfrechits_iterator != pfrechits.end(); ++pfrechits_iterator) {
     DetId id(pfrechits_iterator->detId());
-    GlobalPoint position = geom->getPosition(id);
+    /*GlobalPoint position = geom->getPosition(id);
     pfrechit_eta.push_back(position.eta());
-    pfrechit_phi.push_back(position.phi());
+    pfrechit_phi.push_back(position.phi());*/
     float energy = pfrechits_iterator->energy();
     pfrechit_energy.push_back(energy);
     pfrechit_time.push_back(pfrechits_iterator->time());
     hitmap.insert(std::make_pair(id, energy));
+    pfrechit_det.push_back(id.det());
+    pfrechit_subdetId.push_back(id.subdetId());
+    int depth = 0;
+    if (id.det() == DetId::Hcal) {
+      depth = HcalDetId(id.det()).depth();
+      if (id.subdetId() == HcalOuter)
+        depth += 1;
+    }
+    pfrechit_depth.push_back(depth);
 
-    
-    if(id.subdetId()==EcalBarrel){
+    if (id.subdetId() == EcalBarrel) {
       EBDetId eb_id(id);
       pfrechit_ieta.push_back(eb_id.ieta());
       pfrechit_iphi.push_back(eb_id.iphi());
     }
-
   }
 
   std::vector<size_t> cPIndices;
@@ -459,14 +521,14 @@ void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup&
     for (const auto& cl : cp_iterator->simClusters()) {
       const std::vector<std::pair<uint32_t, float>> haf = cl->hits_and_fractions();
       for (const auto& hit : haf) {
-	DetId id(hit.first);
-	float fraction = hit.second;
-	if (detId2cpMap.find(id) == detId2cpMap.end()) {
-	  std::vector<std::pair<size_t, float>> idxAndFraction{std::make_pair(cpIndex, fraction)};
-	  detId2cpMap.insert(std::make_pair(id, idxAndFraction));
-	} else {
-	    detId2cpMap[id].push_back(std::make_pair(cpIndex, fraction));
-	}
+        DetId id(hit.first);
+        float fraction = hit.second;
+        if (detId2cpMap.find(id) == detId2cpMap.end()) {
+          std::vector<std::pair<size_t, float>> idxAndFraction{std::make_pair(cpIndex, fraction)};
+          detId2cpMap.insert(std::make_pair(id, idxAndFraction));
+        } else {
+          detId2cpMap[id].push_back(std::make_pair(cpIndex, fraction));
+        }
       }
     }
     cpIndex++;
@@ -477,55 +539,67 @@ void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup&
   lc2sc_score.resize(nclusters_);
   associatedsc_to_lc.resize(nclusters_);
   int lc_index = 0;
-  for (auto lc_iterator = layer_clusters.begin(); lc_iterator != layer_clusters.end(); ++lc_iterator) {
-    layercluster_energy.push_back(lc_iterator->energy());
-    layercluster_et.push_back(lc_iterator->energy()/std::cosh(lc_iterator->eta()));
-    layercluster_eta.push_back(lc_iterator->eta());
-    layercluster_phi.push_back(lc_iterator->phi());
+  for (auto lc_iterator = layer_clusters.begin(); lc_iterator != layer_clusters.end(); ++lc_iterator) {\
+    layercluster_energy[lc_index] = lc_iterator->energy();
+    layercluster_et[lc_index] = lc_iterator->energy() / std::cosh(lc_iterator->eta());
+    layercluster_eta[lc_index] = lc_iterator->eta();
+    layercluster_phi[lc_index] = lc_iterator->phi();
     DetId seedId = lc_iterator->seed();
     int layerId = 0;
     if (seedId.det() == DetId::Hcal) {
       HcalDetId hid(seedId);
       layerId = hid.depth();
       if (seedId.subdetId() == HcalSubdetector::HcalOuter)
-	layerId += 1;
+        layerId += 1;
     }
-    layercluster_layer.push_back(layerId);
+    layercluster_layer[lc_index] = layerId;
     float seedEta = (geom->getPosition(seedId)).eta();
     float seedPhi = (geom->getPosition(seedId)).phi();
     layercluster_seed_eta[lc_index] = seedEta;
     layercluster_seed_phi[lc_index] = seedPhi;
     std::vector<std::pair<DetId, float>> hits_and_fractions = lc_iterator->hitsAndFractions();
-    layercluster_nhits.push_back(hits_and_fractions.size());
+    layercluster_nhits[lc_index] = hits_and_fractions.size();
     float pu_contribution_to_cluster = 0.f;
-    for (const auto& haf : hits_and_fractions) { 
+    float e_energy = 0.f;
+    float h_energy = 0.f;
+    for (const auto& haf : hits_and_fractions) {
       float pu_contribution_to_hit = 0.f;
       //float eta = (geom->getPosition(haf.first)).eta();
       //float phi = (geom->getPosition(haf.second)).phi();
       //layercluster_hit_eta[lc_index].push_back(eta);
       //layercluster_hit_phi[lc_index].push_back(phi);
-      layercluster_hit_energy[lc_index].push_back(haf.second*lc_iterator->energy());
-      if (detId2cpMap.find(haf.first) == detId2cpMap.end()) continue;
+      layercluster_hit_energy[lc_index].push_back(haf.second * lc_iterator->energy());
+      if (detId2cpMap.find(haf.first) == detId2cpMap.end())
+        continue;
       auto cp_and_fraction = detId2cpMap[haf.first];
       for (const auto& [cp, frac] : cp_and_fraction) {
-	if (std::find(cPIndices.begin(), cPIndices.end(), cp) != cPIndices.end()) continue;
-	pu_contribution_to_hit += frac;
+        if (std::find(cPIndices.begin(), cPIndices.end(), cp) != cPIndices.end())
+          continue;
+        pu_contribution_to_hit += frac;
       }
       float hit_energy = hitmap[haf.first];
+      if (haf.first.det() == DetId::Ecal)
+        e_energy += hit_energy;
+      else {
+        h_energy += hit_energy;
+      }
       pu_contribution_to_hit *= hit_energy;
       pu_contribution_to_cluster += pu_contribution_to_hit;
     }
+    layercluster_e_energy[lc_index] = e_energy;
+    layercluster_h_energy[lc_index] = h_energy;
     float lc_energy = lc_iterator->energy();
-    layercluster_pu_contribution.push_back(pu_contribution_to_cluster/lc_energy);
-    std::vector<std::pair<std::pair<float, float>, float>> hits_and_densities = addHitsAndDensities(hits_and_fractions, geom, lc_energy);
+    layercluster_pu_contribution.push_back(pu_contribution_to_cluster / lc_energy);
+    std::vector<std::pair<std::pair<float, float>, float>> hits_and_densities =
+        addHitsAndDensities(hits_and_fractions, geom, lc_energy);
     for (const auto& hit_and_density : hits_and_densities) {
       //DetId hit = hit_and_density.first;
       float eta = hit_and_density.first.first;
       float phi = hit_and_density.first.second;
       float density = hit_and_density.second;
-      if (eta == seedEta && phi == seedPhi) 
-	seed_density[lc_index].push_back(density);
-//      GlobalPoint position = geom->getPosition(hit);
+      if (eta == seedEta && phi == seedPhi)
+        seed_density[lc_index].push_back(density);
+      //      GlobalPoint position = geom->getPosition(hit);
       layercluster_hit_eta[lc_index].push_back(eta);
       layercluster_hit_phi[lc_index].push_back(phi);
       layercluster_hit_density[lc_index].push_back(density);
@@ -537,23 +611,22 @@ void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup&
     if (cpsIt != recoToSim.end()) {
       const auto& cps = cpsIt->val;
       for (const auto& cpPair : cps) {
-	auto cp_id = (cpPair.first).get() - (edm::Ref<std::vector<CaloParticle>>(caloparticle_h, 0)).get();
-	associatedcp_to_lc[lc_index].push_back(cp_id);
-	lc2cp_score[lc_index].push_back(cpPair.second);
+        auto cp_id = (cpPair.first).get() - (edm::Ref<std::vector<CaloParticle>>(caloparticle_h, 0)).get();
+        associatedcp_to_lc[lc_index].push_back(cp_id);
+        lc2cp_score[lc_index].push_back(cpPair.second);
       }
     }
     const auto& scsIt = recoToSim_simcl.find(lcRef);
     if (scsIt != recoToSim_simcl.end()) {
       const auto& scs = scsIt->val;
       for (const auto& scPair : scs) {
-	auto sc_id = (scPair.first).get() - (edm::Ref<std::vector<SimCluster>>(simcluster_h, 0)).get();
-	associatedsc_to_lc[lc_index].push_back(sc_id);
-	lc2sc_score[lc_index].push_back(scPair.second);
+        auto sc_id = (scPair.first).get() - (edm::Ref<std::vector<SimCluster>>(simcluster_h, 0)).get();
+        associatedsc_to_lc[lc_index].push_back(sc_id);
+        lc2sc_score[lc_index].push_back(scPair.second);
       }
     }
     lc_index++;
   }
-
 
   cp2lc_score.resize(caloparticles.size());
   associatedlc_to_cp.resize(caloparticles.size());
@@ -561,14 +634,15 @@ void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup&
   for (auto cp_iterator = caloparticles.begin(); cp_iterator != caloparticles.end(); ++cp_iterator) {
     const edm::Ref<std::vector<CaloParticle>> cpRef(caloparticle_h, cp_index);
     const auto& lcsIt = simToReco.find(cpRef);
-    if (lcsIt != simToReco.end()) {                                                                                 
+    if (lcsIt != simToReco.end()) {
       const auto& lcs = lcsIt->val;
-      if (lcs.size() == 0) continue;
+      if (lcs.size() == 0)
+        continue;
       for (const auto& lcPair : lcs) {
-	auto lc_id = (lcPair.first).get() - (edm::Ref<std::vector<reco::CaloCluster>>(layer_clusters_h, 0)).get();
-	associatedlc_to_cp[cp_index].push_back(lc_id);
-	cp2lc_score[cp_index].push_back(lcPair.second.second);
-	shared_energy[cp_index].push_back(lcPair.second.first);
+        auto lc_id = (lcPair.first).get() - (edm::Ref<std::vector<reco::CaloCluster>>(layer_clusters_h, 0)).get();
+        associatedlc_to_cp[cp_index].push_back(lc_id);
+        cp2lc_score[cp_index].push_back(lcPair.second.second);
+        shared_energy[cp_index].push_back(lcPair.second.first);
       }
     }
     float cp_energy = cp_iterator->energy();
@@ -577,7 +651,30 @@ void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup&
     caloparticle_phi.push_back(cp_iterator->phi());
     caloparticle_bx.push_back(cp_iterator->g4Tracks()[0].eventId().bunchCrossing());
     std::vector<std::pair<std::pair<float, float>, float>> hits_and_energies;
+    float e_energy = 0.f;
+    float h_energy = 0.f;
+    std::vector<float> energy_perlayer;
+    energy_perlayer.resize(MAX_LAYERS, 0.f);
     for (const auto& cl : cp_iterator->simClusters()) {
+      const std::vector<std::pair<uint32_t, float>> hae = (*cl).hits_and_energies();
+      for (auto it = hae.begin(); it != hae.end(); ++it) {
+        int layerId = 0;
+        if (DetId(it->first).det() == DetId::Ecal)
+          e_energy += it->second;
+        else if (DetId(it->first).det() == DetId::Hcal) {
+          layerId = HcalDetId(it->first).depth();
+          if (DetId(it->first).subdetId() == HcalOuter)
+            layerId += 1;
+          h_energy += it->second;
+        }
+        else
+          continue;
+      }
+    }
+    caloparticle_layerenergy[cp_index] = energy_perlayer;
+    caloparticle_e_energy[cp_index] = e_energy;
+    caloparticle_h_energy[cp_index] = h_energy;
+    /*for (const auto& cl : cp_iterator->simClusters()) {
       const std::vector<std::pair<uint32_t, float>> hae = (*cl).hits_and_energies();
       for (auto it = hae.begin(); it != hae.end(); ++it) {
 	//if (it->second < 0.1) continue;
@@ -587,16 +684,16 @@ void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup&
 	float phi = (geom->getPosition(id)).phi();
 	hits_and_energies.push_back(std::make_pair(std::make_pair(eta,phi), it->second));
       }
-    }
+    }*/
     //std::vector<std::pair<std::pair<float, float>, float>> hits_and_densities = addHitsAndDensities(hits_and_energies, geom, cp_energy);
     //for (const auto& hit_and_density : hits_and_densities) {
-      //float eta = hit_and_density.first.first;
-      //float phi = hit_and_density.first.second;
-      //float density = hit_and_density.second;
-      //caloparticle_hit_eta.push_back(eta);
-      //caloparticle_hit_phi.push_back(phi);
-      //caloparticle_hit_density.push_back(density);
-      //caloparticle_hit_event.push_back(event_index);
+    //float eta = hit_and_density.first.first;
+    //float phi = hit_and_density.first.second;
+    //float density = hit_and_density.second;
+    //caloparticle_hit_eta.push_back(eta);
+    //caloparticle_hit_phi.push_back(phi);
+    //caloparticle_hit_density.push_back(density);
+    //caloparticle_hit_event.push_back(event_index);
     //}
     //for (const auto& hit_and_energy : hits_and_energies) {
     //  caloparticle_hit_energy[cp_index].push_back(hit_and_energy.second);
@@ -624,13 +721,13 @@ void LayerClusterDumper::analyze(const edm::Event& event, const edm::EventSetup&
 
     const edm::Ref<std::vector<SimCluster>> scRef(simcluster_h, sc_index);
     const auto& lcsIt = simToReco_simcl.find(scRef);
-    if (lcsIt != simToReco_simcl.end())  {
+    if (lcsIt != simToReco_simcl.end()) {
       const auto& lcs = lcsIt->val;
       for (const auto& lcPair : lcs) {
-	auto lc_id = (lcPair.first).get() - (edm::Ref<std::vector<reco::CaloCluster>>(layer_clusters_h, 0)).get();
-	associatedlc_to_sc[sc_index].push_back(lc_id);
-	sc2lc_score[sc_index].push_back(lcPair.second.second);
-	simcl_shared_energy[sc_index].push_back(lcPair.second.first);
+        auto lc_id = (lcPair.first).get() - (edm::Ref<std::vector<reco::CaloCluster>>(layer_clusters_h, 0)).get();
+        associatedlc_to_sc[sc_index].push_back(lc_id);
+        sc2lc_score[sc_index].push_back(lcPair.second.second);
+        simcl_shared_energy[sc_index].push_back(lcPair.second.first);
       }
     }
     sc_index++;
@@ -645,7 +742,10 @@ void LayerClusterDumper::endJob() {}
 
 void LayerClusterDumper::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
-  desc.add<edm::InputTag>("pfrechits", edm::InputTag("particleFlowRecHitECAL", ""));
+  desc.add<std::vector<edm::InputTag>>("pfrechits",
+                                       {edm::InputTag("particleFlowRecHitECAL", ""),
+                                        edm::InputTag("particleFlowRecHitHBHE", ""),
+                                        edm::InputTag("particleFlowRecHitHO", "")});
   desc.add<edm::InputTag>("layerclusters", edm::InputTag("barrelLayerClusters"));
   desc.add<edm::InputTag>("caloparticles", edm::InputTag("mix", "MergedCaloTruth"));
   desc.add<edm::InputTag>("simclusters", edm::InputTag("mix", "MergedCaloTruth"));
@@ -657,4 +757,3 @@ void LayerClusterDumper::fillDescriptions(edm::ConfigurationDescriptions& descri
 }
 
 DEFINE_FWK_MODULE(LayerClusterDumper);
-  

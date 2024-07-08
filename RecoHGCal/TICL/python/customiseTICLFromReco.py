@@ -29,6 +29,7 @@ from SimCalorimetry.HGCalAssociatorProducers.LCToCPAssociation_cfi import barrel
 from SimCalorimetry.HGCalAssociatorProducers.LCToSCAssociation_cfi import barrelLayerClusterSimClusterAssociation as barrelLayerClusterSimClusterAssociationProducer
 
 from RecoHGCal.TICL.lcFromPFClusterProducer_cfi import lcFromPFClusterProducer  
+from RecoHGCal.TICL.recHitDumper_cfi import recHitDumper
 
 # For the moment ignore
 # from SimCalorimetry.HGCalAssociatorProducers.barrelSimClusterAssociatorByEnergyScore_cfi import barrelSimClusterAssociatorByEnergyScore as barrelSCAssocByEnergyScoreProducer
@@ -154,7 +155,7 @@ def customiseTICLBarrelFromReco(process):
     #     				   process.barrelValidatorPFCluster
     #     				   )
     process.TICLBarrel_Validation = cms.Path(process.TICLBarrel_ValidationProducers)
-         				     #process.TICLBarrel_Validator)
+         				     #+process.TICLBarrel_Validator)
 
     process.consumer = cms.EDAnalyzer("GenericConsumer",
       eventProducts = cms.untracked.vstring('lcFromPFClusterProducer')
@@ -173,7 +174,8 @@ def customiseTICLBarrelFromReco(process):
     )
     process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput+
                                                   process.consumer + process.consumer2 + process.consumer3 + process.consumer4 + process.consumer5+
-                                                   process.lcDumper+process.lcDumperPF
+                                                   process.lcDumper+process.lcDumperPF + 
+                                                  process.recHitDumper
                                                   )
     #process.DQMoutput_step = cms.EndPath(process.DQMoutput)
 
