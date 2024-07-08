@@ -4,6 +4,7 @@ from RecoLocalCalo.HGCalRecProducers.hgcalMergeLayerClusters_cfi import hgcalMer
 from RecoLocalCalo.HGCalRecProducers.hgcalLayerClusters_cff import hgcalLayerClustersEE, hgcalLayerClustersHSi, hgcalLayerClustersHSci
 from RecoHGCal.TICL.ticlDumper_cfi import ticlDumper
 from RecoHGCal.TICL.layerClusterDumper_cfi import layerClusterDumper
+from RecoHGCal.TICL.trackstersProducer_cfi import trackstersProducer as _trackstersProducer
 # Validation
 from Validation.HGCalValidation.HGCalValidator_cfi import *
 from RecoLocalCalo.HGCalRecProducers.recHitMapProducer_cfi import recHitMapProducer
@@ -95,6 +96,32 @@ def customiseTICLBarrelFromReco(process):
 					       #process.particleFlowClusterECALUncorrected,
 					       process.lcFromPFClusterProducer
 					       )
+
+    process.barrelHcalPatternRecognition = _trackstersProducer.clone(
+        layer_clusters = "hcalLayerClusters",
+        time_layerclusters = "timeLayerCluster_hcal",
+        filtered_mask = "filteredLayerClustersHcalFastJet:FastJet",
+        seeding_regions = "ticlSeedingGlobal",
+        itername = "FastJet",
+        patternRecognitionBy = "FastJet",
+        pluginPatternRecognitionByFastJet = dict (
+            algo_verbosity = 2
+        )
+    )
+
+    process.barrelEcalPatternRecognition = _trackstersProducer.clone(
+        layer_clusters = "ecalLayerClusters",
+        time_layerclusters = "timeLayerCluster_ecal",
+        filtered_mask = "filteredLayerClustersEcalFastJet:FastJet",
+        seeding_regions = "ticlSeedingGlobal",
+        itername = "CLUE2D",
+        patternRecognitionBy = "FastJet", #"CLUE2D",
+        pluginPatternRecognitionByFastJet = dict (
+            algo_verbosity = 2
+        )
+    )
+    
+    process.hcalPatternRecognitionTask = cms.Task(barrelHcalPatternRecognition) # + process.barrelEcalPatternRecognition
     
     process.TICLBarrel = cms.Path(process.barrelLayerClustersTask)
 
