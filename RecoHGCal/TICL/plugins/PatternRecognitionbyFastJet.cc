@@ -32,6 +32,7 @@ PatternRecognitionbyFastJet<TILES>::PatternRecognitionbyFastJet(const edm::Param
       caloGeomToken_(iC.esConsumes<CaloGeometry, CaloGeometryRecord>()),
       antikt_radius_(conf.getParameter<double>("antikt_radius")),
       minNumLayerCluster_(conf.getParameter<int>("minNumLayerCluster")),
+      useRegression_(conf.getParameter<bool>("use_regression")),
       eidInputName_(conf.getParameter<std::string>("eid_input_name")),
       eidOutputNameEnergy_(conf.getParameter<std::string>("eid_output_name_energy")),
       eidOutputNameId_(conf.getParameter<std::string>("eid_output_name_id")),
@@ -149,16 +150,19 @@ void PatternRecognitionbyFastJet<TILES>::makeTracksters(
                               computeLocalTime_);
 
   // run energy regression and ID
-  energyRegressionAndID(input.layerClusters, input.tfSession, result);
-  if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > VerbosityLevel::Basic) {
-    for (auto const &t : result) {
-      edm::LogVerbatim("PatternRecogntionbyFastJet") << "Barycenter: " << t.barycenter();
-      edm::LogVerbatim("PatternRecogntionbyFastJet") << "LCs: " << t.vertices().size();
-      edm::LogVerbatim("PatternRecogntionbyFastJet") << "Energy: " << t.raw_energy();
-      edm::LogVerbatim("PatternRecogntionbyFastJet") << "Regressed: " << t.regressed_energy();
+  if(useRegression_){
+    energyRegressionAndID(input.layerClusters, input.tfSession, result);
+    if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > VerbosityLevel::Basic) {
+      for (auto const &t : result) {
+	edm::LogVerbatim("PatternRecogntionbyFastJet") << "Barycenter: " << t.barycenter();
+	edm::LogVerbatim("PatternRecogntionbyFastJet") << "LCs: " << t.vertices().size();
+	edm::LogVerbatim("PatternRecogntionbyFastJet") << "Energy: " << t.raw_energy();
+	edm::LogVerbatim("PatternRecogntionbyFastJet") << "Regressed: " << t.regressed_energy();
+      }
     }
   }
 }
+
 
 template <typename TILES>
 void PatternRecognitionbyFastJet<TILES>::energyRegressionAndID(const std::vector<reco::CaloCluster> &layerClusters,

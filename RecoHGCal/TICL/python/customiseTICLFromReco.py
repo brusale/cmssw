@@ -105,6 +105,7 @@ def customiseTICLBarrelFromReco(process):
         itername = "FastJet",
         patternRecognitionBy = "FastJet",
         pluginPatternRecognitionByFastJet = dict (
+            use_regression = cms.bool(False),
             algo_verbosity = 2
         )
     )
@@ -117,6 +118,7 @@ def customiseTICLBarrelFromReco(process):
         itername = "CLUE2D",
         patternRecognitionBy = "FastJet", #"CLUE2D",
         pluginPatternRecognitionByFastJet = dict (
+            use_regression = cms.bool(False),
             algo_verbosity = 2
         )
     )
