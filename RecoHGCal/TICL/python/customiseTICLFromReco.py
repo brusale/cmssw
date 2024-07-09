@@ -124,7 +124,7 @@ def customiseTICLBarrelFromReco(process):
     )
     
     process.hcalPatternRecognitionTask = cms.Task(process.barrelHcalPatternRecognition) # + process.barrelEcalPatternRecognition
-    process.TICLBarrel = cms.Path(process.ticlLayerTileProducer, process.ticlSeedingGlobal, process.barrelLayerClustersTask, process.hcalPatternRecognitionTask)
+    process.TICLBarrel = cms.Path(process.ticlLayerTileProducer + process.ticlSeedingGlobal, process.barrelLayerClustersTask, process.hcalPatternRecognitionTask)
 
     # We want to run CLUE on not -cleaned Rechit collections
     process.recHitMapProducer.EBInput = cms.InputTag("particleFlowRecHitECAL")
@@ -256,9 +256,8 @@ def customiseTICLForLCDumper(process):
     process.lcDumperPF.layerclusters = cms.InputTag("lcFromPFClusterProducer")
     process.lcDumperPF.simToRecoCollection = cms.InputTag("barrelLayerClusterCaloParticleAssociationProducerPFCluster")
     process.lcDumperPF.recoToSimCollection = cms.InputTag("barrelLayerClusterCaloParticleAssociationProducerPFCluster")
-    #process.lcDumperPF.pfrechits = cms.InputTag("particleFlowRecHitECAL")# without cleaned 
-    process.TFileService = cms.Service("TFileService", 
+    #process.lcDumperPF.pfrechits = cms.InputTag("particleFlowRecHitECAL")# without cleaned
+    process.TFileService = cms.Service("TFileService",
 				       fileName = cms.string("histo.root"))
     #process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput_step + process.lcDumper + process.lcDumperPF)
     return process
-
