@@ -47,7 +47,7 @@ CloseByParticleGunProducer::CloseByParticleGunProducer(const ParameterSet& pset)
   }
   if (fFixedR)
     fRMin = pgun_params.getParameter<double>("RMin");
-  
+
   fZMax = pgun_params.getParameter<double>("ZMax");
   fZMin = pgun_params.getParameter<double>("ZMin");
   fDelta = pgun_params.getParameter<double>("Delta");
@@ -134,8 +134,8 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
   double fR = 0.;
   if (fFixedR)
     fR = fRMin;
-    // z will be computed after eta is samples
-  else
+  // z will be computed after eta is samples
+  if (!fControlledByEta)
     fZ = CLHEP::RandFlat::shoot(engine, fZMin, fZMax);
 
   double fT;
@@ -145,10 +145,13 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
     fR = CLHEP::RandFlat::shoot(engine, fRMin, fRMax);
   } else {
     fEta = CLHEP::RandFlat::shoot(engine, fEtaMin, fEtaMax);
+    //fR = CLHEP::RandFlat::shoot(engine, fRMin, fRMax);
 
-    if (fFixedR){
+    //fZ = fR * sinh(fEta);
+
+    if (fFixedR) {
       fZ = fR * sinh(fEta);
-    }else{
+    } else {
       fR = (fZ / sinh(fEta));
     }
   }
@@ -164,11 +167,13 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
 
   // Loop over particles
   for (unsigned int ip = 0; ip < numParticles; ++ip) {
-    if (fOverlapping) {
+    if (fOverlapping && !fFixedR) {
       fR = CLHEP::RandFlat::shoot(engine, tmpR - fDelta, tmpR + fDelta);
       phi = CLHEP::RandFlat::shoot(engine, tmpPhi - fDelta / fR, tmpPhi + fDelta / fR);
+    } else if (fOverlapping && fFixedR) {
+        phi = CLHEP::RandFlat::shoot(engine, tmpPhi - fDelta / fR, tmpPhi + fDelta / fR);
     } else
-      phi += fDelta / fR;
+        phi += fDelta / fR;
 
     double fEn;
     if (numParticles > 1 && fMaxEnSpread)
@@ -206,7 +211,9 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
 
     // compute correct path assuming uniform magnetic field in CMS
     double pathLength = 0.;
-    const double speed = p.pz() / p.e() * c_light / cm;
+    const double speed_ = std::sqrt(p.px() * p.px() + p.py() * p.py() + p.pz() * p.pz()) / p.e() * c_light / cm;
+    //std::cout << "p.pz() : " << p.pz() << std::endl;
+    //std::cout << "p.e() : " << p.e() << std::endl;
     if (PData->charge()) {
       // Radius [cm] = P[GeV/c] * 10^9 / (c[mm/ns] * 10^6 * q[C] * B[T]) * 100[cm/m]
       const double radius = std::sqrt(p.px() * p.px() + p.py() * p.py()) * std::pow(10, 5) /
@@ -218,9 +225,15 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
     }
 
     // if not pointing time doesn't mean a lot, keep the old way
-    const double pathTime = fPointing ? (pathLength / speed) : (std::sqrt(x * x + y * y + fZ * fZ) / speed);
+    //std::cout << "pathLength / speed: " << pathLength / speed << std::endl;
+    //std::cout << "pathLength / speed_: " << pathLength / speed_ << std::endl;
+    //std::cout << "fZ / speedz: " << fZ / speed << std::endl;
+    //std::cout << "fR / speedR: " << fR / speedR << std::endl;
+    const double pathTime = fPointing ? (pathLength / speed_) : (std::sqrt(x * x + y * y + fZ * fZ) / speed_);
+    //const double pathTime = fPointing ? (pathLength / speed) : (std::sqrt(x * x + y * y + fZ * fZ) / speed);
     double timeOffset = fOffsetFirst + (pathTime + ip * fT) * ns * c_light;
-
+    //constexpr double c = 2.99792458e+1;
+    //double timeOffset = std::sqrt(x * x + y * y + fZ * fZ) / c * ns * c_light * fT/fT;
     HepMC::GenVertex* Vtx = new HepMC::GenVertex(HepMC::FourVector(x * cm, y * cm, fZ * cm, timeOffset));
 
     HepMC::GenParticle* Part = new HepMC::GenParticle(p, PartID, 1);
