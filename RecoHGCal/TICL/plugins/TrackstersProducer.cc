@@ -68,7 +68,6 @@ TrackstersProducer::TrackstersProducer(const edm::ParameterSet& ps)
       doNose_(detector_ == "HFNose"),
       doRegression_(ps.getParameter<bool>("doRegression")),
       tfDnnLabel_(ps.getParameter<std::string>("tfDnnLabel")),
-      tfDnnToken_(esConsumes<TfGraphDefWrapper, TfGraphRecord>()),
       tfSession_(nullptr),
       clusters_token_(consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_clusters"))),
       filtered_layerclusters_mask_token_(consumes<std::vector<float>>(ps.getParameter<edm::InputTag>("filtered_mask"))),
