@@ -13,5 +13,11 @@ typedef edmplugin::PluginFactory<ticl::PatternRecognitionAlgoBaseT<TICLLayerTile
 typedef edmplugin::PluginFactory<ticl::PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>*(const edm::ParameterSet&,
                                                                                           edm::ConsumesCollector)>
     PatternRecognitionHFNoseFactory;
+typedef edmplugin::PluginFactory<ticl::PatternRecognitionAlgoBaseT<TICLLayerTilesHCAL>*(const edm::ParameterSet&,
+                                                                                          edm::ConsumesCollector)>
+    PatternRecognitionHCALFactory;
+typedef edmplugin::PluginFactory<ticl::PatternRecognitionAlgoBaseT<TICLLayerTilesECAL>*(const edm::ParameterSet&,
+                                                                                          edm::ConsumesCollector)>
+    PatternRecognitionECALFactory;
 
 #endif

@@ -128,6 +128,7 @@ def customiseTICLBarrelFromReco(process):
     )
     
     process.hcalPatternRecognitionTask = cms.Task(process.barrelHcalPatternRecognition) # + process.barrelEcalPatternRecognition
+    process.ticlLayerTileProducer.detector = cms.string('HCAL')
     process.TICLBarrel = cms.Path(process.ticlLayerTileProducer + process.ticlSeedingGlobal, process.barrelLayerClustersTask, process.hcalPatternRecognitionTask)
 
     # We want to run CLUE on not -cleaned Rechit collections

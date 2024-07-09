@@ -24,11 +24,15 @@ public:
 
 private:
   edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_token_;
+  edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_HCAL_token_;
+  edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_ECAL_token_;
   edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_HFNose_token_;
   edm::ESGetToken<CaloGeometry, CaloGeometryRecord> geometry_token_;
   hgcal::RecHitTools rhtools_;
   std::string detector_;
   bool doNose_;
+  bool doHCAL_;
+  bool doECAL_;
 };
 
 TICLLayerTileProducer::TICLLayerTileProducer(const edm::ParameterSet &ps)
@@ -36,19 +40,21 @@ TICLLayerTileProducer::TICLLayerTileProducer(const edm::ParameterSet &ps)
   geometry_token_ = esConsumes<CaloGeometry, CaloGeometryRecord, edm::Transition::BeginRun>();
 
   doNose_ = (detector_ == "HFNose");
+  doHCAL_ = (detector_ == "HCAL");
+  doECAL_ = (detector_ == "ECAL");
 
   if (doNose_) {
     clusters_HFNose_token_ =
         consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_HFNose_clusters"));
     produces<TICLLayerTilesHFNose>();
-  } else if (detector_ == "HCAL") {
+  } else if (doHCAL_) {
     clusters_HCAL_token_ = 
         consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_HCAL_clusters"));
     produces<TICLLayerTilesHCAL>();
-  /*} else if (detector_ == "ECAL") {
+  } else if (doECAL_) {
     clusters_ECAL_token_ =
         consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_ECAL_clusters"));
-    produces<TICLLayerTilesECAL>();*/
+    produces<TICLLayerTilesECAL>();
   } else {
     clusters_token_ = consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_clusters"));
     produces<TICLLayerTiles>();
@@ -63,11 +69,14 @@ void TICLLayerTileProducer::beginRun(edm::Run const &, edm::EventSetup const &es
 void TICLLayerTileProducer::produce(edm::Event &evt, const edm::EventSetup &) {
   std::unique_ptr<TICLLayerTilesHFNose> resultHFNose;
   std::unique_ptr<TICLLayerTiles> result;
-  std::unique_ptr<TICLLayerTilesHCAL> result;
+  std::unique_ptr<TICLLayerTilesHCAL> resultHCAL;
+  std::unique_ptr<TICLLayerTilesECAL> resultECAL;
   if (doNose_) {
     resultHFNose = std::make_unique<TICLLayerTilesHFNose>();
   } else if (doHCAL_) {
-      result = std::make_unique<TICLLayerTilesHCAL>();
+      resultHCAL = std::make_unique<TICLLayerTilesHCAL>();
+  } else if (doECAL_) {
+      resultECAL = std::make_unique<TICLLayerTilesECAL>();
   } else {
       result = std::make_unique<TICLLayerTiles>();
   }
@@ -75,6 +84,10 @@ void TICLLayerTileProducer::produce(edm::Event &evt, const edm::EventSetup &) {
   edm::Handle<std::vector<reco::CaloCluster>> cluster_h;
   if (doNose_)
     evt.getByToken(clusters_HFNose_token_, cluster_h);
+  else if (doHCAL_)
+    evt.getByToken(clusters_HCAL_token_, cluster_h);
+  else if (doECAL_)
+    evt.getByToken(clusters_ECAL_token_, cluster_h);
   else
     evt.getByToken(clusters_token_, cluster_h);
 
@@ -89,6 +102,10 @@ void TICLLayerTileProducer::produce(edm::Event &evt, const edm::EventSetup &) {
 
     if (doNose_) {
       resultHFNose->fill(layer, lc.eta(), lc.phi(), lcId);
+    } else if (doHCAL_) {
+      resultHCAL->fill(layer, lc.eta(), lc.phi(), lcId);
+    } else if (doECAL_) {
+      resultECAL->fill(layer, lc.eta(), lc.phi(), lcId);
     } else {
       result->fill(layer, lc.eta(), lc.phi(), lcId);
       LogDebug("TICLLayerTileProducer") << "Adding layerClusterId: " << lcId << " into bin [eta,phi]: [ "
@@ -99,6 +116,10 @@ void TICLLayerTileProducer::produce(edm::Event &evt, const edm::EventSetup &) {
   }
   if (doNose_)
     evt.put(std::move(resultHFNose));
+  else if (doHCAL_)
+    evt.put(std::move(resultHCAL));
+  else if (doECAL_)
+    evt.put(std::move(resultECAL));
   else
     evt.put(std::move(result));
 }
@@ -107,6 +128,8 @@ void TICLLayerTileProducer::fillDescriptions(edm::ConfigurationDescriptions &des
   edm::ParameterSetDescription desc;
   desc.add<std::string>("detector", "HGCAL");
   desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalMergeLayerClusters"));
+  desc.add<edm::InputTag>("layer_HCAL_clusters", edm::InputTag("barrelLayerClusters", "hcalLayerClusters"));
+  desc.add<edm::InputTag>("layer_ECAL_clusters", edm::InputTag("barrelLayerClusters", "ecalLayerClusters"));
   desc.add<edm::InputTag>("layer_HFNose_clusters", edm::InputTag("hgcalLayerClustersHFNose"));
   descriptions.add("ticlLayerTileProducer", desc);
 }
