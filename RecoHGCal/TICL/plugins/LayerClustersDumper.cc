@@ -58,7 +58,6 @@
 #include "SimDataFormats/Associations/interface/LayerClusterToCaloParticleAssociatorBaseImpl.h"
 #include "SimDataFormats/Associations/interface/LayerClusterToSimClusterAssociatorBaseImpl.h"
 #include "SimDataFormats/Associations/interface/TracksterToSimTracksterHitLCAssociator.h"
-#include "RecoHGCal/TICL/interface/commons.h"
 
 // TFileService
 #include "FWCore/ServiceRegistry/interface/Service.h"

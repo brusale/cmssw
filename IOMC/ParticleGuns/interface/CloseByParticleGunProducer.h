@@ -25,12 +25,11 @@ namespace edm {
 
   protected:
     // data members
-    bool fControlledByEta;
-    double fVarMin, fVarMax, fEtaMin, fEtaMax, fRMin, fRMax, fZMin, fZMax, fDelta, fPhiMin, fPhiMax, fTMin, fTMax,
+    bool fControlledByEta, fFixedR;
+    double fEnMin, fEnMax, fEtaMin, fEtaMax, fRMin, fRMax, fZMin, fZMax, fDelta, fPhiMin, fPhiMax, fTMin, fTMax,
         fOffsetFirst;
     int fNParticles;
-    bool fMaxVarSpread = false;
-    bool fFlatPtGeneration = false;
+    bool fMaxEnSpread = false;
     bool fPointing = false;
     bool fOverlapping = false;
     bool fRandomShoot = false;
@@ -42,3 +41,4 @@ namespace edm {
 }  // namespace edm
 
 #endif
+

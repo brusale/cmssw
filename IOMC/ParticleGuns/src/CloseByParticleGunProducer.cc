@@ -14,10 +14,10 @@
 #include "FWCore/Utilities/interface/RandomNumberGenerator.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
-#include <CLHEP/Random/RandFlat.h>
-#include <CLHEP/Units/SystemOfUnits.h>
-#include <CLHEP/Units/GlobalPhysicalConstants.h>
-#include <CLHEP/Random/RandFlat.h>
+#include "CLHEP/Random/RandFlat.h"
+#include "CLHEP/Units/GlobalSystemOfUnits.h"
+#include "CLHEP/Units/GlobalPhysicalConstants.h"
+#include "CLHEP/Random/RandFlat.h"
 
 using namespace edm;
 using namespace std;
@@ -26,13 +26,14 @@ CloseByParticleGunProducer::CloseByParticleGunProducer(const ParameterSet& pset)
     : BaseFlatGunProducer(pset), m_fieldToken(esConsumes()) {
   ParameterSet pgun_params = pset.getParameter<ParameterSet>("PGunParameters");
   fControlledByEta = pgun_params.getParameter<bool>("ControlledByEta");
-  fVarMax = pgun_params.getParameter<double>("VarMax");
-  fVarMin = pgun_params.getParameter<double>("VarMin");
-  fMaxVarSpread = pgun_params.getParameter<bool>("MaxVarSpread");
-  fFlatPtGeneration = pgun_params.getParameter<bool>("FlatPtGeneration");
-  if (fVarMin < 1 && !fFlatPtGeneration)
+  fFixedR = pgun_params.getParameter<bool>("FixedR");
+  fEnMax = pgun_params.getParameter<double>("EnMax");
+  fEnMin = pgun_params.getParameter<double>("EnMin");
+  if (fEnMin < 1)
     LogError("CloseByParticleGunProducer") << " Please choose a minimum energy greater than 1 GeV, otherwise time "
                                               "information may be invalid or not reliable";
+
+  fMaxEnSpread = pgun_params.getParameter<bool>("MaxEnSpread");
   if (fControlledByEta) {
     fEtaMax = pgun_params.getParameter<double>("MaxEta");
     fEtaMin = pgun_params.getParameter<double>("MinEta");
@@ -54,9 +55,6 @@ CloseByParticleGunProducer::CloseByParticleGunProducer(const ParameterSet& pset)
   fPhiMax = pgun_params.getParameter<double>("MaxPhi");
   fPointing = pgun_params.getParameter<bool>("Pointing");
   fOverlapping = pgun_params.getParameter<bool>("Overlapping");
-  if (fFlatPtGeneration && !fPointing)
-    LogError("CloseByParticleGunProducer")
-        << " Can't generate non pointing FlatPt samples; please disable FlatPt generation or generate pointing sample";
   fRandomShoot = pgun_params.getParameter<bool>("RandomShoot");
   fNParticles = pgun_params.getParameter<int>("NParticles");
   fPartIDs = pgun_params.getParameter<vector<int>>("PartID");
@@ -85,10 +83,9 @@ void CloseByParticleGunProducer::fillDescriptions(ConfigurationDescriptions& des
     edm::ParameterSetDescription psd0;
     psd0.add<bool>("ControlledByEta", false);
     psd0.add<double>("Delta", 10);
-    psd0.add<double>("VarMax", 200.0);
-    psd0.add<double>("VarMin", 25.0);
-    psd0.add<bool>("MaxVarSpread", false);
-    psd0.add<bool>("FlatPtGeneration", false);
+    psd0.add<double>("EnMax", 200.0);
+    psd0.add<double>("EnMin", 25.0);
+    psd0.add<bool>("MaxEnSpread", false);
     psd0.add<double>("MaxEta", 2.7);
     psd0.add<double>("MaxPhi", 3.14159265359);
     psd0.add<double>("MinEta", 1.7);
@@ -146,7 +143,6 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
 
   if (!fControlledByEta) {
     fR = CLHEP::RandFlat::shoot(engine, fRMin, fRMax);
-    fEta = asinh(fZ / fR);
   } else {
     fEta = CLHEP::RandFlat::shoot(engine, fEtaMin, fEtaMax);
     //fR = CLHEP::RandFlat::shoot(engine, fRMin, fRMax);
@@ -179,39 +175,26 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
     } else
         phi += fDelta / fR;
 
-    double fVar;
-    if (numParticles > 1 && fMaxVarSpread)
-      fVar = fVarMin + ip * (fVarMax - fVarMin) / (numParticles - 1);
+    double fEn;
+    if (numParticles > 1 && fMaxEnSpread)
+      fEn = fEnMin + ip * (fEnMax - fEnMin) / (numParticles - 1);
     else
-      fVar = CLHEP::RandFlat::shoot(engine, fVarMin, fVarMax);
+      fEn = CLHEP::RandFlat::shoot(engine, fEnMin, fEnMax);
 
     int partIdx = CLHEP::RandFlat::shoot(engine, 0, fPartIDs.size());
     int PartID = fPartIDs[partIdx];
     const HepPDT::ParticleData* PData = fPDGTable->particle(HepPDT::ParticleID(abs(PartID)));
     double mass = PData->mass().value();
-
-    double mom, px, py, pz;
-    double energy;
-
-    if (!fFlatPtGeneration) {
-      double mom2 = fVar * fVar - mass * mass;
-      mom = 0.;
-      if (mom2 > 0.) {
-        mom = sqrt(mom2);
-      }
-      px = 0.;
-      py = 0.;
-      pz = mom;
-      energy = fVar;
-    } else {
-      double theta = 2. * atan(exp(-fEta));
-      mom = fVar / sin(theta);
-      px = fVar * cos(phi);
-      py = fVar * sin(phi);
-      pz = mom * cos(theta);
-      double energy2 = mom * mom + mass * mass;
-      energy = sqrt(energy2);
+    double mom2 = fEn * fEn - mass * mass;
+    double mom = 0.;
+    if (mom2 > 0.) {
+      mom = sqrt(mom2);
     }
+    double px = 0.;
+    double py = 0.;
+    double pz = mom;
+    double energy = fEn;
+
     // Compute Vertex Position
     double x = fR * cos(phi);
     double y = fR * sin(phi);
