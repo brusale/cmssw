@@ -41,6 +41,14 @@ TICLLayerTileProducer::TICLLayerTileProducer(const edm::ParameterSet &ps)
     clusters_HFNose_token_ =
         consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_HFNose_clusters"));
     produces<TICLLayerTilesHFNose>();
+  } else if (detector_ == "HCAL") {
+    clusters_HCAL_token_ = 
+        consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_HCAL_clusters"));
+    produces<TICLLayerTilesHCAL>();
+  /*} else if (detector_ == "ECAL") {
+    clusters_ECAL_token_ =
+        consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_ECAL_clusters"));
+    produces<TICLLayerTilesECAL>();*/
   } else {
     clusters_token_ = consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_clusters"));
     produces<TICLLayerTiles>();
@@ -55,10 +63,13 @@ void TICLLayerTileProducer::beginRun(edm::Run const &, edm::EventSetup const &es
 void TICLLayerTileProducer::produce(edm::Event &evt, const edm::EventSetup &) {
   std::unique_ptr<TICLLayerTilesHFNose> resultHFNose;
   std::unique_ptr<TICLLayerTiles> result;
+  std::unique_ptr<TICLLayerTilesHCAL> result;
   if (doNose_) {
     resultHFNose = std::make_unique<TICLLayerTilesHFNose>();
+  } else if (doHCAL_) {
+      result = std::make_unique<TICLLayerTilesHCAL>();
   } else {
-    result = std::make_unique<TICLLayerTiles>();
+      result = std::make_unique<TICLLayerTiles>();
   }
 
   edm::Handle<std::vector<reco::CaloCluster>> cluster_h;
