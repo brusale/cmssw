@@ -44,8 +44,9 @@ public:
 private:
   std::string detector_;
   bool doNose_;
+  bool doRegression_;
   const std::string tfDnnLabel_;
-  const edm::ESGetToken<TfGraphDefWrapper, TfGraphRecord> tfDnnToken_;
+  edm::ESGetToken<TfGraphDefWrapper, TfGraphRecord> tfDnnToken_;
   const tensorflow::Session* tfSession_;
   std::unique_ptr<PatternRecognitionAlgoBaseT<TICLLayerTiles>> myAlgo_;
   std::unique_ptr<PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>> myAlgoHFNose_;
@@ -65,8 +66,9 @@ DEFINE_FWK_MODULE(TrackstersProducer);
 TrackstersProducer::TrackstersProducer(const edm::ParameterSet& ps)
     : detector_(ps.getParameter<std::string>("detector")),
       doNose_(detector_ == "HFNose"),
+      doRegression_(ps.getParameter<bool>("doRegression")),
       tfDnnLabel_(ps.getParameter<std::string>("tfDnnLabel")),
-      tfDnnToken_(esConsumes(edm::ESInputTag("", tfDnnLabel_))),
+      tfDnnToken_(esConsumes<TfGraphDefWrapper, TfGraphRecord>()),
       tfSession_(nullptr),
       clusters_token_(consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_clusters"))),
       filtered_layerclusters_mask_token_(consumes<std::vector<float>>(ps.getParameter<edm::InputTag>("filtered_mask"))),
@@ -76,6 +78,9 @@ TrackstersProducer::TrackstersProducer(const edm::ParameterSet& ps)
       seeding_regions_token_(
           consumes<std::vector<TICLSeedingRegion>>(ps.getParameter<edm::InputTag>("seeding_regions"))),
       itername_(ps.getParameter<std::string>("itername")) {
+  if(doRegression_){
+    tfDnnToken_ = esConsumes<TfGraphDefWrapper, TfGraphRecord>(edm::ESInputTag("", tfDnnLabel_));
+  }
   auto plugin = ps.getParameter<std::string>("patternRecognitionBy");
   auto pluginPSet = ps.getParameter<edm::ParameterSet>("pluginPatternRecognitionBy" + plugin);
   if (doNose_) {
@@ -108,6 +113,7 @@ void TrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descri
   // hgcalMultiClusters
   edm::ParameterSetDescription desc;
   desc.add<std::string>("detector", "HGCAL");
+  desc.add<bool>("doRegression", true)->setComment("Load the TensorFlow session from the EventSetup and pass it to the pattern recognition to do the energy regression");
   desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalMergeLayerClusters"));
   desc.add<edm::InputTag>("filtered_mask", edm::InputTag("filteredLayerClusters", "iterationLabelGoesHere"));
   desc.add<edm::InputTag>("original_mask", edm::InputTag("hgcalMergeLayerClusters", "InitialLayerClustersMask"));
@@ -152,7 +158,9 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
   const auto& layerClustersTimes = evt.get(clustersTime_token_);
   const auto& seeding_regions = evt.get(seeding_regions_token_);
 
-  tfSession_ = es.getData(tfDnnToken_).getSession();
+  if(doRegression_){
+    tfSession_ = es.getData(tfDnnToken_).getSession();
+  }
 
   std::unordered_map<int, std::vector<int>> seedToTrackstersAssociation;
   // if it's regional iteration and there are seeding regions

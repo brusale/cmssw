@@ -104,8 +104,8 @@ def customiseTICLBarrelFromReco(process):
         seeding_regions = "ticlSeedingGlobal",
         itername = "FastJet",
         patternRecognitionBy = "FastJet",
+        doRegression = cms.bool(False),
         pluginPatternRecognitionByFastJet = dict (
-            use_regression = cms.bool(False),
             algo_verbosity = 2
         )
     )
@@ -117,8 +117,8 @@ def customiseTICLBarrelFromReco(process):
         seeding_regions = "ticlSeedingGlobal",
         itername = "CLUE2D",
         patternRecognitionBy = "FastJet", #"CLUE2D",
+        doRegression = cms.bool(False),
         pluginPatternRecognitionByFastJet = dict (
-            use_regression = cms.bool(False),
             algo_verbosity = 2
         )
     )

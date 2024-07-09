@@ -32,7 +32,6 @@ PatternRecognitionbyFastJet<TILES>::PatternRecognitionbyFastJet(const edm::Param
       caloGeomToken_(iC.esConsumes<CaloGeometry, CaloGeometryRecord>()),
       antikt_radius_(conf.getParameter<double>("antikt_radius")),
       minNumLayerCluster_(conf.getParameter<int>("minNumLayerCluster")),
-      useRegression_(conf.getParameter<bool>("use_regression")),
       eidInputName_(conf.getParameter<std::string>("eid_input_name")),
       eidOutputNameEnergy_(conf.getParameter<std::string>("eid_output_name_energy")),
       eidOutputNameId_(conf.getParameter<std::string>("eid_output_name_id")),
@@ -150,7 +149,7 @@ void PatternRecognitionbyFastJet<TILES>::makeTracksters(
                               computeLocalTime_);
 
   // run energy regression and ID
-  if(useRegression_){
+  if(input.tfSession != nullptr){
     energyRegressionAndID(input.layerClusters, input.tfSession, result);
     if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > VerbosityLevel::Basic) {
       for (auto const &t : result) {
