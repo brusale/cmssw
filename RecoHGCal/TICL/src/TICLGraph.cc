@@ -1,5 +1,5 @@
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
-#include "TICLGraph.h"
+#include "RecoHGCal/TICL/interface/TICLGraph.h"
 
 namespace ticl {
 
