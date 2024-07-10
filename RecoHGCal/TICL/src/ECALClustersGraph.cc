@@ -1,4 +1,6 @@
-#include "RecoHGCal/TICL/interface/ECALClustersGraph.h"
+ #include "RecoHGCal/TICL/interface/ECALClustersGraph.h"
+
+#include <iostream>
 
 namespace ticl {
 
@@ -20,6 +22,7 @@ namespace ticl {
     std::vector<int> isRootNode;
     for (size_t i = 0; i < clusters_.size(); ++i){
       auto neighbours = getClustersInSeedWindow(i);
+      std::cout << "Cluster " << i << " has " << neighbours.size() << " neighbours" << std::endl;
       ticl::Node node(i, false/*isTrackster*/);
 
       if (neighbours.size()>0){
@@ -40,6 +43,7 @@ namespace ticl {
   }
   
   std::vector<unsigned int> ECALClustersGraph::getClustersInSeedWindow(unsigned int clIndex) {
+    std::cout << "Looking for neighbours of cluster " << clIndex << std::endl;
     std::vector<unsigned int> out;
     auto& cluster = clusters_[clIndex];
     auto seed_eta = cluster.eta();
@@ -55,26 +59,44 @@ namespace ticl {
       etaMin = seed_eta + window[1];
     }
     else {
-      etaMax = seed_eta - window[0];
-      etaMin = seed_eta - window[1];
+      etaMin = seed_eta - window[0];
+      etaMax = seed_eta - window[1];
     }
+    std::cout << "Eta-phi window: " << etaMin << " " << etaMax << " " << phiMin << " " << phiMax << std::endl;
+    std::cout << "Seed et: " << seed_et << std::endl;
+    
     auto tileIndices = tiles_[0].searchBoxEtaPhi(etaMin, etaMax, phiMin, phiMax);
+    std::cout << "Looking in tiles: ";
+    for (const auto& i : tileIndices) std::cout << i << ", ";
+    std::cout << std::endl;
+    
     for (int i = tileIndices[0]; i <= tileIndices[1]; ++i) {
       for (int j = tileIndices[2]; j <= tileIndices[3]; ++j) {
       	auto& tile = tiles_[0][tiles_[0].globalBin(i, j)];
 	for (const auto& k_cl : tile){
+	  if (k_cl == clIndex) continue; // Exclude the seed
+	  
 	  // Now I check the distance
 	  auto& neighbour = clusters_[k_cl];
 
 	  auto neig_eta = neighbour.eta();
 	  auto neig_phi = neighbour.phi();
 
+	  std::cout << "Found neighbour " << k_cl 
+		    << " - Neighbour eta-phi-et: " << neig_eta
+		    << " " << neig_phi
+		    << " " << neighbour.energy()/std::cosh(neighbour.eta())
+		    << std::endl;
+
+	  
 	  // Do not link to higher energy clusters
 	  if (neighbour.energy()/std::cosh(neighbour.eta()) > seed_et) continue;
           // Geometric check
+	
 	  if (neig_eta > etaMax || neig_eta < etaMin ||
 	      neig_phi > phiMax || neig_phi < phiMin) continue;
-	  
+
+	  std::cout << "Connected!" << std::endl;
 	  out.push_back(k_cl);
 	}	
       }

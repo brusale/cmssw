@@ -10,7 +10,7 @@ namespace ticl {
       alreadyVisited_ = true;
       subComponent.push_back(index_);
       for (auto const& neighbour : outerNeighboursId_) {
-        LogDebug("TICLGraph") << tabs << " Trying to visit " << neighbour << std::endl;
+	edm::LogInfo("TICLGraph") << tabs << " Trying to visit " << neighbour << std::endl;
         graph[neighbour].findSubComponents(graph, subComponent, tabs);
       }
     }

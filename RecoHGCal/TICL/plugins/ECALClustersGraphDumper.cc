@@ -18,6 +18,7 @@
 
 // system include files
 #include <memory>
+#include <iostream>
 #include "TTree.h"
 #include "TFile.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
@@ -101,9 +102,22 @@ void ECALClustersGraphDumper::analyze(const edm::Event& event, const edm::EventS
   event.getByToken(caloClustersToken_, caloClusterHandle);
   const auto& clusters = *caloClusterHandle;
 
-  ticl::ECALClustersGraph graph(clusters, 5.0);
-  
+  std::cout << "Running ECAL GRAPh tools" << std::endl;
+  ticl::ECALClustersGraph ecalGraphTool(clusters, 5.0);
+  auto graph = ecalGraphTool.buildGraph();
 
+  auto connected = graph.getConnectedComponents(true, true);
+  //Print the groups
+  for (size_t i = 0; i < connected.size(); ++i) {
+    std::cout << "Group " << i << " has "
+	      << connected[i].size() << " clusters: " ;
+    for (const auto& cl : connected[i]) {
+      std::cout << cl << " ";
+    }
+    std::cout << std::endl;
+  }
+  
+  
   
 
 }

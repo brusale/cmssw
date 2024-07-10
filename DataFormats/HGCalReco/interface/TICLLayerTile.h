@@ -34,9 +34,11 @@ public:
   std::array<int, 4> searchBoxEtaPhi(float etaMin, float etaMax, float phiMin, float phiMax) const {
     // The tile only handles one endcap at a time and does not hold mixed eta
     // values.
-    if (etaMin * etaMax < 0) {
-      return std::array<int, 4>({{0, 0, 0, 0}});
-    }
+
+    // TODO Generalize this to handle barrel and endcap at the same time.
+    //if (etaMin * etaMax < 0) {
+    //  return std::array<int, 4>({{0, 0, 0, 0}});
+    //}
     if (etaMax - etaMin < 0) {
       return std::array<int, 4>({{0, 0, 0, 0}});
     }
