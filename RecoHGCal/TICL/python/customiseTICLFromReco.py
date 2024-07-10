@@ -98,6 +98,7 @@ def customiseTICLBarrelFromReco(process):
 					       )
 
     process.barrelHcalPatternRecognition = _trackstersProducer.clone(
+        detector = "HCAL",
         layer_clusters = "barrelLayerClusters:hcalLayerClusters",
         time_layerclusters = "barrelLayerClusters:timeLayerClusterHcal",
         filtered_mask = "barrelLayerClusters:InitialLayerClustersMaskHCAL",
