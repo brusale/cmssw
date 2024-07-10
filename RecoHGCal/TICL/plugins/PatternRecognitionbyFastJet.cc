@@ -340,3 +340,4 @@ void PatternRecognitionbyFastJet<TILES>::fillPSetDescription(edm::ParameterSetDe
 }
 
 template class ticl::PatternRecognitionbyFastJet<TICLLayerTiles>;
+template class ticl::PatternRecognitionbyFastJet<TICLLayerTilesHCAL>;
