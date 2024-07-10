@@ -128,7 +128,8 @@ process.FEVTDEBUGHLToutput.outputCommands.extend([#'keep *_ebLayerClusters_*_*',
 						  'keep *_barrelLayerClusterCaloParticleAssociationProducer_*_*',
 						  'keep *_barrelLayerClusterCaloParticleAssociationProducerPFCluster_*_*', 
 						  'keep *_barrelLayerClusterSimClusterAssociationProducerPFCluster_*_*', 
-						  'keep *_lcFromPFClusterProducer_*_*'])
+						  'keep *_lcFromPFClusterProducer_*_*',
+                          'keep *_barrelHcalPatternRecognition_*_*'])
 
 from Validation.RecoParticleFlow.customize_pfanalysis import *
 process = customize_step3(process)

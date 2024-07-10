@@ -102,6 +102,7 @@ def customiseTICLBarrelFromReco(process):
         layer_clusters = "barrelLayerClusters:hcalLayerClusters",
         time_layerclusters = "barrelLayerClusters:timeLayerClusterHcal",
         filtered_mask = "barrelLayerClusters:InitialLayerClustersMaskHCAL",
+        original_mask = "barrelLayerClusters:InitialLayerClustersMaskHCAL",
         seeding_regions = "ticlSeedingGlobal",
         itername = "FastJet",
         patternRecognitionBy = "FastJet",
