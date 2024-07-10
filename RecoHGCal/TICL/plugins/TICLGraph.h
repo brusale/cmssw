@@ -57,9 +57,11 @@ public:
 
   void dfsForCC(unsigned int nodeIndex,
                 std::unordered_set<unsigned int>& visited,
-                std::vector<unsigned int>& component) const;
+                std::vector<unsigned int>& component,
+		bool outgoing,
+		bool ingoing) const;
 
-  std::vector<std::vector<unsigned int>> getConnectedComponents() const;
+  std::vector<std::vector<unsigned int>> getConnectedComponents(bool outgoing=true, bool ingoing=false) const;
 
 private:
   std::vector<ticl::Node> nodes_;
