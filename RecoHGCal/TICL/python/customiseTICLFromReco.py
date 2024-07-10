@@ -108,7 +108,7 @@ def customiseTICLBarrelFromReco(process):
         patternRecognitionBy = "FastJet",
         doRegression = cms.bool(False),
         pluginPatternRecognitionByFastJet = dict (
-            antikt_radius = 10,
+            antikt_radius = 0.15,
             minNumLayerCluster = 0,
             algo_verbosity = 2
         )
@@ -123,7 +123,7 @@ def customiseTICLBarrelFromReco(process):
         patternRecognitionBy = "FastJet", #"CLUE2D",
         doRegression = cms.bool(False),
         pluginPatternRecognitionByFastJet = dict (
-            antikt_radius = 10,
+            antikt_radius = 0.15,
             minNumLayerCluster = 0,
             algo_verbosity = 2
         )
