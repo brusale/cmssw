@@ -34,7 +34,6 @@ namespace ticl {
     edm::ESGetToken<CaloGeometry, CaloGeometryRecord> caloGeomToken_;
     const double antikt_radius_;
     const int minNumLayerCluster_;
-    const bool useRegression_;
     const std::string eidInputName_;
     const std::string eidOutputNameEnergy_;
     const std::string eidOutputNameId_;

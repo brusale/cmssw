@@ -29,6 +29,34 @@
   </class>
   <class name="edm::Wrapper<TICLGenericTile<ticl::TracksterTiles>>" persistent="false"/>
 
+  <class name="ticl::TICLLayerTileHCAL" persistent="false">
+    <field name="tile_" transient="true"/>
+  </class>
+
+  <class name="TICLGenericTile<ticl::TilesHCAL>" persistent="false">
+    <field name="tiles_" transient="true"/>
+  </class>
+  <class name="edm::Wrapper<TICLGenericTile<ticl::TilesHCAL>>" persistent="false"/>
+
+  <class name="TICLGenericTile<ticl::TracksterTilesHCAL>" persistent="false">
+    <field name="tiles_" transient="true"/>
+  </class>
+  <class name="edm::Wrapper<TICLGenericTile<ticl::TracksterTilesHCAL>>" persistent="false"/>
+
+  <class name="ticl::TICLLayerTileECAL" persistent="false">
+    <field name="tile_" transient="true"/>
+  </class>
+
+  <class name="TICLGenericTile<ticl::TilesECAL>" persistent="false">
+    <field name="tiles_" transient="true"/>
+  </class>
+  <class name="edm::Wrapper<TICLGenericTile<ticl::TilesECAL>>" persistent="false"/>
+
+  <class name="TICLGenericTile<ticl::TracksterTilesECAL>" persistent="false">
+    <field name="tiles_" transient="true"/>
+  </class>
+  <class name="edm::Wrapper<TICLGenericTile<ticl::TracksterTilesECAL>>" persistent="false"/>
+
   <class name="ticl::TICLLayerTileHFNose" persistent="false">
     <field name="tile_" transient="true"/>
   </class>

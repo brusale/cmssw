@@ -10,6 +10,7 @@
 #include "DataFormats/Math/interface/deltaR.h"
 #include "DataFormats/Math/interface/LorentzVector.h"
 #include "DataFormats/Candidate/interface/Candidate.h"
+#include "DataFormats/HcalDetId/interface/HcalDetId.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "FWCore/Utilities/interface/Exception.h"
@@ -32,7 +33,6 @@ PatternRecognitionbyFastJet<TILES>::PatternRecognitionbyFastJet(const edm::Param
       caloGeomToken_(iC.esConsumes<CaloGeometry, CaloGeometryRecord>()),
       antikt_radius_(conf.getParameter<double>("antikt_radius")),
       minNumLayerCluster_(conf.getParameter<int>("minNumLayerCluster")),
-      useRegression_(conf.getParameter<bool>("use_regression")),
       eidInputName_(conf.getParameter<std::string>("eid_input_name")),
       eidOutputNameEnergy_(conf.getParameter<std::string>("eid_output_name_energy")),
       eidOutputNameId_(conf.getParameter<std::string>("eid_output_name_id")),
@@ -48,12 +48,14 @@ void PatternRecognitionbyFastJet<TILES>::buildJetAndTracksters(std::vector<Pseud
     edm::LogVerbatim("PatternRecogntionbyFastJet")
         << "Creating FastJet with " << fjInputs.size() << " LayerClusters in input";
   }
-  fastjet::ClusterSequence sequence(fjInputs, JetDefinition(antikt_algorithm, antikt_radius_));
+  std::cout << __FILE__ << " " << __LINE__ << std::endl;
+  std::cout << "Creating FastJet with " << fjInputs.size() << " LayerClusters in input" << std::endl;
+  fastjet::ClusterSequence sequence(fjInputs, JetDefinition(antikt_algorithm, antikt_radius_), true);
   auto jets = fastjet::sorted_by_pt(sequence.inclusive_jets(0));
   if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > VerbosityLevel::Basic) {
     edm::LogVerbatim("PatternRecogntionbyFastJet") << "FastJet produced " << jets.size() << " jets/trackster";
   }
-
+  std:: cout << "FastJet produced " << jets.size() << " jets/trackster"<< std::endl;
   auto trackster_idx = result.size();
   auto jetsSize = std::count_if(jets.begin(), jets.end(), [this](fastjet::PseudoJet jet) {
     return jet.constituents().size() > static_cast<unsigned int>(minNumLayerCluster_);
@@ -129,6 +131,15 @@ void PatternRecognitionbyFastJet<TILES>::makeTracksters(
           }
           // Should we correct for the position of the PV?
           auto const &cl = input.layerClusters[clusterIdx];
+          std::cout << __FILE__ << " " << __LINE__ << std::endl;
+          std::cout << "Cluster energy: " << cl.energy() << " ";
+          auto firstHitDetId = cl.hitsAndFractions()[0].first;
+          std::cout << "Det from hit: " << firstHitDetId.det() << " ";
+          int depth = 0;
+          if (firstHitDetId.det() == DetId::Hcal) 
+            depth = HcalDetId(firstHitDetId).depth();
+          std::cout << "Layer from hit: " << depth << " ";
+          std::cout << "Layer from RecHitTools: " << rhtools_.getLayerWithOffset(firstHitDetId) << std::endl;
           math::XYZVector direction(cl.x(), cl.y(), cl.z());
           direction = direction.Unit();
           direction *= cl.energy();
@@ -140,8 +151,18 @@ void PatternRecognitionbyFastJet<TILES>::makeTracksters(
     }      // End of loop over eta-bin region
   }        // End of loop over layers
 
+  std::cout << __FILE__ << " " << __LINE__ << std::endl;
+  for (const auto& pJet : fjInputs) {
+    std::cout << "pJet energy: " << pJet.E() << " " ;
+    std::cout << "pJet eta: "  << pJet.eta() << " " ;
+    std::cout << "pJet phi: " <<  pJet.phi() << std::endl;
+  }
   // Collect the jet from the other side wrt to the one taken care of inside the main loop above.
   buildJetAndTracksters(fjInputs, result);
+
+  for (const auto& trackster : result) {
+    std::cout << "Trackster energy: " << trackster.raw_energy() << std::endl;
+  }
 
   ticl::assignPCAtoTracksters(result,
                               input.layerClusters,
@@ -150,7 +171,7 @@ void PatternRecognitionbyFastJet<TILES>::makeTracksters(
                               computeLocalTime_);
 
   // run energy regression and ID
-  if(useRegression_){
+  if(input.tfSession != nullptr){
     energyRegressionAndID(input.layerClusters, input.tfSession, result);
     if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > VerbosityLevel::Basic) {
       for (auto const &t : result) {

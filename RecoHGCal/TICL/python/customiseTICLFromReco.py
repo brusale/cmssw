@@ -104,8 +104,10 @@ def customiseTICLBarrelFromReco(process):
         seeding_regions = "ticlSeedingGlobal",
         itername = "FastJet",
         patternRecognitionBy = "FastJet",
+        doRegression = cms.bool(False),
         pluginPatternRecognitionByFastJet = dict (
-            use_regression = cms.bool(False),
+            antikt_radius = 10,
+            minNumLayerCluster = 0,
             algo_verbosity = 2
         )
     )
@@ -117,14 +119,17 @@ def customiseTICLBarrelFromReco(process):
         seeding_regions = "ticlSeedingGlobal",
         itername = "CLUE2D",
         patternRecognitionBy = "FastJet", #"CLUE2D",
+        doRegression = cms.bool(False),
         pluginPatternRecognitionByFastJet = dict (
-            use_regression = cms.bool(False),
+            antikt_radius = 10,
+            minNumLayerCluster = 0,
             algo_verbosity = 2
         )
     )
     
     process.hcalPatternRecognitionTask = cms.Task(process.barrelHcalPatternRecognition) # + process.barrelEcalPatternRecognition
-    process.TICLBarrel = cms.Path(process.ticlSeedingGlobal, process.barrelLayerClustersTask, process.hcalPatternRecognitionTask)
+    process.ticlLayerTileProducer.detector = cms.string('HCAL')
+    process.TICLBarrel = cms.Path(process.ticlLayerTileProducer + process.ticlSeedingGlobal, process.barrelLayerClustersTask, process.hcalPatternRecognitionTask)
 
     # We want to run CLUE on not -cleaned Rechit collections
     process.recHitMapProducer.EBInput = cms.InputTag("particleFlowRecHitECAL")
@@ -244,4 +249,20 @@ def customiseTICLForDumper(process):
                                        )
     process.FEVTDEBUGHLToutput_step = cms.EndPath(
         process.FEVTDEBUGHLToutput + process.ticlDumper)
+    return process
+
+def customiseTICLForLCDumper(process):
+    process.recHitDumper = recHitDumper.clone()
+    process.lcDumper = layerClusterDumper.clone()
+    process.lcDumper.layerclusters = cms.InputTag("barrelLayerClusters")
+    #process.lcDumper.pfrechits = cms.InputTag("particleFlowRecHitECAL", "Cleaned")
+    #process.lcDumper.simlayerclusters = cms.InputTag("simBarrelLayerClusters")
+    process.lcDumperPF = layerClusterDumper.clone()
+    process.lcDumperPF.layerclusters = cms.InputTag("lcFromPFClusterProducer")
+    process.lcDumperPF.simToRecoCollection = cms.InputTag("barrelLayerClusterCaloParticleAssociationProducerPFCluster")
+    process.lcDumperPF.recoToSimCollection = cms.InputTag("barrelLayerClusterCaloParticleAssociationProducerPFCluster")
+    #process.lcDumperPF.pfrechits = cms.InputTag("particleFlowRecHitECAL")# without cleaned
+    process.TFileService = cms.Service("TFileService",
+				       fileName = cms.string("histo.root"))
+    #process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput_step + process.lcDumper + process.lcDumperPF)
     return process
