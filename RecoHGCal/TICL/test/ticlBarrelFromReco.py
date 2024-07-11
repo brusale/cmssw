@@ -41,7 +41,7 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 #options.parseArguments()
 
 process.maxEvents = cms.untracked.PSet(
-	input = cms.untracked.int32(100),
+	input = cms.untracked.int32(1000),
     output = cms.optional.untracked.allowed(cms.int32,cms.PSet)
 )
 
@@ -153,8 +153,7 @@ process.mix.digitizers = cms.PSet()
 for a in process.aliases: delattr(process, a)
 process.RandomNumberGeneratorService.restoreStateLabel=cms.untracked.string("randomEngineStateProducer")
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, '131X_mcRun4_realistic_v6', '')
-#process.GlobalTag = GlobalTag(process.GlobalTag, '140X_mcRun4_realistic_v4', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, '131X_mcRun4_realistic_v3', '')
 
 
 
