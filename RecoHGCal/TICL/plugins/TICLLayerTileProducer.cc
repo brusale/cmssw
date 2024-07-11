@@ -50,11 +50,11 @@ TICLLayerTileProducer::TICLLayerTileProducer(const edm::ParameterSet &ps)
   } else if (doHCAL_) {
     clusters_HCAL_token_ = 
         consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_HCAL_clusters"));
-    produces<TICLLayerTilesHCAL>();
+    produces<TICLLayerTilesHCAL>("ticlLayerTilesHCAL");
   } else if (doECAL_) {
     clusters_ECAL_token_ =
         consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_ECAL_clusters"));
-    produces<TICLLayerTilesECAL>();
+    produces<TICLLayerTilesECAL>("ticlLayerTilesECAL");
   } else {
     clusters_token_ = consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_clusters"));
     produces<TICLLayerTiles>();
@@ -117,9 +117,9 @@ void TICLLayerTileProducer::produce(edm::Event &evt, const edm::EventSetup &) {
   if (doNose_)
     evt.put(std::move(resultHFNose));
   else if (doHCAL_)
-    evt.put(std::move(resultHCAL));
+    evt.put(std::move(resultHCAL), "ticlLayerTilesHCAL");
   else if (doECAL_)
-    evt.put(std::move(resultECAL));
+    evt.put(std::move(resultECAL), "ticlLayerTilesECAL");
   else
     evt.put(std::move(result));
 }

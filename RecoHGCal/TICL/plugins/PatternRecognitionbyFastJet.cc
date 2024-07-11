@@ -48,14 +48,11 @@ void PatternRecognitionbyFastJet<TILES>::buildJetAndTracksters(std::vector<Pseud
     edm::LogVerbatim("PatternRecogntionbyFastJet")
         << "Creating FastJet with " << fjInputs.size() << " LayerClusters in input";
   }
-  std::cout << __FILE__ << " " << __LINE__ << std::endl;
-  std::cout << "Creating FastJet with " << fjInputs.size() << " LayerClusters in input" << std::endl;
-  fastjet::ClusterSequence sequence(fjInputs, JetDefinition(antikt_algorithm, antikt_radius_), true);
+  fastjet::ClusterSequence sequence(fjInputs, JetDefinition(antikt_algorithm, antikt_radius_), false);
   auto jets = fastjet::sorted_by_pt(sequence.inclusive_jets(0));
   if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > VerbosityLevel::Basic) {
     edm::LogVerbatim("PatternRecogntionbyFastJet") << "FastJet produced " << jets.size() << " jets/trackster";
   }
-  std:: cout << "FastJet produced " << jets.size() << " jets/trackster"<< std::endl;
   auto trackster_idx = result.size();
   auto jetsSize = std::count_if(jets.begin(), jets.end(), [this](fastjet::PseudoJet jet) {
     return jet.constituents().size() > static_cast<unsigned int>(minNumLayerCluster_);
@@ -97,30 +94,36 @@ void PatternRecognitionbyFastJet<TILES>::makeTracksters(
   const CaloGeometry &geom = es.getData(caloGeomToken_);
   rhtools_.setGeometry(geom);
 
+  constexpr bool isBarrel = std::is_same<TILES, TICLLayerTilesHCAL>::value || std::is_same<TILES, TICLLayerTilesECAL>::value;
   constexpr auto isHFnose = std::is_same<TILES, TICLLayerTilesHFNose>::value;
   constexpr int nEtaBin = TILES::constants_type_t::nEtaBins;
   constexpr int nPhiBin = TILES::constants_type_t::nPhiBins;
 
   // We need to partition the two sides of the HGCAL detector
-  auto lastLayerPerSide = static_cast<unsigned int>(rhtools_.lastLayer(isHFnose)) - 1;
-  unsigned int maxLayer = 2 * lastLayerPerSide - 1;
+  auto lastLayerPerSide = static_cast<unsigned int>(rhtools_.lastLayer(isHFnose, isBarrel)) - 1;
+  unsigned int maxLayer = isBarrel ? lastLayerPerSide + 1 : 2 * lastLayerPerSide - 1;
   std::vector<fastjet::PseudoJet> fjInputs;
   fjInputs.clear();
   for (unsigned int currentLayer = 0; currentLayer <= maxLayer; ++currentLayer) {
-    if (currentLayer == lastLayerPerSide) {
+    if (currentLayer == lastLayerPerSide && !isBarrel) {
+      // Pause the loop to process the fjInputs accumulated so far, which correspond to the first endcap
       buildJetAndTracksters(fjInputs, result);
+      // buildJetAndTracksters calls .clear() on its first argument, so the rest of the loop (second endcap) starts with an empty collection
     }
     const auto &tileOnLayer = input.tiles[currentLayer];
-    for (int ieta = 0; ieta <= nEtaBin; ++ieta) {
+    //for (int ieta = 0; ieta <= nEtaBin; ++ieta) {
+    for (int ieta = 0; ieta < nEtaBin; ++ieta) {
       auto offset = ieta * nPhiBin;
       if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > VerbosityLevel::Advanced) {
         edm::LogVerbatim("PatternRecogntionbyFastJet") << "offset: " << offset;
       }
-      for (int iphi = 0; iphi <= nPhiBin; ++iphi) {
+      //for (int iphi = 0; iphi <= nPhiBin; ++iphi) {
+      for (int iphi = 0; iphi < nPhiBin; ++iphi) {
         if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > VerbosityLevel::Advanced) {
           edm::LogVerbatim("PatternRecogntionbyFastJet") << "iphi: " << iphi;
           edm::LogVerbatim("PatternRecogntionbyFastJet") << "Entries in tileBin: " << tileOnLayer[offset + iphi].size();
         }
+        
         for (auto clusterIdx : tileOnLayer[offset + iphi]) {
           // Skip masked layer clusters
           if (input.mask[clusterIdx] == 0.) {
@@ -131,15 +134,6 @@ void PatternRecognitionbyFastJet<TILES>::makeTracksters(
           }
           // Should we correct for the position of the PV?
           auto const &cl = input.layerClusters[clusterIdx];
-          std::cout << __FILE__ << " " << __LINE__ << std::endl;
-          std::cout << "Cluster energy: " << cl.energy() << " ";
-          auto firstHitDetId = cl.hitsAndFractions()[0].first;
-          std::cout << "Det from hit: " << firstHitDetId.det() << " ";
-          int depth = 0;
-          if (firstHitDetId.det() == DetId::Hcal) 
-            depth = HcalDetId(firstHitDetId).depth();
-          std::cout << "Layer from hit: " << depth << " ";
-          std::cout << "Layer from RecHitTools: " << rhtools_.getLayerWithOffset(firstHitDetId) << std::endl;
           math::XYZVector direction(cl.x(), cl.y(), cl.z());
           direction = direction.Unit();
           direction *= cl.energy();
@@ -151,37 +145,27 @@ void PatternRecognitionbyFastJet<TILES>::makeTracksters(
     }      // End of loop over eta-bin region
   }        // End of loop over layers
 
-  std::cout << __FILE__ << " " << __LINE__ << std::endl;
-  for (const auto& pJet : fjInputs) {
-    std::cout << "pJet energy: " << pJet.E() << " " ;
-    std::cout << "pJet eta: "  << pJet.eta() << " " ;
-    std::cout << "pJet phi: " <<  pJet.phi() << std::endl;
-  }
   // Collect the jet from the other side wrt to the one taken care of inside the main loop above.
   buildJetAndTracksters(fjInputs, result);
-
-  for (const auto& trackster : result) {
-    std::cout << "Trackster energy: " << trackster.raw_energy() << std::endl;
-  }
 
   ticl::assignPCAtoTracksters(result,
                               input.layerClusters,
                               input.layerClustersTime,
                               rhtools_.getPositionLayer(rhtools_.lastLayerEE(isHFnose), isHFnose).z(),
                               computeLocalTime_);
-
+   
   // run energy regression and ID
-  if(input.tfSession != nullptr){
+  /*if(input.tfSession != nullptr){
     energyRegressionAndID(input.layerClusters, input.tfSession, result);
     if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > VerbosityLevel::Basic) {
       for (auto const &t : result) {
-	edm::LogVerbatim("PatternRecogntionbyFastJet") << "Barycenter: " << t.barycenter();
-	edm::LogVerbatim("PatternRecogntionbyFastJet") << "LCs: " << t.vertices().size();
-	edm::LogVerbatim("PatternRecogntionbyFastJet") << "Energy: " << t.raw_energy();
-	edm::LogVerbatim("PatternRecogntionbyFastJet") << "Regressed: " << t.regressed_energy();
+	      edm::LogVerbatim("PatternRecogntionbyFastJet") << "Barycenter: " << t.barycenter();
+	      edm::LogVerbatim("PatternRecogntionbyFastJet") << "LCs: " << t.vertices().size();
+	      edm::LogVerbatim("PatternRecogntionbyFastJet") << "Energy: " << t.raw_energy();
+	      edm::LogVerbatim("PatternRecogntionbyFastJet") << "Regressed: " << t.regressed_energy();
       }
     }
-  }
+  }*/
 }
 
 

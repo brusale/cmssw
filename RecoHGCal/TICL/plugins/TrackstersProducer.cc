@@ -136,8 +136,8 @@ void TrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descri
   desc.add<edm::InputTag>("original_mask", edm::InputTag("hgcalMergeLayerClusters", "InitialLayerClustersMask"));
   desc.add<edm::InputTag>("time_layerclusters", edm::InputTag("hgcalMergeLayerClusters", "timeLayerCluster"));
   desc.add<edm::InputTag>("layer_clusters_tiles", edm::InputTag("ticlLayerTileProducer"));
-  desc.add<edm::InputTag>("layer_clusters_hcal_tiles", edm::InputTag("ticlLayerTileProducer"));
-  desc.add<edm::InputTag>("layer_clusters_ecal_tiles", edm::InputTag("ticlLayerTileProducer"));
+  desc.add<edm::InputTag>("layer_clusters_hcal_tiles", edm::InputTag("ticlLayerTileProducer", "ticlLayerTilesHCAL"));
+  desc.add<edm::InputTag>("layer_clusters_ecal_tiles", edm::InputTag("ticlLayerTileProducer", "ticlLayerTilesECAL"));
   desc.add<edm::InputTag>("layer_clusters_hfnose_tiles", edm::InputTag("ticlLayerTileHFNose"));
   desc.add<edm::InputTag>("seeding_regions", edm::InputTag("ticlSeedingRegionProducer"));
   desc.add<std::string>("patternRecognitionBy", "CA");
