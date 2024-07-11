@@ -21,7 +21,8 @@ from SimCalorimetry.HGCalAssociatorProducers.simTracksterAssociatorByEnergyScore
 from SimCalorimetry.HGCalAssociatorProducers.TSToSimTSAssociation_cfi import tracksterSimTracksterAssociationLinking, tracksterSimTracksterAssociationPR,tracksterSimTracksterAssociationLinkingbyCLUE3D, tracksterSimTracksterAssociationPRbyCLUE3D
 
 # Barrel associators
-from RecoParticleFlow.PFClusterProducer.barrelLayerClusters_cff  import barrelLayerClusters  
+from RecoParticleFlow.PFClusterProducer.barrelLayerClusters_cff  import barrelLayerClusters
+from RecoHGCal.TICL.filteredLayerClustersProducer_cfi import filteredLayerClustersProducer
 from SimCalorimetry.HGCalAssociatorProducers.barrelLCToCPAssociatorByEnergyScoreProducer_cfi import barrelLCToCPAssociatorByEnergyScoreProducer as barrelLCToCPAssociatorByEnergyScoreProducer
 
 from SimCalorimetry.HGCalAssociatorProducers.barrelLCToSCAssociatorByEnergyScoreProducer_cfi import barrelLCToSCAssociatorByEnergyScoreProducer as barrelLCToSCAssociatorByEnergyScoreProducer
@@ -97,6 +98,10 @@ def customiseTICLBarrelFromReco(process):
 					       process.lcFromPFClusterProducer
 					       )
 
+    process.filteredLayerClustersProducerHCAL = filteredLayerClustersProducer.clone(
+        clusterFilter = "ClusterFilterByAlgo"
+    )
+
     process.barrelHcalPatternRecognition = _trackstersProducer.clone(
         detector = "HCAL",
         layer_clusters = "barrelLayerClusters:hcalLayerClusters",
@@ -134,9 +139,9 @@ def customiseTICLBarrelFromReco(process):
     process.ticlSimTracksters.time_layerclusters = cms.InputTag("barrelLayerClusters:timeLayerClusterHcal")
     process.ticlSimTracksters.layerClusterCaloParticleAssociator = cms.InputTag("barrelLayerClusterCaloParticleAssociationProducer")
     process.ticlSimTracksters.layerClusterSimClusterAssociator = cms.InputTag("barrelLayerClusterSimClusterAssociationProducer")
-    process.hcalPatternRecognitionTask = cms.Task(process.barrelHcalPatternRecognition) # + process.barrelEcalPatternRecognition
+    process.hcalPatternRecognitionSeq = cms.Sequence(process.filteredLayerClustersProducerHCAL + process.barrelHcalPatternRecognition)#+process.barrelEcalPatternRecognition
     process.ticlLayerTileProducer.detector = cms.string('HCAL')
-    process.TICLBarrel = cms.Path(process.ticlSimTracksters + process.ticlLayerTileProducer + process.ticlSeedingGlobal, process.barrelLayerClustersTask, process.hcalPatternRecognitionTask)
+    process.TICLBarrel = cms.Path(process.ticlSimTracksters + process.ticlLayerTileProducer + process.ticlSeedingGlobal + process.hcalPatternRecognitionSeq, process.barrelLayerClustersTask)
 
     # We want to run CLUE on not -cleaned Rechit collections
     process.recHitMapProducer.EBInput = cms.InputTag("particleFlowRecHitECAL")
