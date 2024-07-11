@@ -128,10 +128,15 @@ def customiseTICLBarrelFromReco(process):
             algo_verbosity = 2
         )
     )
-    
+   
+    process.ticlSimTracksters.layer_clusters = cms.InputTag("barrelLayerClusters", "hcalLayerClusters") 
+    process.ticlSimTracksters.filtered_mask = cms.InputTag("barrelLayerClusters:InitialLayerClustersMaskHCAL")
+    process.ticlSimTracksters.time_layerclusters = cms.InputTag("barrelLayerClusters:timeLayerClusterHcal")
+    process.ticlSimTracksters.layerClusterCaloParticleAssociator = cms.InputTag("barrelLayerClusterCaloParticleAssociationProducer")
+    process.ticlSimTracksters.layerClusterSimClusterAssociator = cms.InputTag("barrelLayerClusterSimClusterAssociationProducer")
     process.hcalPatternRecognitionTask = cms.Task(process.barrelHcalPatternRecognition) # + process.barrelEcalPatternRecognition
     process.ticlLayerTileProducer.detector = cms.string('HCAL')
-    process.TICLBarrel = cms.Path(process.ticlLayerTileProducer + process.ticlSeedingGlobal, process.barrelLayerClustersTask, process.hcalPatternRecognitionTask)
+    process.TICLBarrel = cms.Path(process.ticlSimTracksters + process.ticlLayerTileProducer + process.ticlSeedingGlobal, process.barrelLayerClustersTask, process.hcalPatternRecognitionTask)
 
     # We want to run CLUE on not -cleaned Rechit collections
     process.recHitMapProducer.EBInput = cms.InputTag("particleFlowRecHitECAL")
@@ -147,7 +152,7 @@ def customiseTICLBarrelFromReco(process):
     process.barrelSCAssocByEnergyScoreProducerPFCluster = barrelLCToSCAssociatorByEnergyScoreProducer.clone()
     process.barrelLayerClusterCaloParticleAssociationProducerPFCluster =  barrelLayerClusterCaloParticleAssociationProducer.clone()
     process.barrelLayerClusterSimClusterAssociationProducerPFCluster = barrelLayerClusterSimClusterAssociationProducer.clone()
-    
+   
     process.barrelLayerClusterCaloParticleAssociationProducerPFCluster.label_lc = cms.InputTag("lcFromPFClusterProducer")
     process.barrelLayerClusterSimClusterAssociationProducerPFCluster.label_lcl = cms.InputTag("lcFromPFClusterProducer")
     process.barrelLayerClusterCaloParticleAssociationProducerPFCluster.associator = cms.InputTag("barrelLCAssocByEnergyScoreProducerPFCluster")
@@ -208,11 +213,11 @@ def customiseTICLBarrelFromReco(process):
       eventProducts = cms.untracked.vstring("barrelLayerClusterSimClusterAssociationProducerPFCluster")
     )
     process.consumer6 = cms.EDAnalyzer("GenericConsumer",
-      eventProducts = cms.untracked.vstring("barrelHcalPatternRecognition")
+      eventProducts = cms.untracked.vstring(["barrelHcalPatternRecognition", "ticlSimTracksters"])
     )
     process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput+
                                                   process.consumer + process.consumer2 + process.consumer3 + process.consumer4 + process.consumer5+process.consumer6+
-                                                   process.lcDumper+process.lcDumperPF + 
+                                                  process.lcDumper+process.lcDumperPF + 
                                                   process.recHitDumper
                                                   )
     #process.DQMoutput_step = cms.EndPath(process.DQMoutput)

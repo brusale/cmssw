@@ -41,7 +41,7 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 #options.parseArguments()
 
 process.maxEvents = cms.untracked.PSet(
-	input = cms.untracked.int32(100),
+	input = cms.untracked.int32(1000),
     output = cms.optional.untracked.allowed(cms.int32,cms.PSet)
 )
 
@@ -129,7 +129,8 @@ process.FEVTDEBUGHLToutput.outputCommands.extend([#'keep *_ebLayerClusters_*_*',
 						  'keep *_barrelLayerClusterCaloParticleAssociationProducerPFCluster_*_*', 
 						  'keep *_barrelLayerClusterSimClusterAssociationProducerPFCluster_*_*', 
 						  'keep *_lcFromPFClusterProducer_*_*',
-                          'keep *_barrelHcalPatternRecognition_*_*'])
+                          'keep *_barrelHcalPatternRecognition_*_*',
+                          'keep *_ticlSimTracksters_*_*'])
 
 from Validation.RecoParticleFlow.customize_pfanalysis import *
 process = customize_step3(process)

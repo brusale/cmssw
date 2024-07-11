@@ -237,7 +237,6 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
     myAlgo_->makeTracksters(input, *result, seedToTrackstersAssociation);
   }
   // Now update the global mask and put it into the event
-  std::cout << "original_layerclusters_mask.size(): " << original_layerclusters_mask.size() << std::endl;
   output_mask->reserve(original_layerclusters_mask.size());
   // Copy over the previous state
   std::copy(
@@ -249,8 +248,6 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
     for (auto const v : trackster.vertices()) {
       // TODO(rovere): for the moment we mask the layer cluster completely. In
       // the future, properly compute the fraction of usage.
-      std::cout << "output_mask" << &output_mask << std::endl;
-      std::cout << "output_mask.size(): " << output_mask->size() << std::endl;
       (*output_mask)[v] = 0.;
     }
   }
