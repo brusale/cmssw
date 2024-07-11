@@ -129,7 +129,8 @@ process.FEVTDEBUGHLToutput.outputCommands.extend([#'keep *_ebLayerClusters_*_*',
 						  'keep *_barrelLayerClusterCaloParticleAssociationProducerPFCluster_*_*', 
 						  'keep *_barrelLayerClusterSimClusterAssociationProducerPFCluster_*_*', 
 						  'keep *_lcFromPFClusterProducer_*_*',
-                          'keep *_barrelHcalPatternRecognition_*_*'])
+                          'keep *_barrelHcalPatternRecognition_*_*',
+                          'keep *_ticlSimTracksters_*_*'])
 
 from Validation.RecoParticleFlow.customize_pfanalysis import *
 process = customize_step3(process)
@@ -152,7 +153,8 @@ process.mix.digitizers = cms.PSet()
 for a in process.aliases: delattr(process, a)
 process.RandomNumberGeneratorService.restoreStateLabel=cms.untracked.string("randomEngineStateProducer")
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, '131X_mcRun4_realistic_v3', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, '131X_mcRun4_realistic_v6', '')
+#process.GlobalTag = GlobalTag(process.GlobalTag, '140X_mcRun4_realistic_v4', '')
 
 
 
