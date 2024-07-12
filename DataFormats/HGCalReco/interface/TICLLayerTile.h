@@ -83,13 +83,9 @@ namespace ticl {
   using TilesHFNose = std::array<TICLLayerTileHFNose, TileConstantsHFNose::nLayers>;
   using TracksterTilesHFNose = std::array<TICLLayerTileHFNose, TileConstantsHFNose::iterations>;
 
-  using TICLLayerTileHCAL = TICLLayerTileT<TileConstantsHCAL>;
-  using TilesHCAL = std::array<TICLLayerTileHCAL, TileConstantsHCAL::nLayers>;
-  using TracksterTilesHCAL = std::array<TICLLayerTileHCAL, TileConstantsHCAL::iterations>;
-
-  using TICLLayerTileECAL = TICLLayerTileT<TileConstantsECAL>;
-  using TilesECAL = std::array<TICLLayerTileECAL, TileConstantsECAL::nLayers>;
-  using TracksterTilesECAL = std::array<TICLLayerTileECAL, TileConstantsECAL::iterations>;
+  using TICLLayerTileBarrel = TICLLayerTileT<TileConstantsBarrel>;
+  using TilesBarrel = std::array<TICLLayerTileBarrel, TileConstantsBarrel::nLayers>;
+  using TracksterTilesBarrel = std::array<TICLLayerTileBarrel, TileConstantsBarrel::iterations>;
 }  // namespace ticl
 
 template <typename T>
@@ -109,10 +105,8 @@ private:
 
 using TICLLayerTiles = TICLGenericTile<ticl::Tiles>;
 using TICLTracksterTiles = TICLGenericTile<ticl::TracksterTiles>;
-using TICLLayerTilesHCAL = TICLGenericTile<ticl::TilesHCAL>;
-using TICLTracksterTilesHCAL = TICLGenericTile<ticl::TracksterTilesHCAL>;
-using TICLLayerTilesECAL = TICLGenericTile<ticl::TilesECAL>;
-using TICLTracksterTilesECAL = TICLGenericTile<ticl::TracksterTilesECAL>;
+using TICLLayerTilesBarrel = TICLGenericTile<ticl::TilesBarrel>;
+using TICLTracksterTilesBarrel = TICLGenericTile<ticl::TracksterTilesBarrel>;
 using TICLLayerTilesHFNose = TICLGenericTile<ticl::TilesHFNose>;
 using TICLTracksterTilesHFNose = TICLGenericTile<ticl::TracksterTilesHFNose>;
 

@@ -59,6 +59,16 @@ void PatternRecognitionbyFastJet<TILES>::buildJetAndTracksters(std::vector<Pseud
   });
   result.resize(trackster_idx + jetsSize);
 
+  for (const auto& pj : jets) {
+    for (const auto &component : pj.constituents()) {
+      std::cout << __FILE__ << " " << __LINE__ << std::endl;
+      std::cout << "component: " << component.user_index() << std::endl;
+    }
+  }
+      
+
+
+
   for (const auto &pj : jets) {
     if (pj.constituents().size() > static_cast<unsigned int>(minNumLayerCluster_)) {
       for (const auto &component : pj.constituents()) {
@@ -94,7 +104,7 @@ void PatternRecognitionbyFastJet<TILES>::makeTracksters(
   const CaloGeometry &geom = es.getData(caloGeomToken_);
   rhtools_.setGeometry(geom);
 
-  constexpr bool isBarrel = std::is_same<TILES, TICLLayerTilesHCAL>::value || std::is_same<TILES, TICLLayerTilesECAL>::value;
+  constexpr bool isBarrel = std::is_same<TILES, TICLLayerTilesBarrel>::value;
   constexpr auto isHFnose = std::is_same<TILES, TICLLayerTilesHFNose>::value;
   constexpr int nEtaBin = TILES::constants_type_t::nEtaBins;
   constexpr int nPhiBin = TILES::constants_type_t::nPhiBins;
@@ -324,4 +334,4 @@ void PatternRecognitionbyFastJet<TILES>::fillPSetDescription(edm::ParameterSetDe
 }
 
 template class ticl::PatternRecognitionbyFastJet<TICLLayerTiles>;
-template class ticl::PatternRecognitionbyFastJet<TICLLayerTilesHCAL>;
+template class ticl::PatternRecognitionbyFastJet<TICLLayerTilesBarrel>;
