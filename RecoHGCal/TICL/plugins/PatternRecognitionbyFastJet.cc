@@ -59,16 +59,6 @@ void PatternRecognitionbyFastJet<TILES>::buildJetAndTracksters(std::vector<Pseud
   });
   result.resize(trackster_idx + jetsSize);
 
-  for (const auto& pj : jets) {
-    for (const auto &component : pj.constituents()) {
-      std::cout << __FILE__ << " " << __LINE__ << std::endl;
-      std::cout << "component: " << component.user_index() << std::endl;
-    }
-  }
-      
-
-
-
   for (const auto &pj : jets) {
     if (pj.constituents().size() > static_cast<unsigned int>(minNumLayerCluster_)) {
       for (const auto &component : pj.constituents()) {
