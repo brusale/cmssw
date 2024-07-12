@@ -8,12 +8,11 @@
 
 EDM_REGISTER_VALIDATED_PLUGINFACTORY(PatternRecognitionFactory, "PatternRecognitionFactory");
 EDM_REGISTER_VALIDATED_PLUGINFACTORY(PatternRecognitionHFNoseFactory, "PatternRecognitionHFNoseFactory");
-EDM_REGISTER_VALIDATED_PLUGINFACTORY(PatternRecognitionHCALFactory, "PatternRecognitionHCALFactory");
-EDM_REGISTER_VALIDATED_PLUGINFACTORY(PatternRecognitionECALFactory, "PatternRecognitionECALFactory");
+EDM_REGISTER_VALIDATED_PLUGINFACTORY(PatternRecognitionBarrelFactory, "PatternRecognitionBarrelFactory");
 DEFINE_EDM_VALIDATED_PLUGIN(PatternRecognitionFactory, ticl::PatternRecognitionbyCA<TICLLayerTiles>, "CA");
 DEFINE_EDM_VALIDATED_PLUGIN(PatternRecognitionFactory, ticl::PatternRecognitionbyCLUE3D<TICLLayerTiles>, "CLUE3D");
 DEFINE_EDM_VALIDATED_PLUGIN(PatternRecognitionFactory, ticl::PatternRecognitionbyFastJet<TICLLayerTiles>, "FastJet");
-DEFINE_EDM_VALIDATED_PLUGIN(PatternRecognitionHCALFactory, ticl::PatternRecognitionbyFastJet<TICLLayerTilesHCAL>, "FastJet");
+DEFINE_EDM_VALIDATED_PLUGIN(PatternRecognitionBarrelFactory, ticl::PatternRecognitionbyFastJet<TICLLayerTilesBarrel>, "FastJet");
 DEFINE_EDM_VALIDATED_PLUGIN(PatternRecognitionFactory,
                             ticl::PatternRecognitionbyPassthrough<TICLLayerTiles>,
                             "Passthrough");

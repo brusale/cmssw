@@ -44,15 +44,13 @@ public:
 private:
   std::string detector_;
   bool doNose_;
-  bool doHCAL_;
-  bool doECAL_;
+  bool doBarrel_;
   bool doRegression_;
   const std::string tfDnnLabel_;
   edm::ESGetToken<TfGraphDefWrapper, TfGraphRecord> tfDnnToken_;
   const tensorflow::Session* tfSession_;
   std::unique_ptr<PatternRecognitionAlgoBaseT<TICLLayerTiles>> myAlgo_;
-  std::unique_ptr<PatternRecognitionAlgoBaseT<TICLLayerTilesHCAL>> myAlgoHCAL_;
-  std::unique_ptr<PatternRecognitionAlgoBaseT<TICLLayerTilesECAL>> myAlgoECAL_;
+  std::unique_ptr<PatternRecognitionAlgoBaseT<TICLLayerTilesBarrel>> myAlgoBarrel_;
   std::unique_ptr<PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>> myAlgoHFNose_;
 
   const edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_token_;
@@ -60,8 +58,7 @@ private:
   const edm::EDGetTokenT<std::vector<float>> original_layerclusters_mask_token_;
   const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTime_token_;
   edm::EDGetTokenT<TICLLayerTiles> layer_clusters_tiles_token_;
-  edm::EDGetTokenT<TICLLayerTilesHCAL> layer_clusters_tiles_hcal_token_;
-  edm::EDGetTokenT<TICLLayerTilesECAL> layer_clusters_tiles_ecal_token_;
+  edm::EDGetTokenT<TICLLayerTilesBarrel> layer_clusters_tiles_barrel_token_;
   edm::EDGetTokenT<TICLLayerTilesHFNose> layer_clusters_tiles_hfnose_token_;
   const edm::EDGetTokenT<std::vector<TICLSeedingRegion>> seeding_regions_token_;
   const std::string itername_;
@@ -72,8 +69,7 @@ DEFINE_FWK_MODULE(TrackstersProducer);
 TrackstersProducer::TrackstersProducer(const edm::ParameterSet& ps)
     : detector_(ps.getParameter<std::string>("detector")),
       doNose_(detector_ == "HFNose"),
-      doHCAL_(detector_ == "HCAL"),
-      doECAL_(detector_ == "ECAL"),
+      doBarrel_(detector_ == "Barrel"),
       doRegression_(ps.getParameter<bool>("doRegression")),
       tfDnnLabel_(ps.getParameter<std::string>("tfDnnLabel")),
       tfSession_(nullptr),
@@ -95,16 +91,11 @@ TrackstersProducer::TrackstersProducer(const edm::ParameterSet& ps)
         ps.getParameter<std::string>("patternRecognitionBy"), pluginPSet, consumesCollector());
     layer_clusters_tiles_hfnose_token_ =
         consumes<TICLLayerTilesHFNose>(ps.getParameter<edm::InputTag>("layer_clusters_hfnose_tiles"));
-  } else if (doHCAL_) {
-    myAlgoHCAL_ = PatternRecognitionHCALFactory::get()->create(
+  } else if (doBarrel_) {
+    myAlgoBarrel_ = PatternRecognitionBarrelFactory::get()->create(
         ps.getParameter<std::string>("patternRecognitionBy"), pluginPSet, consumesCollector());
-    layer_clusters_tiles_hcal_token_ =
-        consumes<TICLLayerTilesHCAL>(ps.getParameter<edm::InputTag>("layer_clusters_hcal_tiles"));
-  } else if (doECAL_) {
-    myAlgoECAL_ = PatternRecognitionECALFactory::get()->create(
-        ps.getParameter<std::string>("patternRecognitionBy"), pluginPSet, consumesCollector());
-    layer_clusters_tiles_ecal_token_ =
-        consumes<TICLLayerTilesECAL>(ps.getParameter<edm::InputTag>("layer_clusters_ecal_tiles"));
+    layer_clusters_tiles_barrel_token_ =
+        consumes<TICLLayerTilesBarrel>(ps.getParameter<edm::InputTag>("layer_clusters_barrel_tiles"));
   } else {
     myAlgo_ = PatternRecognitionFactory::get()->create(
         ps.getParameter<std::string>("patternRecognitionBy"), pluginPSet, consumesCollector());
@@ -136,8 +127,7 @@ void TrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descri
   desc.add<edm::InputTag>("original_mask", edm::InputTag("hgcalMergeLayerClusters", "InitialLayerClustersMask"));
   desc.add<edm::InputTag>("time_layerclusters", edm::InputTag("hgcalMergeLayerClusters", "timeLayerCluster"));
   desc.add<edm::InputTag>("layer_clusters_tiles", edm::InputTag("ticlLayerTileProducer"));
-  desc.add<edm::InputTag>("layer_clusters_hcal_tiles", edm::InputTag("ticlLayerTileProducer", "ticlLayerTilesHCAL"));
-  desc.add<edm::InputTag>("layer_clusters_ecal_tiles", edm::InputTag("ticlLayerTileProducer", "ticlLayerTilesECAL"));
+  desc.add<edm::InputTag>("layer_clusters_barrel_tiles", edm::InputTag("ticlLayerTileProducer", "ticlLayerTilesBarrel"));
   desc.add<edm::InputTag>("layer_clusters_hfnose_tiles", edm::InputTag("ticlLayerTileHFNose"));
   desc.add<edm::InputTag>("seeding_regions", edm::InputTag("ticlSeedingRegionProducer"));
   desc.add<std::string>("patternRecognitionBy", "CA");
@@ -203,31 +193,18 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
 
     myAlgoHFNose_->makeTracksters(inputHFNose, *result, seedToTrackstersAssociation);
 
-  } else if (doHCAL_) {
-    const auto& layer_clusters_hcal_tiles = evt.get(layer_clusters_tiles_hcal_token_);
-    const typename PatternRecognitionAlgoBaseT<TICLLayerTilesHCAL>::Inputs inputHCAL(evt,
+  } else if (doBarrel_) {
+    const auto& layer_clusters_barrel_tiles = evt.get(layer_clusters_tiles_barrel_token_);
+    const typename PatternRecognitionAlgoBaseT<TICLLayerTilesBarrel>::Inputs inputBarrel(evt,
                                                                                          es,
                                                                                          layerClusters,
                                                                                          inputClusterMask,
                                                                                          layerClustersTimes,
-                                                                                         layer_clusters_hcal_tiles,
+                                                                                         layer_clusters_barrel_tiles,
                                                                                          seeding_regions,
                                                                                          tfSession_);
 
-    myAlgoHCAL_->makeTracksters(inputHCAL, *result, seedToTrackstersAssociation);
-
-  } else if (doECAL_) {
-    const auto& layer_clusters_ecal_tiles = evt.get(layer_clusters_tiles_ecal_token_);
-    const typename PatternRecognitionAlgoBaseT<TICLLayerTilesECAL>::Inputs inputECAL(evt,
-                                                                                         es,
-                                                                                         layerClusters,
-                                                                                         inputClusterMask,
-                                                                                         layerClustersTimes,
-                                                                                         layer_clusters_ecal_tiles,
-                                                                                         seeding_regions,
-                                                                                         tfSession_);
-
-    myAlgoECAL_->makeTracksters(inputECAL, *result, seedToTrackstersAssociation);
+    myAlgoBarrel_->makeTracksters(inputBarrel, *result, seedToTrackstersAssociation);
 
   } else {
     const auto& layer_clusters_tiles = evt.get(layer_clusters_tiles_token_);
