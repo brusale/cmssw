@@ -44,7 +44,7 @@ namespace ticl {
     const std::vector<reco::CaloCluster>& clusters_;
     float minEtSeed_;
 
-    TICLLayerTilesECAL tiles_;
+    TICLLayerTilesBarrel tiles_;
 
   };
 };

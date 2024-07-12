@@ -279,7 +279,6 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
   int loop_index = 0;
   for (const auto& [key, lcVec] : caloParticlesToRecoColl) {
     auto const& cp = *(key);
-    std::cout << "lcVec.size(): " << lcVec.size() << std::endl;
     auto cpIndex = &cp - &caloparticles[0];
     for (const auto& scRef : cp.simClusters()) {
       auto const& sc = *(scRef);

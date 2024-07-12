@@ -39,7 +39,7 @@ TICLLayerTileProducer::TICLLayerTileProducer(const edm::ParameterSet &ps)
   geometry_token_ = esConsumes<CaloGeometry, CaloGeometryRecord, edm::Transition::BeginRun>();
 
   doNose_ = (detector_ == "HFNose");
-  doBarrel_ = (detector_ == "BARREL");
+  doBarrel_ = (detector_ == "Barrel");
 
   if (doNose_) {
     clusters_HFNose_token_ =
@@ -48,7 +48,7 @@ TICLLayerTileProducer::TICLLayerTileProducer(const edm::ParameterSet &ps)
   } else if (doBarrel_) {
     clusters_barrel_token_ =
         consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("barrel_layer_clusters"));
-    produces<TICLLayerTilesBarrel>();
+    produces<TICLLayerTilesBarrel>("ticlLayerTilesBarrel");
   } else {
     clusters_token_ = consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_clusters"));
     produces<TICLLayerTiles>();
@@ -84,8 +84,9 @@ void TICLLayerTileProducer::produce(edm::Event &evt, const edm::EventSetup &) {
   int lcId = 0;
   for (auto const &lc : layerClusters) {
     const auto firstHitDetId = lc.hitsAndFractions()[0].first;
-    int layer = rhtools_.getLayerWithOffset(firstHitDetId) +
-                rhtools_.lastLayer(doNose_) * ((rhtools_.zside(firstHitDetId) + 1) >> 1) - 1;
+    int layer = rhtools_.getLayerWithOffset(firstHitDetId);
+    if (!doBarrel_)
+        layer += rhtools_.lastLayer(doNose_) * ((rhtools_.zside(firstHitDetId) + 1) >> 1) - 1;
 
     assert(layer >= 0);
 
@@ -104,7 +105,7 @@ void TICLLayerTileProducer::produce(edm::Event &evt, const edm::EventSetup &) {
   if (doNose_) {
     evt.put(std::move(resultHFNose));
   } else if (doBarrel_) {  
-    evt.put(std::move(resultBarrel), "ticlLayerTilesBarrel");
+    evt.put(std::move(resultBarrel),"ticlLayerTilesBarrel");
   } else {
     evt.put(std::move(result));
   }

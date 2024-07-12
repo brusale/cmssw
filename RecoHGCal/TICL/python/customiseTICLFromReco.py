@@ -91,57 +91,61 @@ def customiseTICLBarrelFromReco(process):
     process.lcFromPFClusterProducer = lcFromPFClusterProducer.clone()
     
     
-    process.barrelLayerClustersTask = cms.Task(
-                                               #process.simBarrelLayerClusters,
-					       process.barrelLayerClusters,
-					       #process.particleFlowClusterECALUncorrected,
-					       process.lcFromPFClusterProducer
-					       )
-
     process.filteredLayerClustersProducerHCAL = filteredLayerClustersProducer.clone(
         clusterFilter = "ClusterFilterByAlgo"
     )
 
-    process.barrelHcalPatternRecognition = _trackstersProducer.clone(
-        detector = "HCAL",
-        layer_clusters = "barrelLayerClusters:hcalLayerClusters",
-        time_layerclusters = "barrelLayerClusters:timeLayerClusterHcal",
-        filtered_mask = "barrelLayerClusters:InitialLayerClustersMaskHCAL",
-        original_mask = "barrelLayerClusters:InitialLayerClustersMaskHCAL",
+    process.barrelPatternRecognition = _trackstersProducer.clone(
+        detector = "Barrel",
+        layer_clusters = "barrelLayerClusters",
+        time_layerclusters = "barrelLayerClusters:timeLayerCluster",
+        filtered_mask = "barrelLayerClusters:InitialLayerClustersMask",
+        original_mask = "barrelLayerClusters:InitialLayerClustersMask",
         seeding_regions = "ticlSeedingGlobal",
         itername = "FastJet",
         patternRecognitionBy = "FastJet",
         doRegression = cms.bool(False),
         pluginPatternRecognitionByFastJet = dict (
-            antikt_radius = 0.15,
+            antikt_radius = 0.03,
             minNumLayerCluster = 0,
             algo_verbosity = 2
         )
     )
 
-    process.barrelEcalPatternRecognition = _trackstersProducer.clone(
-        layer_clusters = "barrelLayerClusters:ecalLayerClusters",
-        time_layerclusters = "barrelLayerClusters:timeLayerClusterEcal",
-        filtered_mask = "barrelLayerClusters:InitialLayerClustersMaskECAL",
-        seeding_regions = "ticlSeedingGlobal",
-        itername = "CLUE2D",
-        patternRecognitionBy = "FastJet", #"CLUE2D",
-        doRegression = cms.bool(False),
-        pluginPatternRecognitionByFastJet = dict (
-            antikt_radius = 0.15,
-            minNumLayerCluster = 0,
-            algo_verbosity = 2
-        )
-    )
+    # process.barrelEcalPatternRecognition = _trackstersProducer.clone(
+    #     layer_clusters = "barrelLayerClusters",
+    #     time_layerclusters = "barrelLayerClusters:timeLayerClusterEcal",
+    #     filtered_mask = "barrelLayerClusters:InitialLayerClustersMaskECAL",
+    #     seeding_regions = "ticlSeedingGlobal",
+    #     itername = "CLUE2D",
+    #     patternRecognitionBy = "FastJet", #"CLUE2D",
+    #     doRegression = cms.bool(False),
+    #     pluginPatternRecognitionByFastJet = dict (
+    #         antikt_radius = 0.15,
+    #         minNumLayerCluster = 0,
+    #         algo_verbosity = 2
+    #     )
+    # )
    
-    process.ticlSimTracksters.layer_clusters = cms.InputTag("barrelLayerClusters", "hcalLayerClusters") 
-    process.ticlSimTracksters.filtered_mask = cms.InputTag("barrelLayerClusters:InitialLayerClustersMaskHCAL")
-    process.ticlSimTracksters.time_layerclusters = cms.InputTag("barrelLayerClusters:timeLayerClusterHcal")
+    process.ticlSimTracksters.layer_clusters = cms.InputTag("barrelLayerClusters") 
+    process.ticlSimTracksters.filtered_mask = cms.InputTag("barrelLayerClusters:InitialLayerClustersMask")
+    process.ticlSimTracksters.time_layerclusters = cms.InputTag("barrelLayerClusters:timeLayerCluster")
     process.ticlSimTracksters.layerClusterCaloParticleAssociator = cms.InputTag("barrelLayerClusterCaloParticleAssociationProducer")
     process.ticlSimTracksters.layerClusterSimClusterAssociator = cms.InputTag("barrelLayerClusterSimClusterAssociationProducer")
-    process.hcalPatternRecognitionSeq = cms.Sequence(process.filteredLayerClustersProducerHCAL + process.barrelHcalPatternRecognition)#+process.barrelEcalPatternRecognition
-    process.ticlLayerTileProducer.detector = cms.string('HCAL')
-    process.TICLBarrel = cms.Path(process.ticlSimTracksters + process.ticlLayerTileProducer + process.ticlSeedingGlobal + process.hcalPatternRecognitionSeq, process.barrelLayerClustersTask)
+    #process.barrelPatternRecognitionTask = cms.Task(process.barrelPatternRecognition)#+process.barrelEcalPatternRecognition
+    process.ticlLayerTileProducer.detector = cms.string('Barrel')
+
+
+    process.barrelTrackstersTask = cms.Task(
+                                               #process.simBarrelLayerClusters,
+					       process.barrelLayerClusters,
+					       #process.particleFlowClusterECALUncorrected,
+					       process.lcFromPFClusterProducer,
+                                               process.barrelPatternRecognition,
+					       )
+
+    
+    process.TICLBarrel = cms.Path(process.ticlSimTracksters + process.ticlLayerTileProducer + process.ticlSeedingGlobal, process.barrelTrackstersTask)
 
     # We want to run CLUE on not -cleaned Rechit collections
     process.recHitMapProducer.EBInput = cms.InputTag("particleFlowRecHitECAL")
