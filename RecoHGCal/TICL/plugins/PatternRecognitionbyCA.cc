@@ -72,13 +72,17 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
   }
 
   constexpr auto isHFnose = std::is_same<TILES, TICLLayerTilesHFNose>::value;
+  constexpr auto isBarrel = std::is_same<TILES, TICLLayerTilesBarrel>::value;
   constexpr int nEtaBin = TILES::constants_type_t::nEtaBins;
   constexpr int nPhiBin = TILES::constants_type_t::nPhiBins;
-
   bool isRegionalIter = (input.regions[0].index != -1);
   std::vector<HGCDoublet::HGCntuplet> foundNtuplets;
   std::vector<int> seedIndices;
   std::vector<uint8_t> layer_cluster_usage(input.layerClusters.size(), 0);
+  unsigned int lastLayerFH = rhtools_.lastLayerFH();
+  if (isBarrel)
+    lastLayerFH = rhtools_.lastLayer(isHFnose, isBarrel);
+
   theGraph_->makeAndConnectDoublets(input.tiles,
                                     input.regions,
                                     nEtaBin,
@@ -86,17 +90,17 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
                                     input.layerClusters,
                                     input.mask,
                                     input.layerClustersTime,
-                                    1,
-                                    1,
+                                    2, //1,
+                                    2, //1,
                                     min_cos_theta_,
                                     min_cos_pointing_,
                                     root_doublet_max_distance_from_seed_squared_,
                                     etaLimitIncreaseWindow_,
                                     skip_layers_,
-                                    rhtools_.lastLayer(isHFnose),
+                                    rhtools_.lastLayer(isHFnose, isBarrel),
                                     max_delta_time_,
-                                    rhtools_.lastLayerEE(isHFnose),
-                                    rhtools_.lastLayerFH(),
+                                    rhtools_.lastLayerEE(isHFnose, isBarrel),
+                                    lastLayerFH,
                                     siblings_maxRSquared_);
 
   theGraph_->findNtuplets(foundNtuplets, seedIndices, min_clusters_per_ntuplet_, out_in_dfs_, max_out_in_hops_);
@@ -108,6 +112,8 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
   std::vector<Trackster> tmpTracksters;
   tmpTracksters.reserve(foundNtuplets.size());
 
+  
+  
   for (auto const &ntuplet : foundNtuplets) {
     tracksterId++;
 
@@ -187,7 +193,7 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
                               computeLocalTime_);
 
   // run energy regression and ID
-  energyRegressionAndID(input.layerClusters, input.tfSession, tmpTracksters);
+  /*energyRegressionAndID(input.layerClusters, input.tfSession, tmpTracksters);
   // Filter results based on PID criteria or EM/Total energy ratio.
   // We want to **keep** tracksters whose cumulative
   // probability summed up over the selected categories
@@ -201,11 +207,12 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
     }
     return (cumulative_prob <= pid_threshold_) &&
            (t.raw_em_energy() < energy_em_over_total_threshold_ * t.raw_energy());
-  };
+  };*/
 
   std::vector<unsigned int> selectedTrackstersIds;
   for (unsigned i = 0; i < tmpTracksters.size(); ++i) {
-    if (!filter_on_pids(tmpTracksters[i]) and tmpTracksters[i].sigmasPCA()[0] < max_longitudinal_sigmaPCA_) {
+    //if (!filter_on_pids(tmpTracksters[i]) and tmpTracksters[i].sigmasPCA()[0] < max_longitudinal_sigmaPCA_) {
+    if (tmpTracksters[i].sigmasPCA()[0] < max_longitudinal_sigmaPCA_) {
       selectedTrackstersIds.push_back(i);
     }
   }
@@ -249,7 +256,7 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
                               computeLocalTime_);
 
   // run energy regression and ID
-  energyRegressionAndID(input.layerClusters, input.tfSession, result);
+  //energyRegressionAndID(input.layerClusters, input.tfSession, result);
 
   // now adding dummy tracksters from seeds not connected to any shower in the result collection
   // these are marked as charged hadrons with probability 1.
@@ -518,3 +525,4 @@ void PatternRecognitionbyCA<TILES>::fillPSetDescription(edm::ParameterSetDescrip
 
 template class ticl::PatternRecognitionbyCA<TICLLayerTiles>;
 template class ticl::PatternRecognitionbyCA<TICLLayerTilesHFNose>;
+template class ticl::PatternRecognitionbyCA<TICLLayerTilesBarrel>;
