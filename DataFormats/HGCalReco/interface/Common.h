@@ -29,7 +29,7 @@ namespace ticl {
   };
 
   struct TileConstantsBarrel {
-    static constexpr float minEta = -1.5f;
+    static constexpr float minEta = 0.f;
     static constexpr float maxEta = 1.5f;
     static constexpr int nEtaBins = 34;
     static constexpr int nPhiBins = 36;
