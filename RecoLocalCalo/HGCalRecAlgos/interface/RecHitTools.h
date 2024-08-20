@@ -41,7 +41,7 @@ namespace hgcal {
     const CaloSubdetectorGeometry* getSubdetectorGeometry(const DetId& id) const;
 
     GlobalPoint getPosition(const DetId& id) const;
-    GlobalPoint getPositionLayer(int layer, bool nose = false) const;
+    GlobalPoint getPositionLayer(int layer, bool nose = false, bool barrel = false) const;
     // zside returns +/- 1
     int zside(const DetId& id) const;
 
