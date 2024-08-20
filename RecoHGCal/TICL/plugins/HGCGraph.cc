@@ -89,7 +89,11 @@ void HGCGraphT<TILES>::makeAndConnectDoublets(const TILES &histo,
     for (int il = 0; il < maxNumberOfLayers - 1; ++il) {
       for (int outer_layer = 0; outer_layer < std::min(1 + skip_layers, maxNumberOfLayers - 1 - il); ++outer_layer) {
         int currentInnerLayerId = il + maxNumberOfLayers * zSide;
+        if constexpr (std::is_same_v<TILES, TICLLayerTilesBarrel>)
+          currentInnerLayerId = il; //+ maxNumberOfLayers; 
         int currentOuterLayerId = currentInnerLayerId + 1 + outer_layer;
+        if (currentOuterLayerId == 6)
+          break;
         auto const &outerLayerHisto = histo[currentOuterLayerId];
         auto const &innerLayerHisto = histo[currentInnerLayerId];
         maxRSquared = (il <= lastLayerEE)   ? siblings_maxRSquared[0]
@@ -273,7 +277,7 @@ void HGCGraphT<TILES>::findNtuplets(std::vector<HGCDoublet::HGCntuplet> &foundNt
       outInToVisit.pop_back();
     }
 
-    if (tmpNtuplet.size() > minClustersPerNtuplet) {
+    if (tmpNtuplet.size() >= minClustersPerNtuplet) {
       foundNtuplets.push_back(tmpNtuplet);
       seedIndices.push_back(seedIndex);
     }
@@ -282,3 +286,4 @@ void HGCGraphT<TILES>::findNtuplets(std::vector<HGCDoublet::HGCntuplet> &foundNt
 
 template class HGCGraphT<TICLLayerTiles>;
 template class HGCGraphT<TICLLayerTilesHFNose>;
+template class HGCGraphT<TICLLayerTilesBarrel>;
