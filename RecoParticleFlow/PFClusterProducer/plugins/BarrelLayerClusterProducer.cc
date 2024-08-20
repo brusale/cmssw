@@ -79,10 +79,12 @@ BarrelLayerClusterProducer::BarrelLayerClusterProducer(const edm::ParameterSet& 
       caloGeomToken_{consumesCollector().esConsumes<CaloGeometry, CaloGeometryRecord>()} {
   auto ebpluginPSet = ps.getParameter<edm::ParameterSet>("ebplugin");
   ebalgo = HGCalLayerClusterAlgoFactory::get()->create(ebpluginPSet.getParameter<std::string>("type"), ebpluginPSet);
+  algoId = reco::CaloCluster::hgcal_em;
   ebalgo->setAlgoId(algoId);
 
   auto hbpluginPSet = ps.getParameter<edm::ParameterSet>("hbplugin");
   hbalgo = HGCalLayerClusterAlgoFactory::get()->create(hbpluginPSet.getParameter<std::string>("type"), hbpluginPSet);
+  algoId = reco::CaloCluster::hgcal_had;
   hbalgo->setAlgoId(algoId);
 
   auto hopluginPSet = ps.getParameter<edm::ParameterSet>("hoplugin");
