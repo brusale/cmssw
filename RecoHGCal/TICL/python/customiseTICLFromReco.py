@@ -30,6 +30,8 @@ from SimCalorimetry.HGCalAssociatorProducers.barrelLCToSCAssociatorByEnergyScore
 from SimCalorimetry.HGCalAssociatorProducers.LCToCPAssociation_cfi import barrelLayerClusterCaloParticleAssociation as barrelLayerClusterCaloParticleAssociationProducer
 from SimCalorimetry.HGCalAssociatorProducers.LCToSCAssociation_cfi import barrelLayerClusterSimClusterAssociation as barrelLayerClusterSimClusterAssociationProducer
 
+from SimCalorimetry.HGCalAssociatorProducers.TSToSimTSAssociation_cfi import barrelTracksterSimTracksterAssociationPR, barrelTracksterSimTracksterAssociationLinkingPR
+from SimCalorimetry.HGCalAssociatorProducers.barrelSimTracksterHitLCAssociatorByEnergyScore_cfi import barrelSimTracksterHitLCAssociatorByEnergyScore
 from RecoHGCal.TICL.lcFromPFClusterProducer_cfi import lcFromPFClusterProducer  
 from RecoHGCal.TICL.recHitDumper_cfi import recHitDumper
 
@@ -91,8 +93,8 @@ def customiseTICLBarrelFromReco(process):
     process.lcFromPFClusterProducer = lcFromPFClusterProducer.clone()
     
     
-    process.filteredLayerClustersProducerHCAL = filteredLayerClustersProducer.clone(
-        clusterFilter = "ClusterFilterByAlgo"
+    process.barrelLayerClustersTask = cms.Task(process.barrelLayerClusters
+                                               ,process.lcFromPFClusterProducer
     )
 
     process.barrelPatternRecognition = _trackstersProducer.clone(
@@ -102,50 +104,51 @@ def customiseTICLBarrelFromReco(process):
         filtered_mask = "barrelLayerClusters:InitialLayerClustersMask",
         original_mask = "barrelLayerClusters:InitialLayerClustersMask",
         seeding_regions = "ticlSeedingGlobal",
-        itername = "FastJet",
-        patternRecognitionBy = "FastJet",
+        itername = "CA",
+        patternRecognitionBy = "CA",
         doRegression = cms.bool(False),
         pluginPatternRecognitionByFastJet = dict (
-            antikt_radius = 0.03,
+            antikt_radius = 0.1,
             minNumLayerCluster = 0,
             algo_verbosity = 2
+        ),
+        pluginPatternRecognitionByCA = dict (
+            min_layers_per_trackster = 1,
+            root_doublet_max_distance_from_seed_squared = 9998,
+            min_cos_theta = 0.99,
+            siblings_maxRSquared = cms.vdouble(3*0.0175, 5*0.087, 5*0.087)
+        ),
+        pluginPatternRecognitionByCLUE3D = dict (
+            criticalDensity = cms.vdouble(0.5, 0.5, 0.5),
+            criticalSelfDensity = cms.vdouble(0., 0., 0.),
+            criticalEtaPhiDistance = cms.vdouble(7*0.087, 7*0.087, 7*0.087, 7*0.087),
+            densityEtaPhiDistanceSqr = cms.vdouble(0.37, 0.37, 0.37, 0.37), # 7*0.087 squared
+            #nearestHigherOnSameLayer = cms.bool(True),
+            #densityOnSameLayer = cms.bool(True),
+            minNumLayerCluster = cms.vint32(1, 1, 1),
+            useAbsoluteProjectiveScale = cms.bool(False),
+            densitySiblingLayers = cms.vint32(4,4,4)
         )
     )
 
-    # process.barrelEcalPatternRecognition = _trackstersProducer.clone(
-    #     layer_clusters = "barrelLayerClusters",
-    #     time_layerclusters = "barrelLayerClusters:timeLayerClusterEcal",
-    #     filtered_mask = "barrelLayerClusters:InitialLayerClustersMaskECAL",
-    #     seeding_regions = "ticlSeedingGlobal",
-    #     itername = "CLUE2D",
-    #     patternRecognitionBy = "FastJet", #"CLUE2D",
-    #     doRegression = cms.bool(False),
-    #     pluginPatternRecognitionByFastJet = dict (
-    #         antikt_radius = 0.15,
-    #         minNumLayerCluster = 0,
-    #         algo_verbosity = 2
-    #     )
-    # )
-   
+    process.barrelLayerClusters.hbplugin.kappa = cms.double(1.5)
+
     process.ticlSimTracksters.layer_clusters = cms.InputTag("barrelLayerClusters") 
     process.ticlSimTracksters.filtered_mask = cms.InputTag("barrelLayerClusters:InitialLayerClustersMask")
     process.ticlSimTracksters.time_layerclusters = cms.InputTag("barrelLayerClusters:timeLayerCluster")
     process.ticlSimTracksters.layerClusterCaloParticleAssociator = cms.InputTag("barrelLayerClusterCaloParticleAssociationProducer")
     process.ticlSimTracksters.layerClusterSimClusterAssociator = cms.InputTag("barrelLayerClusterSimClusterAssociationProducer")
-    #process.barrelPatternRecognitionTask = cms.Task(process.barrelPatternRecognition)#+process.barrelEcalPatternRecognition
+
+    process.barrelSimTracksterHitLCAssociatorByEnergyScoreProducer = barrelSimTracksterHitLCAssociatorByEnergyScore.clone() 
+    process.barrelTracksterSimTracksterAssociationPR = barrelTracksterSimTracksterAssociationPR.clone()
+    process.barrelTracksterSimTracksterAssociationLinkingPR = barrelTracksterSimTracksterAssociationLinkingPR.clone() 
+    process.barrellPatternRecognitionSeq = cms.Sequence(process.barrelPatternRecognition)
     process.ticlLayerTileProducer.detector = cms.string('Barrel')
-
-
-    process.barrelTrackstersTask = cms.Task(
-                                               #process.simBarrelLayerClusters,
-					       process.barrelLayerClusters,
-					       #process.particleFlowClusterECALUncorrected,
-					       process.lcFromPFClusterProducer,
-                                               process.barrelPatternRecognition,
-					       )
-
-    
-    process.TICLBarrel = cms.Path(process.ticlSimTracksters + process.ticlLayerTileProducer + process.ticlSeedingGlobal, process.barrelTrackstersTask)
+    process.TICLBarrel = cms.Path(process.ticlSimTracksters 
+                                  + process.ticlLayerTileProducer
+                                  + process.ticlSeedingGlobal 
+                                  + process.barrelPatternRecognition
+                                  , process.barrelLayerClustersTask)
 
     # We want to run CLUE on not -cleaned Rechit collections
     process.recHitMapProducer.EBInput = cms.InputTag("particleFlowRecHitECAL")
@@ -156,23 +159,23 @@ def customiseTICLBarrelFromReco(process):
     process.barrelLayerClusters.HBInput = cms.InputTag("particleFlowRecHitHBHE")
     process.barrelLayerClusters.HOInput = cms.InputTag("particleFlowRecHitHO")
        
-
     process.barrelLCAssocByEnergyScoreProducerPFCluster = barrelLCToCPAssociatorByEnergyScoreProducer.clone()
     process.barrelSCAssocByEnergyScoreProducerPFCluster = barrelLCToSCAssociatorByEnergyScoreProducer.clone()
     process.barrelLayerClusterCaloParticleAssociationProducerPFCluster =  barrelLayerClusterCaloParticleAssociationProducer.clone()
     process.barrelLayerClusterSimClusterAssociationProducerPFCluster = barrelLayerClusterSimClusterAssociationProducer.clone()
-   
+  
+    process.barrelLayerClusterCaloParticleAssociationProducer.label_lc = cms.InputTag("barrelLayerClusters") 
     process.barrelLayerClusterCaloParticleAssociationProducerPFCluster.label_lc = cms.InputTag("lcFromPFClusterProducer")
     process.barrelLayerClusterSimClusterAssociationProducerPFCluster.label_lcl = cms.InputTag("lcFromPFClusterProducer")
     process.barrelLayerClusterCaloParticleAssociationProducerPFCluster.associator = cms.InputTag("barrelLCAssocByEnergyScoreProducerPFCluster")
     process.barrelLayerClusterSimClusterAssociationProducerPFCluster.label_lc = cms.InputTag("lcFromPFClusterProducer")
 
-    process.barrelLCToCPAssociatorByEnergyScoreProducer.hits = cms.VInputTag("particleFlowRecHitECAL","particleFlowRecHitHBHE","particleFlowRecHitHO")
-    process.barrelLCToSCAssociatorByEnergyScoreProducer.hits = cms.VInputTag("particleFlowRecHitECAL","particleFlowRecHitHBHE","particleFlowRecHitHO")
+    process.barrelLCToCPAssociatorByEnergyScoreProducer.hits = cms.VInputTag("particleFlowRecHitECAL","particleFlowRecHitHBHE")
+    process.barrelLCToSCAssociatorByEnergyScoreProducer.hits = cms.VInputTag("particleFlowRecHitECAL","particleFlowRecHitHBHE")
 
     # Uncorrected PFClusters are build without "cleaned "
-    process.barrelLCAssocByEnergyScoreProducerPFCluster.hits = cms.VInputTag("particleFlowRecHitECAL","particleFlowRecHitHBHE","particleFlowRecHitHO")
-    process.barrelSCAssocByEnergyScoreProducerPFCluster.hits = cms.VInputTag("particleFlowRecHitECAL","particleFlowRecHitHBHE","particleFlowRecHitHO")
+    process.barrelLCAssocByEnergyScoreProducerPFCluster.hits = cms.VInputTag("particleFlowRecHitECAL","particleFlowRecHitHBHE")
+    process.barrelSCAssocByEnergyScoreProducerPFCluster.hits = cms.VInputTag("particleFlowRecHitECAL","particleFlowRecHitHBHE")
     
     
     # Make the plots in CMSSW
@@ -184,58 +187,76 @@ def customiseTICLBarrelFromReco(process):
 
     # process.barrelValidatorPFCluster.dirName = cms.string('PFCluster/PFClusterValidator/')
 
-    process.TICLBarrel_ValidationProducers = cms.Task(
-                                                      process.recHitMapProducer,
-    #     					      process.simBarrelRecHitMapProducer,
-         					      process.barrelLCAssocByEnergyScoreProducerPFCluster,
-        					      process.barrelSCAssocByEnergyScoreProducerPFCluster,
-         					      process.barrelLayerClusterCaloParticleAssociationProducerPFCluster,
-         					      process.barrelLayerClusterSimClusterAssociationProducerPFCluster,
+    process.TICLBarrel_ValidationProducers = cms.Task(process.recHitMapProducer,
+         					                          process.barrelLCAssocByEnergyScoreProducerPFCluster,
+        					                          process.barrelSCAssocByEnergyScoreProducerPFCluster,
+         					                          #process.barrelLayerClusterCaloParticleAssociationProducerPFCluster,
+         					                          #process.barrelLayerClusterSimClusterAssociationProducerPFCluster,
                                                       process.barrelLCToCPAssociatorByEnergyScoreProducer,
                                                       process.barrelLCToSCAssociatorByEnergyScoreProducer,
                                                       process.barrelLayerClusterCaloParticleAssociationProducer,
-                                                      process.barrelLayerClusterSimClusterAssociationProducer)
-    #     					      process.simBarrelLCAssocByEnergyScoreProducer,
-    #     					      process.simBarrelLayerClusterCaloParticleAssociationProducer,
-    #     					      process.simBarrelSCAssocByEnergyScoreProducer,
-    #     					      process.simBarrelLayerClusterSimClusterAssociationProducer)
-    # process.TICLBarrel_Validator = cms.Task(process.barrelValidator,
-    #     				   process.simBarrelValidator, 
-    #     				   process.barrelValidatorPFCluster
-    #     				   )
-    process.TICLBarrel_Validation = cms.Path(process.TICLBarrel_ValidationProducers)
-         				     #+process.TICLBarrel_Validator)
+                                                      process.barrelLayerClusterSimClusterAssociationProducer,
+                                                      process.barrelSimTracksterHitLCAssociatorByEnergyScoreProducer,
+                                                      process.barrelTracksterSimTracksterAssociationPR,
+                                                      process.barrelTracksterSimTracksterAssociationLinkingPR,
+    )
+    #process.TICLBarrel_Validator = cms.Task(process.barrelValidator,
+    #     				                    process.barrelValidatorPFCluster
+    #)
+    process.TICLBarrel_Validation = cms.Path(process.TICLBarrel_ValidationProducers
+         				                     #+process.TICLBarrel_Validator
+    )
+
+    process.ticlDumper = ticlDumper.clone(
+        saveLCs = True,
+        saveCLUE3DTracksters = True,
+        saveTrackstersMerged = False,
+        saveSimTrackstersSC = True,
+        saveSimTrackstersCP = True,
+        saveTICLCandidate = False,
+        saveSimTICLCandidate = False,
+        saveTracks = False,
+        saveAssociations = True,
+        trackstersclue3d = "barrelPatternRecognition",
+        layerClusters = "barrelLayerClusters",
+        layer_clustersTime = "barrelLayerClusters:timeLayerCluster",
+        recoToSimAssociatorSC = "barrelTracksterSimTracksterAssociationPR:recoToSim",
+        simToRecoAssociatorSC = "barrelTracksterSimTracksterAssociationPR:simToReco",
+        recoToSimAssociatorCP = "barrelTracksterSimTracksterAssociationLinkingPR:recoToSim",
+        simToRecoAssociatorCP = "barrelTracksterSimTracksterAssociationLinkingPR:simToReco",
+    )
 
     process.consumer = cms.EDAnalyzer("GenericConsumer",
-      eventProducts = cms.untracked.vstring('lcFromPFClusterProducer')
+      eventProducts = cms.untracked.vstring(['lcFromPFClusterProducer',
+                                            'barrelLCAssocByEnergyScoreProducerPFCluster',
+                                            'barrelSCAssocByEnergyScoreProducerPFCluster',
+                                            'barrelLayerClusterCaloParticleAssociationProducerPFCluster',
+                                            'barrelLayerClusterSimClusterAssociationProducerPFCluster',
+                                            'barrelPatternRecognition',
+                                            'ticlSimTrackster',
+                                            'barrelSimTracksterHitLCAssociatorByEnergyScoreProducer',
+                                            'tracksterSimTracksterAssociationPRbyCLUE3D',
+      ])
     )
-    process.consumer2 = cms.EDAnalyzer("GenericConsumer",
-      eventProducts = cms.untracked.vstring('barrelLCAssocByEnergyScoreProducerPFCluster')
+
+    process.FastTimerService.writeJSONSummary = cms.untracked.bool(True)
+    process.FastTimerService.jsonFileName = cms.untracked.string('resourcesCA.json')
+
+    process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput
+                                                  +process.consumer
+                                                  #+process.lcDumper
+                                                  #+process.lcDumperPF 
+                                                  +process.recHitDumper
+                                                  +process.ticlDumper
     )
-    process.consumer3 = cms.EDAnalyzer("GenericConsumer",
-      eventProducts = cms.untracked.vstring("barrelSCAssocByEnergyScoreProducerPFCluster")
-    )
-    process.consumer4 = cms.EDAnalyzer("GenericConsumer",
-      eventProducts = cms.untracked.vstring("barrelLayerClusterCaloParticleAssociationProducerPFCluster")
-    )
-    process.consumer5 = cms.EDAnalyzer("GenericConsumer",
-      eventProducts = cms.untracked.vstring("barrelLayerClusterSimClusterAssociationProducerPFCluster")
-    )
-    process.consumer6 = cms.EDAnalyzer("GenericConsumer",
-      eventProducts = cms.untracked.vstring(["barrelHcalPatternRecognition", "ticlSimTracksters"])
-    )
-    process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput+
-                                                  process.consumer + process.consumer2 + process.consumer3 + process.consumer4 + process.consumer5+process.consumer6+
-                                                  process.lcDumper+process.lcDumperPF + 
-                                                  process.recHitDumper
-                                                  )
-    #process.DQMoutput_step = cms.EndPath(process.DQMoutput)
+  
+    process.DQMoutput_step = cms.EndPath(process.DQMoutput + process.fastTimerServiceClient)
 
     process.schedule = cms.Schedule(process.TICLBarrel,
-				    process.TICLBarrel_Validation,
-				    process.FEVTDEBUGHLToutput_step,
-				    #process.DQMoutput_step
-                                    )
+				                    process.TICLBarrel_Validation,
+				                    process.FEVTDEBUGHLToutput_step,
+				                    process.DQMoutput_step
+    )
     return process
 
 def customiseTICLForDumper(process):
