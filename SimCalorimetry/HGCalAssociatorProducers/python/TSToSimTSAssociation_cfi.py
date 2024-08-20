@@ -55,6 +55,29 @@ tracksterSimTracksterAssociationPRPU = cms.EDProducer("TSToSimTSHitLCAssociatorE
     label_cp = cms.InputTag("mix","MergedCaloTruth"),
 )
 
+### Barrel associators
+
+barrelTracksterSimTracksterAssociationPR = cms.EDProducer("TSToSimTSHitLCAssociatorEDProducer",
+    associator = cms.InputTag("barrelSimTracksterHitLCAssociatorByEnergyScoreProducer"),
+    label_tst = cms.InputTag("barrelPatternRecognition"),
+    label_simTst = cms.InputTag("ticlSimTracksters"),
+    label_lcl = cms.InputTag("barrelLayerClusters"),
+    label_scl = cms.InputTag("mix", "MergedCaloTruth"),
+    label_cp = cms.InputTag("mix", "MergedCaloTruth")
+)
+
+barrelTracksterSimTracksterAssociationLinkingPR = cms.EDProducer("TSToSimTSHitLCAssociatorEDProducer",
+    associator = cms.InputTag("barrelSimTracksterHitLCAssociatorByEnergyScoreProducer"),
+    label_tst = cms.InputTag("barrelPatternRecognition"),
+    label_simTst = cms.InputTag("ticlSimTracksters", "fromCPs"),
+    label_lcl = cms.InputTag("barrelLayerClusters"),
+    label_scl = cms.InputTag("mix", "MergedCaloTruth"),
+    label_cp = cms.InputTag("mix", "MergedCaloTruth")
+)
+
+
+
+
 from Configuration.ProcessModifiers.ticl_v5_cff import ticl_v5
 ''' For future separate iterations
 ticl_v5.toModify(tracksterSimTracksterAssociationLinkingbyCLUE3D, label_tst = cms.InputTag("mergedTrackstersProducer"))

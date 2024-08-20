@@ -18,7 +18,7 @@ LCToSCAssociatorByEnergyScoreImpl<HIT>::LCToSCAssociatorByEnergyScoreImpl(
   if constexpr (std::is_same_v<HIT, HGCRecHit>)
     layers_ = recHitTools_->lastLayerBH();
   else
-    layers_ = 6;  //EB + 4 HB + HO
+    layers_ = recHitTools_->lastLayer(false, true);  //EB + 4 HB + HO
 }
 
 template <typename HIT>
@@ -44,16 +44,18 @@ ticl::association LCToSCAssociatorByEnergyScoreImpl<HIT>::makeConnections(
     sCIndices.emplace_back(scId);
   }
   nSimClusters = sCIndices.size();
-
   // Initialize lcsInSimCluster. It contains the simClusterOnLayer structure for all simClusters in each layer and
   // among other the information to compute the SimCluster-To-LayerCluster score. It is one of the two objects that
   // build the output of the makeConnections function.
   // lcsInSimCluster[scId][layerId]
   ticl::simClusterToLayerCluster lcsInSimCluster;
   lcsInSimCluster.resize(nSimClusters);
+  auto maxLayer = 2 * layers_;
+  if constexpr (!std::is_same_v<HIT, HGCRecHit>) 
+    maxLayer = layers_ + 1;
   for (unsigned int i = 0; i < nSimClusters; ++i) {
-    lcsInSimCluster[i].resize(layers_ * 2);
-    for (unsigned int j = 0; j < layers_ * 2; ++j) {
+    lcsInSimCluster[i].resize(maxLayer);
+    for (unsigned int j = 0; j < maxLayer; ++j) {
       lcsInSimCluster[i][j].simClusterId = i;
       lcsInSimCluster[i][j].energy = 0.f;
       lcsInSimCluster[i][j].hits_and_fractions.clear();
@@ -75,6 +77,10 @@ ticl::association LCToSCAssociatorByEnergyScoreImpl<HIT>::makeConnections(
     for (const auto& it_haf : hits_and_fractions) {
       const auto hitid = (it_haf.first);
       unsigned int scLayerId = recHitTools_->getLayer(hitid);
+      if constexpr (!std::is_same_v<HIT, HGCRecHit>) {
+        if (scLayerId == 5)
+          continue;
+      }
       if constexpr (std::is_same_v<HIT, HGCRecHit>)
         scLayerId += layers_ * ((recHitTools_->zside(hitid) + 1) >> 1) - 1;
       const auto itcheck = hitMap_->find(hitid);
@@ -86,7 +92,6 @@ ticl::association LCToSCAssociatorByEnergyScoreImpl<HIT>::makeConnections(
         detIdToSimClusterId_Map[hitid].emplace_back(scId, it_haf.second);
         const HIT* hit = hits_[itcheck->second];
         lcsInSimCluster[scId][scLayerId].energy += it_haf.second * hit->energy();
-        lcsInSimCluster[scId][scLayerId].hits_and_fractions.emplace_back(hitid, it_haf.second);
       }
     }
   }  // end of loop over SimClusters
@@ -418,7 +423,7 @@ ticl::association LCToSCAssociatorByEnergyScoreImpl<HIT>::makeConnections(
 
   // Compute the SimCluster-To-LayerCluster score
   for (const auto& scId : sCIndices) {
-    for (unsigned int layerId = 0; layerId < layers_ * 2; ++layerId) {
+    for (unsigned int layerId = 0; layerId < maxLayer; ++layerId) {
       unsigned int SCNumberOfHits = lcsInSimCluster[scId][layerId].hits_and_fractions.size();
       if (SCNumberOfHits == 0)
         continue;

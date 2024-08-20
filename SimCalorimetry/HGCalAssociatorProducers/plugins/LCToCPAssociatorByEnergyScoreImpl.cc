@@ -25,7 +25,7 @@ LCToCPAssociatorByEnergyScoreImpl<HIT>::LCToCPAssociatorByEnergyScoreImpl(
   if constexpr (std::is_same_v<HIT, HGCRecHit>)
     layers_ = recHitTools_->lastLayerBH();
   else
-    layers_ = 6;
+    layers_ = recHitTools_->lastLayer(false, true);
 }
 
 template <typename HIT>
@@ -47,9 +47,12 @@ ticl::association LCToCPAssociatorByEnergyScoreImpl<HIT>::makeConnections(
   // cPOnLayer[cpId][layerId]
   ticl::caloParticleToLayerCluster cPOnLayer;
   cPOnLayer.resize(nCaloParticles);
+  auto maxLayerIndex = 2 * layers_;
+  if constexpr (!std::is_same_v<HIT, HGCRecHit>)
+    maxLayerIndex = layers_ + 1;
   for (unsigned int i = 0; i < nCaloParticles; ++i) {
     cPOnLayer[i].resize(layers_ * 2);
-    for (unsigned int j = 0; j < layers_ * 2; ++j) {
+    for (unsigned int j = 0; j < maxLayerIndex; ++j) {
       cPOnLayer[i][j].caloParticleId = i;
       cPOnLayer[i][j].energy = 0.f;
       cPOnLayer[i][j].hits_and_fractions.clear();
@@ -75,9 +78,12 @@ ticl::association LCToCPAssociatorByEnergyScoreImpl<HIT>::makeConnections(
       for (const auto& it_haf : hits_and_fractions) {
         const auto hitid = (it_haf.first);
         unsigned int cpLayerId = recHitTools_->getLayerWithOffset(hitid);
-        if constexpr (std::is_same_v<HIT, HGCRecHit>)
+        if constexpr (std::is_same_v<HIT, HGCRecHit>) {
           cpLayerId += layers_ * ((recHitTools_->zside(hitid) + 1) >> 1) - 1;
-
+        } else {
+          if (cpLayerId == 5) 
+            continue;
+        }
         const auto itcheck = hitMap_->find(hitid);
 
         if (itcheck != hitMap_->end()) {
@@ -183,7 +189,6 @@ ticl::association LCToCPAssociatorByEnergyScoreImpl<HIT>::makeConnections(
       detIdToLayerClusterId_Map[rh_detid].emplace_back(lcId, rhFraction);
 
       auto hit_find_in_CP = detIdToCaloParticleId_Map.find(rh_detid);
-
       if (hit_find_in_CP != detIdToCaloParticleId_Map.end()) {
         const auto itcheck = hitMap_->find(rh_detid);
         const HIT* hit = hits_[itcheck->second];
@@ -405,7 +410,7 @@ ticl::association LCToCPAssociatorByEnergyScoreImpl<HIT>::makeConnections(
 
   // Compute the CaloParticle-To-LayerCluster score
   for (const auto& cpId : cPIndices) {
-    for (unsigned int layerId = 0; layerId < layers_ * 2; ++layerId) {
+    for (unsigned int layerId = 0; layerId < maxLayerIndex; ++layerId) {
       unsigned int CPNumberOfHits = cPOnLayer[cpId][layerId].hits_and_fractions.size();
       if (CPNumberOfHits == 0)
         continue;
