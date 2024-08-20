@@ -13,6 +13,8 @@ DEFINE_EDM_VALIDATED_PLUGIN(PatternRecognitionFactory, ticl::PatternRecognitionb
 DEFINE_EDM_VALIDATED_PLUGIN(PatternRecognitionFactory, ticl::PatternRecognitionbyCLUE3D<TICLLayerTiles>, "CLUE3D");
 DEFINE_EDM_VALIDATED_PLUGIN(PatternRecognitionFactory, ticl::PatternRecognitionbyFastJet<TICLLayerTiles>, "FastJet");
 DEFINE_EDM_VALIDATED_PLUGIN(PatternRecognitionBarrelFactory, ticl::PatternRecognitionbyFastJet<TICLLayerTilesBarrel>, "FastJet");
+DEFINE_EDM_VALIDATED_PLUGIN(PatternRecognitionBarrelFactory, ticl::PatternRecognitionbyCA<TICLLayerTilesBarrel>, "CA");
+DEFINE_EDM_VALIDATED_PLUGIN(PatternRecognitionBarrelFactory, ticl::PatternRecognitionbyCLUE3D<TICLLayerTilesBarrel>, "CLUE3D");
 DEFINE_EDM_VALIDATED_PLUGIN(PatternRecognitionFactory,
                             ticl::PatternRecognitionbyPassthrough<TICLLayerTiles>,
                             "Passthrough");
