@@ -31,6 +31,8 @@
 #include "DataFormats/Math/interface/Point3D.h"
 #include "DataFormats/GeometrySurface/interface/BoundDisk.h"
 #include "DataFormats/HGCalReco/interface/Common.h"
+#include "DataFormats/ParticleFlowReco/interface/PFRecHit.h"
+
 #include "SimDataFormats/CaloAnalysis/interface/CaloParticle.h"
 #include "SimDataFormats/CaloAnalysis/interface/SimCluster.h"
 
@@ -128,6 +130,8 @@ private:
   const edm::EDGetTokenT<ticl::SimToRecoCollectionWithSimClusters> lc_simToReco_SC_token_;
   const edm::EDGetTokenT<std::vector<SimCluster>> simclusters_token_;
   const edm::EDGetTokenT<std::vector<CaloParticle>> caloparticles_token_;
+  const edm::EDGetTokenT<std::vector<reco::PFRecHit>> ecalhits_token_;
+  const edm::EDGetTokenT<std::vector<reco::PFRecHit>> hcalhits_token_;
 
   const edm::ESGetToken<CaloGeometry, CaloGeometryRecord> geometry_token_;
   const std::string detector_;
@@ -150,7 +154,8 @@ private:
   bool saveSimTICLCandidate_;
   bool saveTracks_;
   bool saveAssociations_;
-
+  bool saveCaloParticles_;
+  bool saveHits_;
   // Output tree
   TTree* tree_;
 
@@ -165,6 +170,10 @@ private:
   size_t nsimTrackstersSC;
   size_t nsimTrackstersCP;
 
+  std::vector<int> trackster_n_vertices;
+  std::vector<int> trackster_span;
+  std::vector<int> trackster_min_layer;
+  std::vector<int> trackster_max_layer;
   std::vector<float> trackster_time;
   std::vector<float> trackster_timeError;
   std::vector<float> trackster_regressed_energy;
@@ -198,6 +207,10 @@ private:
   std::vector<std::vector<float>> trackster_vertices_correctedEnergyUncertainty;
   std::vector<std::vector<float>> trackster_vertices_multiplicity;
 
+  std::vector<int> stsSC_trackster_n_vertices;
+  std::vector<int> stsSC_trackster_span;
+  std::vector<int> stsSC_trackster_min_layer;
+  std::vector<int> stsSC_trackster_max_layer;
   std::vector<float> stsSC_trackster_time;
   std::vector<float> stsSC_trackster_timeBoundary;
   std::vector<float> stsSC_trackster_timeError;
@@ -251,6 +264,11 @@ private:
   std::vector<std::vector<float>> stsSC_trackster_vertices_correctedEnergy;
   std::vector<std::vector<float>> stsSC_trackster_vertices_correctedEnergyUncertainty;
   std::vector<std::vector<float>> stsSC_trackster_vertices_multiplicity;
+  
+  std::vector<int> stsCP_trackster_n_vertices;
+  std::vector<int> stsCP_trackster_span;
+  std::vector<int> stsCP_trackster_min_layer;
+  std::vector<int> stsCP_trackster_max_layer;
   std::vector<float> stsCP_trackster_time;
   std::vector<float> stsCP_trackster_timeBoundary;
   std::vector<float> stsCP_trackster_timeError;
@@ -459,6 +477,17 @@ private:
   std::vector<int> track_isMuon;
   std::vector<int> track_isTrackerMuon;
 
+  std::vector<float> caloparticle_energy;
+  std::vector<float> caloparticle_et;
+  std::vector<float> caloparticle_eta;
+  std::vector<float> caloparticle_phi;
+  std::vector<float> caloparticle_pt;
+
+  std::vector<float> hit_energy;
+  std::vector<float> hit_eta;
+  std::vector<float> hit_phi;
+  std::vector<int> hit_layer;
+
   TTree* trackster_tree_;
   TTree* cluster_tree_;
   TTree* candidate_tree_;
@@ -468,13 +497,19 @@ private:
   TTree* simtrackstersCP_tree_;
   TTree* tracks_tree_;
   TTree* simTICLCandidate_tree;
+  TTree* caloparticle_tree;
+  TTree* hit_tree;
 };
 
 void TICLDumper::clearVariables() {
   // event info
   ntracksters_ = 0;
   nclusters_ = 0;
-
+  
+  trackster_n_vertices.clear();
+  trackster_span.clear();
+  trackster_min_layer.clear();
+  trackster_max_layer.clear();
   trackster_time.clear();
   trackster_timeError.clear();
   trackster_regressed_energy.clear();
@@ -508,6 +543,10 @@ void TICLDumper::clearVariables() {
   trackster_vertices_correctedEnergyUncertainty.clear();
   trackster_vertices_multiplicity.clear();
 
+  stsCP_trackster_n_vertices.clear();
+  stsCP_trackster_span.clear();
+  stsCP_trackster_min_layer.clear();
+  stsCP_trackster_max_layer.clear();
   stsSC_trackster_time.clear();
   stsSC_trackster_timeBoundary.clear();
   stsSC_trackster_timeError.clear();
@@ -562,6 +601,10 @@ void TICLDumper::clearVariables() {
   stsSC_trackster_vertices_correctedEnergyUncertainty.clear();
   stsSC_trackster_vertices_multiplicity.clear();
 
+  stsCP_trackster_n_vertices.clear();
+  stsCP_trackster_span.clear();
+  stsCP_trackster_min_layer.clear();
+  stsCP_trackster_max_layer.clear();
   stsCP_trackster_time.clear();
   stsCP_trackster_timeBoundary.clear();
   stsCP_trackster_timeError.clear();
@@ -770,6 +813,17 @@ void TICLDumper::clearVariables() {
   track_nhits.clear();
   track_isMuon.clear();
   track_isTrackerMuon.clear();
+
+  caloparticle_energy.clear();
+  caloparticle_et.clear();
+  caloparticle_pt.clear();
+  caloparticle_eta.clear();
+  caloparticle_phi.clear();
+
+  hit_energy.clear();
+  hit_eta.clear();
+  hit_phi.clear();
+  hit_layer.clear();
 };
 
 TICLDumper::TICLDumper(const edm::ParameterSet& ps)
@@ -830,6 +884,8 @@ TICLDumper::TICLDumper(const edm::ParameterSet& ps)
           ps.getParameter<edm::InputTag>("lcSimToRecoAssociatorSC"))),
       simclusters_token_(consumes(ps.getParameter<edm::InputTag>("simclusters"))),
       caloparticles_token_(consumes(ps.getParameter<edm::InputTag>("caloparticles"))),
+      ecalhits_token_(consumes(ps.getParameter<edm::InputTag>("ecalhits"))),
+      hcalhits_token_(consumes(ps.getParameter<edm::InputTag>("hcalhits"))),
       geometry_token_(esConsumes<CaloGeometry, CaloGeometryRecord, edm::Transition::BeginRun>()),
       detector_(ps.getParameter<std::string>("detector")),
       propName_(ps.getParameter<std::string>("propagator")),
@@ -844,7 +900,9 @@ TICLDumper::TICLDumper(const edm::ParameterSet& ps)
       saveTICLCandidate_(ps.getParameter<bool>("saveSimTICLCandidate")),
       saveSimTICLCandidate_(ps.getParameter<bool>("saveSimTICLCandidate")),
       saveTracks_(ps.getParameter<bool>("saveTracks")),
-      saveAssociations_(ps.getParameter<bool>("saveAssociations")) {
+      saveAssociations_(ps.getParameter<bool>("saveAssociations")),
+      saveCaloParticles_(ps.getParameter<bool>("saveCaloParticles")),
+      saveHits_(ps.getParameter<bool>("saveHits")) {
   std::string detectorName_ = (detector_ == "HFNose") ? "HGCalHFNoseSensitive" : "HGCalEESensitive";
   hdc_token_ =
       esConsumes<HGCalDDDConstants, IdealGeometryRecord, edm::Transition::BeginRun>(edm::ESInputTag("", detectorName_));
@@ -871,6 +929,10 @@ void TICLDumper::beginJob() {
     trackster_tree_->Branch("event", &ev_event_);
     trackster_tree_->Branch("NClusters", &nclusters_);
     trackster_tree_->Branch("NTracksters", &ntracksters_);
+    trackster_tree_->Branch("n_vertices", &trackster_n_vertices);
+    trackster_tree_->Branch("span", &trackster_span);
+    trackster_tree_->Branch("min_layer", &trackster_min_layer);
+    trackster_tree_->Branch("max_layer", &trackster_max_layer);
     trackster_tree_->Branch("time", &trackster_time);
     trackster_tree_->Branch("timeError", &trackster_timeError);
     trackster_tree_->Branch("regressed_energy", &trackster_regressed_energy);
@@ -1030,6 +1092,10 @@ void TICLDumper::beginJob() {
     simtrackstersSC_tree_ = fs->make<TTree>("simtrackstersSC", "TICL simTracksters SC");
     simtrackstersSC_tree_->Branch("event", &ev_event_);
     simtrackstersSC_tree_->Branch("NTracksters", &stsSC_ntracksters_);
+    simtrackstersSC_tree_->Branch("n_vertices", &stsSC_trackster_n_vertices);
+    simtrackstersSC_tree_->Branch("span", &stsSC_trackster_span);
+    simtrackstersSC_tree_->Branch("min_layer", &stsSC_trackster_min_layer);
+    simtrackstersSC_tree_->Branch("max_layer", &stsSC_trackster_max_layer);
     simtrackstersSC_tree_->Branch("time", &stsSC_trackster_time);
     simtrackstersSC_tree_->Branch("timeBoundary", &stsSC_trackster_timeBoundary);
     simtrackstersSC_tree_->Branch("timeError", &stsSC_trackster_timeError);
@@ -1090,6 +1156,10 @@ void TICLDumper::beginJob() {
     simtrackstersCP_tree_ = fs->make<TTree>("simtrackstersCP", "TICL simTracksters CP");
     simtrackstersCP_tree_->Branch("event", &ev_event_);
     simtrackstersCP_tree_->Branch("NTracksters", &stsCP_ntracksters_);
+    simtrackstersCP_tree_->Branch("n_vertices", &stsCP_trackster_n_vertices);
+    simtrackstersCP_tree_->Branch("span", &stsCP_trackster_span);
+    simtrackstersCP_tree_->Branch("min_layer", &stsCP_trackster_min_layer);
+    simtrackstersCP_tree_->Branch("max_layer", &stsCP_trackster_max_layer);
     simtrackstersCP_tree_->Branch("time", &stsCP_trackster_time);
     simtrackstersCP_tree_->Branch("timeBoundary", &stsCP_trackster_timeBoundary);
     simtrackstersCP_tree_->Branch("timeError", &stsCP_trackster_timeError);
@@ -1189,6 +1259,23 @@ void TICLDumper::beginJob() {
     simTICLCandidate_tree->Branch("simTICLCandidate_pdgId", &simTICLCandidate_pdgId);
     simTICLCandidate_tree->Branch("simTICLCandidate_charge", &simTICLCandidate_charge);
     simTICLCandidate_tree->Branch("simTICLCandidate_track_in_candidate", &simTICLCandidate_track_in_candidate);
+  }
+
+  if (saveCaloParticles_) {
+    caloparticle_tree = fs->make<TTree>("caloparticles", "CaloParticles");
+    caloparticle_tree->Branch("caloparticle_energy", &caloparticle_energy);
+    caloparticle_tree->Branch("caloparticle_et", &caloparticle_et);
+    caloparticle_tree->Branch("caloparticle_pt", &caloparticle_pt);
+    caloparticle_tree->Branch("caloparticle_eta", &caloparticle_eta);
+    caloparticle_tree->Branch("caloparticle_phi", &caloparticle_phi);
+  }
+
+  if (saveHits_) {
+    hit_tree = fs->make<TTree>("hits", "Hits");
+    hit_tree->Branch("hit_energy", &hit_energy);
+    hit_tree->Branch("hit_eta", &hit_eta);
+    hit_tree->Branch("hit_phi", &hit_phi);
+    hit_tree->Branch("hit_layer", &hit_layer);
   }
 }
 
@@ -1390,12 +1477,25 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
   edm::Handle<std::vector<SimCluster>> simclusters_h;
   event.getByToken(simclusters_token_, simclusters_h);
   const auto& simclusters = event.get(simclusters_token_);
+ 
+  std::vector<reco::PFRecHit> hits;
+  
+  edm::Handle<std::vector<reco::PFRecHit>> ecalhits_h;
+  event.getByToken(ecalhits_token_, ecalhits_h);
+  const auto& ecalhits = event.get(ecalhits_token_); 
+  hits.insert(hits.end(), ecalhits.begin(), ecalhits.end());
+  
+  edm::Handle<std::vector<reco::PFRecHit>> hcalhits_h;
+  event.getByToken(hcalhits_token_, hcalhits_h);
+  const auto& hcalhits = event.get(hcalhits_token_);
+  hits.insert(hits.end(), hcalhits.begin(), hcalhits.end());
   
   ntracksters_ = tracksters.size();
   nclusters_ = clusters.size();
 
   for (auto trackster_iterator = tracksters.begin(); trackster_iterator != tracksters.end(); ++trackster_iterator) {
     //per-trackster analysis
+    trackster_n_vertices.push_back(trackster_iterator->vertices().size());
     trackster_time.push_back(trackster_iterator->time());
     trackster_timeError.push_back(trackster_iterator->timeError());
     trackster_regressed_energy.push_back(trackster_iterator->regressed_energy());
@@ -1432,6 +1532,7 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
     std::vector<float> vertices_energy;
     std::vector<float> vertices_correctedEnergy;
     std::vector<float> vertices_correctedEnergyUncertainty;
+    std::vector<int> vertices_layerid;
     for (auto idx : trackster_iterator->vertices()) {
       vertices_indexes.push_back(idx);
       auto associated_cluster = (*layer_clusters_h)[idx];
@@ -1443,7 +1544,18 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
       vertices_correctedEnergyUncertainty.push_back(associated_cluster.correctedEnergyUncertainty());
       vertices_time.push_back(layerClustersTimes.get(idx).first);
       vertices_timeErr.push_back(layerClustersTimes.get(idx).second);
+      auto haf = associated_cluster.hitsAndFractions();
+      auto layerId = rhtools_.getLayerWithOffset(haf[0].first);
+      vertices_layerid.push_back(layerId);
     }
+    std::sort(vertices_layerid.begin(), vertices_layerid.end());
+    auto last = std::unique(vertices_layerid.begin(), vertices_layerid.end());
+    vertices_layerid.erase(last, vertices_layerid.end());
+    int min_layer = *std::min_element(vertices_layerid.begin(), vertices_layerid.end());
+    int max_layer = *std::max_element(vertices_layerid.begin(), vertices_layerid.end());
+    trackster_span.push_back(max_layer - min_layer);
+    trackster_min_layer.push_back(min_layer);
+    trackster_max_layer.push_back(max_layer);
     trackster_vertices_indexes.push_back(vertices_indexes);
     trackster_vertices_x.push_back(vertices_x);
     trackster_vertices_y.push_back(vertices_y);
@@ -1467,6 +1579,7 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
   for (auto trackster_iterator = simTrackstersSC.begin(); trackster_iterator != simTrackstersSC.end();
        ++trackster_iterator) {
     //per-trackster analysis
+    stsSC_trackster_n_vertices.push_back(trackster_iterator->vertices().size());
     stsSC_trackster_time.push_back(trackster_iterator->time());
     stsSC_trackster_timeBoundary.push_back(trackster_iterator->boundaryTime());
     stsSC_trackster_timeError.push_back(trackster_iterator->timeError());
@@ -1578,6 +1691,7 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
     std::vector<float> vertices_energy;
     std::vector<float> vertices_correctedEnergy;
     std::vector<float> vertices_correctedEnergyUncertainty;
+    std::vector<int> vertices_layerid;
     for (auto idx : trackster_iterator->vertices()) {
       vertices_indexes.push_back(idx);
       auto associated_cluster = (*layer_clusters_h)[idx];
@@ -1589,7 +1703,18 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
       vertices_correctedEnergyUncertainty.push_back(associated_cluster.correctedEnergyUncertainty());
       vertices_time.push_back(layerClustersTimes.get(idx).first);
       vertices_timeErr.push_back(layerClustersTimes.get(idx).second);
+      auto haf = associated_cluster.hitsAndFractions();
+      auto layerId = rhtools_.getLayerWithOffset(haf[0].first);
+      vertices_layerid.push_back(layerId);
     }
+    std::sort(vertices_layerid.begin(), vertices_layerid.end());
+    auto last = std::unique(vertices_layerid.begin(), vertices_layerid.end());
+    vertices_layerid.erase(last, vertices_layerid.end());
+    int min_layer = *std::min_element(vertices_layerid.begin(), vertices_layerid.end());
+    int max_layer = *std::max_element(vertices_layerid.begin(), vertices_layerid.end());
+    stsSC_trackster_min_layer.push_back(min_layer);
+    stsSC_trackster_max_layer.push_back(max_layer);
+    stsSC_trackster_span.push_back(max_layer - min_layer);
     stsSC_trackster_vertices_indexes.push_back(vertices_indexes);
     stsSC_trackster_vertices_x.push_back(vertices_x);
     stsSC_trackster_vertices_y.push_back(vertices_y);
@@ -1612,6 +1737,7 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
   for (auto trackster_iterator = simTrackstersCP.begin(); trackster_iterator != simTrackstersCP.end();
        ++trackster_iterator) {
     //per-trackster analysis
+    stsCP_trackster_n_vertices.push_back(trackster_iterator->vertices().size());
     stsCP_trackster_time.push_back(trackster_iterator->time());
     stsCP_trackster_timeBoundary.push_back(trackster_iterator->boundaryTime());
     stsCP_trackster_timeError.push_back(trackster_iterator->timeError());
@@ -1722,6 +1848,7 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
     std::vector<float> vertices_energy;
     std::vector<float> vertices_correctedEnergy;
     std::vector<float> vertices_correctedEnergyUncertainty;
+    std::vector<int> vertices_layerid;
     for (auto idx : trackster_iterator->vertices()) {
       vertices_indexes.push_back(idx);
       auto associated_cluster = (*layer_clusters_h)[idx];
@@ -1733,7 +1860,18 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
       vertices_correctedEnergyUncertainty.push_back(associated_cluster.correctedEnergyUncertainty());
       vertices_time.push_back(layerClustersTimes.get(idx).first);
       vertices_timeErr.push_back(layerClustersTimes.get(idx).second);
-    }
+       auto haf = associated_cluster.hitsAndFractions();                                    
+       auto layerId = rhtools_.getLayerWithOffset(haf[0].first);
+       vertices_layerid.push_back(layerId);
+     }
+    std::sort(vertices_layerid.begin(), vertices_layerid.end());
+    auto last = std::unique(vertices_layerid.begin(), vertices_layerid.end());
+    vertices_layerid.erase(last, vertices_layerid.end());
+    int min_layer = *std::min_element(vertices_layerid.begin(), vertices_layerid.end());
+    int max_layer = *std::max_element(vertices_layerid.begin(), vertices_layerid.end());
+    stsCP_trackster_min_layer.push_back(min_layer);
+    stsCP_trackster_max_layer.push_back(max_layer);
+    stsCP_trackster_span.push_back(max_layer - min_layer);
     stsCP_trackster_vertices_indexes.push_back(vertices_indexes);
     stsCP_trackster_vertices_x.push_back(vertices_x);
     stsCP_trackster_vertices_y.push_back(vertices_y);
@@ -1827,6 +1965,24 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
     cluster_timeErr.push_back(layerClustersTimes.get(c_id).second);
     cluster_time.push_back(layerClustersTimes.get(c_id).first);
     c_id += 1;
+  }
+
+  // fill caloparticles
+  for (auto cp_iterator = caloparticles.begin(); cp_iterator != caloparticles.end(); ++cp_iterator) {
+    caloparticle_energy.push_back(cp_iterator->energy());
+    caloparticle_et.push_back(cp_iterator->et());
+    caloparticle_pt.push_back(cp_iterator->pt());
+    caloparticle_eta.push_back(cp_iterator->eta());
+    caloparticle_phi.push_back(cp_iterator->phi());
+  }
+
+  for (auto hit_iterator = hits.begin(); hit_iterator != hits.end(); ++hit_iterator) {
+    DetId id(hit_iterator->detId());
+    auto position = rhtools_.getPosition(id);
+    hit_energy.push_back(hit_iterator->energy());
+    hit_eta.push_back(position.eta());
+    hit_phi.push_back(position.phi());
+    hit_layer.push_back(rhtools_.getLayerWithOffset(id));
   }
 /*
   tracksters_in_candidate.resize(ticlcandidates.size());
@@ -2267,6 +2423,10 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
     tracks_tree_->Fill();
   if (saveSimTICLCandidate_)
     simTICLCandidate_tree->Fill();
+  if (saveCaloParticles_)
+    caloparticle_tree->Fill();
+  if (saveHits_)
+    hit_tree->Fill();
 }
 
 void TICLDumper::endJob() {}
@@ -2322,6 +2482,8 @@ void TICLDumper::fillDescriptions(edm::ConfigurationDescriptions& descriptions) 
                           edm::InputTag("barrelLayerClusterSimClusterAssociationProducer"));
   desc.add<edm::InputTag>("simclusters", edm::InputTag("mix", "MergedCaloTruth"));
   desc.add<edm::InputTag>("caloparticles", edm::InputTag("mix", "MergedCaloTruth"));
+  desc.add<edm::InputTag>("ecalhits", edm::InputTag("particleFlowRecHitECAL"));
+  desc.add<edm::InputTag>("hcalhits", edm::InputTag("particleFlowRecHitHBHE"));
   desc.add<std::string>("detector", "HGCAL");
   desc.add<std::string>("propagator", "PropagatorWithMaterial");
 
@@ -2334,6 +2496,8 @@ void TICLDumper::fillDescriptions(edm::ConfigurationDescriptions& descriptions) 
   desc.add<bool>("saveSimTICLCandidate", true);
   desc.add<bool>("saveTracks", true);
   desc.add<bool>("saveAssociations", true);
+  desc.add<bool>("saveCaloParticles", true);
+  desc.add<bool>("saveHits", true);
   descriptions.add("ticlDumper", desc);
 }
 
