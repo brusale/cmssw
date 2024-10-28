@@ -14,7 +14,8 @@
 #include "SimDataFormats/CaloAnalysis/interface/CaloParticle.h"
 #include "SimDataFormats/CaloAnalysis/interface/SimCluster.h"
 
-TracksterToSimTracksterAssociatorByHitsProducer::TracksterToSimTracksterAssociatorByHitsProducer(
+template <typename HIT>
+TracksterToSimTracksterAssociatorByHitsProducer<HIT>::TracksterToSimTracksterAssociatorByHitsProducer(
     const edm::ParameterSet& pset)
     : recoTracksterCollectionToken_(
           consumes<std::vector<ticl::Trackster>>(pset.getParameter<edm::InputTag>("tracksters"))),
@@ -41,7 +42,7 @@ TracksterToSimTracksterAssociatorByHitsProducer::TracksterToSimTracksterAssociat
       caloParticleToken_(consumes<std::vector<CaloParticle>>(pset.getParameter<edm::InputTag>("caloParticles"))) {
   auto hitsTags = pset.getParameter<std::vector<edm::InputTag>>("hits");
   for (const auto& tag : hitsTags) {
-    hitsTokens_.push_back(consumes<HGCRecHitCollection>(tag));
+    hitsTokens_.push_back(consumes<std::vector<HIT>>(tag));
   }
   produces<
       ticl::AssociationMap<ticl::mapWithFractionAndScore, std::vector<ticl::Trackster>, std::vector<ticl::Trackster>>>(
@@ -57,11 +58,13 @@ TracksterToSimTracksterAssociatorByHitsProducer::TracksterToSimTracksterAssociat
       "simTracksterFromCPToTracksterMap");
 }
 
-TracksterToSimTracksterAssociatorByHitsProducer::~TracksterToSimTracksterAssociatorByHitsProducer() {}
+template <typename HIT>
+TracksterToSimTracksterAssociatorByHitsProducer<HIT>::~TracksterToSimTracksterAssociatorByHitsProducer() {}
 
-void TracksterToSimTracksterAssociatorByHitsProducer::produce(edm::StreamID,
-                                                              edm::Event& iEvent,
-                                                              const edm::EventSetup& iSetup) const {
+template <typename HIT>
+void TracksterToSimTracksterAssociatorByHitsProducer<HIT>::produce(edm::StreamID,
+                                                                   edm::Event& iEvent,
+                                                                   const edm::EventSetup& iSetup) const {
   using namespace edm;
 
   Handle<std::vector<ticl::Trackster>> recoTrackstersHandle;
@@ -111,9 +114,9 @@ void TracksterToSimTracksterAssociatorByHitsProducer::produce(edm::StreamID,
   Handle<std::vector<CaloParticle>> caloParticlesHandle;
   iEvent.getByToken(caloParticleToken_, caloParticlesHandle);
 
-  MultiVectorManager<HGCRecHit> rechitManager;
+  MultiVectorManager<HIT> rechitManager;
   for (const auto& token : hitsTokens_) {
-    Handle<HGCRecHitCollection> hitsHandle;
+    Handle<std::vector<HIT>> hitsHandle;
     iEvent.getByToken(token, hitsHandle);
     rechitManager.addVector(*hitsHandle);
   }
@@ -413,7 +416,8 @@ void TracksterToSimTracksterAssociatorByHitsProducer::produce(edm::StreamID,
   iEvent.put(std::move(simTracksterFromCPToTracksterMap), "simTracksterFromCPToTracksterMap");
 }
 
-void TracksterToSimTracksterAssociatorByHitsProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+template <typename HIT>
+void TracksterToSimTracksterAssociatorByHitsProducer<HIT>::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
   desc.add<edm::InputTag>("tracksters", edm::InputTag("ticlTrackstersMerge"));
   desc.add<edm::InputTag>("simTracksters", edm::InputTag("ticlSimTracksters"));
@@ -435,12 +439,22 @@ void TracksterToSimTracksterAssociatorByHitsProducer::fillDescriptions(edm::Conf
                           edm::InputTag("allHitToTracksterAssociations", "ticlSimTrackstersfromCPsToHit"));
   desc.add<edm::InputTag>("caloParticles", edm::InputTag("mix", "MergedCaloTruth"));
 
-  desc.add<std::vector<edm::InputTag>>("hits",
-                                       {edm::InputTag("HGCalRecHit", "HGCEERecHits"),
-                                        edm::InputTag("HGCalRecHit", "HGCHEFRecHits"),
-                                        edm::InputTag("HGCalRecHit", "HGCHEBRecHits")});
-  descriptions.add("tracksterToSimTracksterAssociatorByHitsProducer", desc);
+  if constexpr (std::is_same_v<HIT, HGCRecHit>) {
+    desc.add<std::vector<edm::InputTag>>("hits",
+                                         {edm::InputTag("HGCalRecHit", "HGCEERecHits"),
+                                          edm::InputTag("HGCalRecHit", "HGCHEFRecHits"),
+                                          edm::InputTag("HGCalRecHit", "HGCHEBRecHits")});
+    descriptions.add("tracksterToSimTracksterAssociatorByHitsProducer", desc);
+  } else if constexpr (std::is_same_v<HIT, reco::PFRecHit>) {
+    desc.add<std::vector<edm::InputTag>>("hits", 
+                                         {edm::InputTag("particleFlowRecHitECAL"),
+                                          edm::InputTag("particleFlowRecHitHBHE")});
+    descriptions.add("barrelTracksterToSimTracksterAssociatorByHitsProducer", desc);
+  }
 }
 
 // Define this as a plug-in
-DEFINE_FWK_MODULE(TracksterToSimTracksterAssociatorByHitsProducer);
+using HGCalTracksterToSimTracksterAssociatorByHitsProducer = TracksterToSimTracksterAssociatorByHitsProducer<HGCRecHit>;
+DEFINE_FWK_MODULE(HGCalTracksterToSimTracksterAssociatorByHitsProducer);
+using BarrelTracksterToSimTracksterAssociatorByHitsProducer = TracksterToSimTracksterAssociatorByHitsProducer<reco::PFRecHit>;
+DEFINE_FWK_MODULE(BarrelTracksterToSimTracksterAssociatorByHitsProducer);
