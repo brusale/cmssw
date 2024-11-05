@@ -80,7 +80,7 @@ AllTracksterToSimTracksterAssociatorsByLCsProducer::AllTracksterToSimTracksterAs
       produces<ticl::AssociationMap<ticl::mapWithFractionAndScore,
                                     std::vector<ticl::Trackster>,
                                     std::vector<ticl::Trackster>>>(reverseInstanceLabel);
-    } 
+    }
   }
 }
 

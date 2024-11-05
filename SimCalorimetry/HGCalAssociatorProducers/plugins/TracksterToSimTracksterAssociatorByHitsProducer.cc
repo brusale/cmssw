@@ -417,7 +417,8 @@ void TracksterToSimTracksterAssociatorByHitsProducer<HIT>::produce(edm::StreamID
 }
 
 template <typename HIT>
-void TracksterToSimTracksterAssociatorByHitsProducer<HIT>::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+void TracksterToSimTracksterAssociatorByHitsProducer<HIT>::fillDescriptions(
+    edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
   desc.add<edm::InputTag>("tracksters", edm::InputTag("ticlTrackstersMerge"));
   desc.add<edm::InputTag>("simTracksters", edm::InputTag("ticlSimTracksters"));
@@ -446,9 +447,8 @@ void TracksterToSimTracksterAssociatorByHitsProducer<HIT>::fillDescriptions(edm:
                                           edm::InputTag("HGCalRecHit", "HGCHEBRecHits")});
     descriptions.add("tracksterToSimTracksterAssociatorByHitsProducer", desc);
   } else if constexpr (std::is_same_v<HIT, reco::PFRecHit>) {
-    desc.add<std::vector<edm::InputTag>>("hits", 
-                                         {edm::InputTag("particleFlowRecHitECAL"),
-                                          edm::InputTag("particleFlowRecHitHBHE")});
+    desc.add<std::vector<edm::InputTag>>(
+        "hits", {edm::InputTag("particleFlowRecHitECAL"), edm::InputTag("particleFlowRecHitHBHE")});
     descriptions.add("barrelTracksterToSimTracksterAssociatorByHitsProducer", desc);
   }
 }
@@ -456,5 +456,6 @@ void TracksterToSimTracksterAssociatorByHitsProducer<HIT>::fillDescriptions(edm:
 // Define this as a plug-in
 using HGCalTracksterToSimTracksterAssociatorByHitsProducer = TracksterToSimTracksterAssociatorByHitsProducer<HGCRecHit>;
 DEFINE_FWK_MODULE(HGCalTracksterToSimTracksterAssociatorByHitsProducer);
-using BarrelTracksterToSimTracksterAssociatorByHitsProducer = TracksterToSimTracksterAssociatorByHitsProducer<reco::PFRecHit>;
+using BarrelTracksterToSimTracksterAssociatorByHitsProducer =
+    TracksterToSimTracksterAssociatorByHitsProducer<reco::PFRecHit>;
 DEFINE_FWK_MODULE(BarrelTracksterToSimTracksterAssociatorByHitsProducer);
