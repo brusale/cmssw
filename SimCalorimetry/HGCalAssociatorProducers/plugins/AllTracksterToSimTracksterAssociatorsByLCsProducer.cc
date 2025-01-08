@@ -81,7 +81,7 @@ AllTracksterToSimTracksterAssociatorsByLCsProducer::AllTracksterToSimTracksterAs
       produces<ticl::AssociationMap<ticl::mapWithSharedEnergyAndScore,
                                     std::vector<ticl::Trackster>,
                                     std::vector<ticl::Trackster>>>(reverseInstanceLabel);
-    }
+    } 
   }
 }
 
