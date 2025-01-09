@@ -21,7 +21,9 @@ from SimCalorimetry.HGCalAssociatorProducers.barrelHitToSimClusterCaloParticleAs
 from SimCalorimetry.HGCalAssociatorProducers.SimClusterToCaloParticleAssociatorProducer_cfi import SimClusterToCaloParticleAssociatorProducer as _SimClusterToCaloParticleAssociator
 from SimCalorimetry.HGCalAssociatorProducers.HitToTracksterAssociation_cfi import allHitToBarrelTracksterAssociations as _allHitToBarrelTracksterAssociations
 
-def customiseForTICLBarrel_legacyPFClusters(process, pfComparison=False):
+from Configuration.ProcessModifiers.ticl_v5_cff import ticl_v5
+
+def customiseForTICLBarrel_legacyPFClusters(process, doPFComparison=True):
     
     process.recHitMapProducer.hgcalOnly = cms.bool(False)
 
@@ -147,7 +149,7 @@ def customiseForTICLBarrel_legacyPFClusters(process, pfComparison=False):
         hitToTracksterMap = cms.string('allHitToBarrelTracksterAssociations')
     )
     
-    process.ticlAssociators = cms.Path(process.recHitMapProducer
+    process.ticlAssociatorsPF = cms.Path(process.recHitMapProducer
                                        +process.barrelLCToCPAssociatorByEnergyScoreProducer
                                        +process.barrelLCToSCAssociatorByEnergyScoreProducer
                                        +process.barrelLCToCPAssociatorByEnergyScoreProducerPF
@@ -165,7 +167,7 @@ def customiseForTICLBarrel_legacyPFClusters(process, pfComparison=False):
                                        +process.allBarrelTrackstersToSimTrackstersAssociationsByHits
     )
 
-    process.ticlDumper = _ticlDumper.clone(
+    process.ticlDumperPF = _ticlDumper.clone(
         tracksterCollections = [*[cms.PSet(treeName=cms.string(label), inputTag=cms.InputTag(label)) for label in ticlBarrelTrackstersLabels],
             cms.PSet(
                 treeName = cms.string("simtrackstersSC"),
@@ -219,29 +221,18 @@ def customiseForTICLBarrel_legacyPFClusters(process, pfComparison=False):
         saveCaloParticles = cms.bool(True)
     )
 
-    process.consumer = cms.EDAnalyzer("GenericConsumer",
-        eventProducts = cms.untracked.vstring(['barrelLayerClusters',
-                                               'barrelLayerClusterCaloParticleAssociationProducer',
-                                               'barrelLayerClusterSimClusterAssociationProducer',
-                                               'ticlBarrelTracksters',
-                                               'ticlBarrelSimTracksters',
-                                               'barrelSimTracksterAssociationPR',
-                                               'barrelTracksterSimTracksterAssociationLinkingPR'])
-    )
-
+    ticl_v5.toModify(process.ticlDumperPF, ticlcandidates = cms.InputTag("ticlCandidate"))
 
     process.TFileService = cms.Service("TFileService",
         fileName = cms.string("histo.root")
     )
 
-    process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput
-                                                  +process.ticlDumper
-                                                  +process.consumer)
+    if (doPFComparison):
+        process.FEVTDEBUGHLToutput_stepPF = cms.EndPath(process.ticlDumperPF)
+    else: 
+        process.FEVTDEBUGHLToutput_stepPF = cms.EndPath(process.FEVTDEBUGHLToutput+process.ticlDumperPF)
 
-    process.schedule = cms.Schedule(process.ticlBarrel
-                                    ,process.ticlAssociators
-                                    ,process.FEVTDEBUGHLToutput_step)
-    
+    process.schedule.extend([process.ticlAssociatorsPF, process.FEVTDEBUGHLToutput_stepPF])
     return process
 
 
@@ -413,6 +404,7 @@ def customiseForTICLBarrel(process, pfComparison=False):
                  associatorSimToRecoInputTag = cms.InputTag("allBarrelTrackstersToSimTrackstersAssociationsByHits", "ticlBarrelSimTrackstersToticlBarrelTracksters")
              )
         ],
+    #    ticlcandidates = cms.InputTag("ticlCandidate"),
         saveLCs = cms.bool(True),
         layerClusters = cms.InputTag("barrelLayerClusters"),
         layer_clustersTime = cms.InputTag("barrelLayerClusters:timeLayerCluster"),
@@ -428,27 +420,15 @@ def customiseForTICLBarrel(process, pfComparison=False):
         saveCaloParticles = cms.bool(True)
     )
 
-    process.consumer = cms.EDAnalyzer("GenericConsumer",
-        eventProducts = cms.untracked.vstring(['barrelLayerClusters',
-                                               'barrelLayerClusterCaloParticleAssociationProducer',
-                                               'barrelLayerClusterSimClusterAssociationProducer',
-                                               'ticlBarrelTracksters',
-                                               'ticlBarrelSimTracksters',
-                                               'barrelSimTracksterAssociationPR',
-                                               'barrelTracksterSimTracksterAssociationLinkingPR'])
-    )
-
-
+    ticl_v5.toModify(process.ticlDumper, ticlcandidates = cms.InputTag("ticlCandidate"))
+    
     process.TFileService = cms.Service("TFileService",
         fileName = cms.string("histo.root")
     )
 
     process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput
                                                   +process.ticlDumper
-                                                  +process.consumer)
+    )
 
-    process.schedule = cms.Schedule(process.ticlBarrel
-                                    ,process.ticlAssociators
-                                    ,process.FEVTDEBUGHLToutput_step)
-    
+    process.schedule.extend([process.ticlBarrel, process.ticlAssociators])
     return process

@@ -1657,7 +1657,7 @@ void TICLDumper::fillDescriptions(edm::ConfigurationDescriptions& descriptions) 
   desc.add<edm::InputTag>("lcRecoToSimAssociatorCP", edm::InputTag("layerClusterCaloParticleAssociationProducer"));
   desc.add<edm::InputTag>("lcSimToRecoAssociatorCP", edm::InputTag("layerClusterCaloParticleAssociationProducer"));
   desc.add<edm::InputTag>("lcRecoToSimAssociatorSC", edm::InputTag("layerClusterSimClusterAssociationProducer"));
-  desc.add<edm::InputTag>("lcSimToRecoAssociatorSC", edm::InputTag("layerClusterSimClusterAsdsociationProducer"));
+  desc.add<edm::InputTag>("lcSimToRecoAssociatorSC", edm::InputTag("layerClusterSimClusterAssociationProducer"));
   // Settings for dumping trackster associators (recoToSim & simToReco)
   edm::ParameterSetDescription associatorDescValidator;
   associatorDescValidator.add<std::string>("branchName")->setComment("Name of the output branches in the tree");
