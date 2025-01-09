@@ -44,11 +44,12 @@ TICLLayerTileProducer::TICLLayerTileProducer(const edm::ParameterSet &ps)
     clusters_HFNose_token_ =
         consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_HFNose_clusters"));
     produces<TICLLayerTilesHFNose>();
-  } else if (doBarrel_) {
-    clusters_barrel_token_ = 
-        consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("barrel_layer_clusters"));
-    produces<TICLLayerTilesBarrel>("ticlLayerTilesBarrel");
   } else {
+    if (doBarrel_) {
+      clusters_barrel_token_ =
+        consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("barrel_layer_clusters"));
+      produces<TICLLayerTilesBarrel>("ticlLayerTilesBarrel");
+    }
     clusters_token_ = consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_clusters"));
     produces<TICLLayerTiles>();
   }
@@ -65,17 +66,15 @@ void TICLLayerTileProducer::produce(edm::Event &evt, const edm::EventSetup &) {
   std::unique_ptr<TICLLayerTilesBarrel> resultBarrel;
   if (doNose_) {
     resultHFNose = std::make_unique<TICLLayerTilesHFNose>();
-  } else if (doBarrel_) {
-    resultBarrel = std::make_unique<TICLLayerTilesBarrel>();
   } else {
+    if (doBarrel_)
+      resultBarrel = std::make_unique<TICLLayerTilesBarrel>();
     result = std::make_unique<TICLLayerTiles>();
   }
 
   edm::Handle<std::vector<reco::CaloCluster>> cluster_h;
   if (doNose_)
     evt.getByToken(clusters_HFNose_token_, cluster_h);
-  else if (doBarrel_)
-    evt.getByToken(clusters_barrel_token_, cluster_h);
   else
     evt.getByToken(clusters_token_, cluster_h);
 
@@ -91,8 +90,6 @@ void TICLLayerTileProducer::produce(edm::Event &evt, const edm::EventSetup &) {
 
     if (doNose_) {
       resultHFNose->fill(layer, lc.eta(), lc.phi(), lcId);
-    } else if (doBarrel_) {
-      resultBarrel->fill(layer, lc.eta(), lc.phi(), lcId);
     } else {
       result->fill(layer, lc.eta(), lc.phi(), lcId);
       LogDebug("TICLLayerTileProducer") << "Adding layerClusterId: " << lcId << " into bin [eta,phi]: [ "
@@ -101,12 +98,28 @@ void TICLLayerTileProducer::produce(edm::Event &evt, const edm::EventSetup &) {
     }
     lcId++;
   }
+
+  if (doBarrel_) {
+    edm::Handle<std::vector<reco::CaloCluster>> cluster_barrel_h;
+    evt.getByToken(clusters_barrel_token_, cluster_barrel_h);
+    const auto barrelLayerClusters = *cluster_barrel_h;
+    lcId = 0;
+    for (auto const &lc : barrelLayerClusters) {
+      const auto firstHitDetId = lc.hitsAndFractions()[0].first;
+      int layer = rhtools_.getLayerWithOffset(firstHitDetId);
+      assert(layer >= 0);
+      resultBarrel->fill(layer, lc.eta(), lc.phi(), lcId);
+      lcId++;
+    }
+  }
+
   if (doNose_)
     evt.put(std::move(resultHFNose));
-  else if (doBarrel_)
-    evt.put(std::move(resultBarrel), "ticlLayerTilesBarrel");
-  else
+  else {
+    if (doBarrel_) 
+      evt.put(std::move(resultBarrel), "ticlLayerTilesBarrel");
     evt.put(std::move(result));
+  }
 }
 
 void TICLLayerTileProducer::fillDescriptions(edm::ConfigurationDescriptions &descriptions) {
