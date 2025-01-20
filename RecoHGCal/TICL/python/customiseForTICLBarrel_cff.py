@@ -227,6 +227,8 @@ def customiseForTICLBarrel_legacyPFClusters(process, doPFComparison=True):
         fileName = cms.string("histo.root")
     )
 
+    process.FEVTDEBUGHLToutput.outputCommands.extend(['keep *_lcFromPFClusterProducer_*_*',
+                                                      'keep *_barrelLayerCluster*AssociationProducerPF_*_*'])
     if (doPFComparison):
         process.FEVTDEBUGHLToutput_stepPF = cms.EndPath(process.ticlDumperPF)
     else: 
@@ -404,7 +406,6 @@ def customiseForTICLBarrel(process, pfComparison=False):
                  associatorSimToRecoInputTag = cms.InputTag("allBarrelTrackstersToSimTrackstersAssociationsByHits", "ticlBarrelSimTrackstersToticlBarrelTracksters")
              )
         ],
-    #    ticlcandidates = cms.InputTag("ticlCandidate"),
         saveLCs = cms.bool(True),
         layerClusters = cms.InputTag("barrelLayerClusters"),
         layer_clustersTime = cms.InputTag("barrelLayerClusters:timeLayerCluster"),
@@ -417,7 +418,8 @@ def customiseForTICLBarrel(process, pfComparison=False):
         saveTracks = cms.bool(False),
         saveSuperclustering = cms.bool(False),
         saveRecoSuperclusters = cms.bool(False),
-        saveCaloParticles = cms.bool(True)
+        saveCaloParticles = cms.bool(True),
+        saveHits = cms.bool(True)
     )
 
     ticl_v5.toModify(process.ticlDumper, ticlcandidates = cms.InputTag("ticlCandidate"))
@@ -426,6 +428,12 @@ def customiseForTICLBarrel(process, pfComparison=False):
         fileName = cms.string("histo.root")
     )
 
+
+    process.FEVTDEBUGHLToutput.outputCommands.extend(['keep *_barrelLayerClusters_*_*',
+                                                      'keep *_barrelLayerCluster*AssociationProducer_*_*',
+                                                      'keep *_ticlBarrel*Tracksters_*_*',
+                                                      'keep *_allBarrelTrackstersToSimTrackstersAssociations*_*_*'])
+    
     process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput
                                                   +process.ticlDumper
     )
