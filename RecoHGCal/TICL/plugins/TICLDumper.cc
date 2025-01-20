@@ -701,7 +701,7 @@ private:
   bool saveSimTICLCandidate_;
   bool saveTracks_;
   bool saveCaloParticles_;
-
+  bool saveHits_;
   // Output tree
   TTree* tree_;
 
@@ -819,6 +819,15 @@ private:
   std::vector<std::vector<float>> lc_simToReco_SC_score;
   std::vector<std::vector<float>> lc_simToReco_SC_shared;
 
+  // Hits
+  std::vector<uint32_t> hit_id;
+  std::vector<float> hit_energy;
+  std::vector<float> hit_eta;
+  std::vector<float> hit_phi;
+  std::vector<float> hit_x;
+  std::vector<float> hit_y;
+  std::vector<float> hit_z;
+  std::vector<uint32_t> hit_cluster_idx;
 
   TTree* cluster_tree_;
   TTree* candidate_tree_;
@@ -826,6 +835,7 @@ private:
   TTree* tracks_tree_;
   TTree* simTICLCandidate_tree;
   TTree* caloparticle_tree_;
+  TTree* hit_tree_;
 };
 
 void TICLDumper::clearVariables() {
@@ -939,6 +949,16 @@ void TICLDumper::clearVariables() {
   lc_simToReco_SC.clear();
   lc_simToReco_SC_score.clear();
   lc_simToReco_SC_shared.clear();
+
+  hit_id.clear();
+  hit_energy.clear();
+  hit_x.clear();
+  hit_y.clear();
+  hit_z.clear();
+  hit_eta.clear();
+  hit_phi.clear();
+  hit_cluster_idx.clear();
+
 };
 
 TICLDumper::TICLDumper(const edm::ParameterSet& ps)
@@ -1002,7 +1022,8 @@ TICLDumper::TICLDumper(const edm::ParameterSet& ps)
       saveTICLCandidate_(ps.getParameter<bool>("saveSimTICLCandidate")),
       saveSimTICLCandidate_(ps.getParameter<bool>("saveSimTICLCandidate")),
       saveTracks_(ps.getParameter<bool>("saveTracks")),
-      saveCaloParticles_(ps.getParameter<bool>("saveCaloParticles")) {
+      saveCaloParticles_(ps.getParameter<bool>("saveCaloParticles")),
+      saveHits_(ps.getParameter<bool>("saveHits")) {
   if (saveSuperclustering_) {
     superclustering_linkedResultTracksters_token =
         consumes<std::vector<std::vector<unsigned int>>>(ps.getParameter<edm::InputTag>("superclustering"));
@@ -1186,6 +1207,18 @@ void TICLDumper::beginJob() {
     caloparticle_tree_->Branch("caloparticle_pt", &caloparticle_pt);
     caloparticle_tree_->Branch("caloparticle_eta", &caloparticle_eta);
     caloparticle_tree_->Branch("caloparticle_phi", &caloparticle_phi);
+  }
+
+  if (saveHits_) {
+    hit_tree_ = fs->make<TTree>("hits", "Hits");
+    hit_tree_->Branch("event", &eventId_);
+    hit_tree_->Branch("hit_energy", &hit_energy);
+    hit_tree_->Branch("hit_eta", &hit_eta);
+    hit_tree_->Branch("hit_phi", &hit_phi);
+    hit_tree_->Branch("hit_x", &hit_x);
+    hit_tree_->Branch("hit_y", &hit_y);
+    hit_tree_->Branch("hit_z", &hit_z);
+    hit_tree_->Branch("hit_cluster_idx", &hit_cluster_idx);
   }
 }
 
@@ -1399,6 +1432,19 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
     }
   }
 
+
+  for (auto hit_iterator = hits.begin(); hit_iterator != hits.end(); ++hit_iterator) {
+    hit_id.push_back(hit_iterator->detId());
+    hit_energy.push_back(hit_iterator->energy());
+    auto hit_pos = detectorTools_->rhtools.getPosition(hit_iterator->detId());
+    hit_x.push_back(hit_pos.x());
+    hit_y.push_back(hit_pos.y());
+    hit_z.push_back(hit_pos.z());
+    hit_eta.push_back(hit_pos.eta());
+    hit_phi.push_back(hit_pos.phi());
+  }
+  hit_cluster_idx.resize(hits.size(), -1);
+  
   int c_id = 0;
 
   for (auto cluster_iterator = clusters.begin(); cluster_iterator != clusters.end(); ++cluster_iterator) {
@@ -1413,6 +1459,11 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
     cluster_position_eta.push_back(cluster_iterator->eta());
     cluster_position_phi.push_back(cluster_iterator->phi());
     auto haf = cluster_iterator->hitsAndFractions();
+    auto maxFracHit = std::max_element(haf.begin(), haf.end(), [](auto& el1, auto& el2) { return el1.second < el2.second; });
+    uint32_t maxFracHitId = (*maxFracHit).first.rawId();
+    auto maxHit_it = std::find(hit_id.begin(), hit_id.end(), maxFracHitId);
+    unsigned int maxHit_idx = std::distance(hit_id.begin(), maxHit_it);
+    hit_cluster_idx[maxHit_idx] = c_id;
     auto layerId = detectorTools_->rhtools.getLayerWithOffset(haf[0].first);
     cluster_layer_id.push_back(layerId);
     uint32_t number_of_hits = cluster_iterator->hitsAndFractions().size();
@@ -1605,6 +1656,8 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
     caloparticle_tree_->Fill();
   if (associations_dumperHelpers_.size() > 0)
     associations_tree_->Fill();
+  if (saveHits_)
+    hit_tree_->Fill();
 }
 
 void TICLDumper::endJob() {}
@@ -1682,6 +1735,7 @@ void TICLDumper::fillDescriptions(edm::ConfigurationDescriptions& descriptions) 
   desc.add<bool>("saveRecoSuperclusters", true)
       ->setComment("Save superclustering Egamma collections (as reco::SuperCluster)");
   desc.add<bool>("saveCaloParticles", false);
+  desc.add<bool>("saveHits", false);
   descriptions.add("ticlDumper", desc);
 }
 
