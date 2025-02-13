@@ -827,6 +827,7 @@ private:
   std::vector<float> hit_x;
   std::vector<float> hit_y;
   std::vector<float> hit_z;
+  std::vector<float> hit_t;
   std::vector<uint32_t> hit_cluster_idx;
 
   TTree* cluster_tree_;
@@ -1218,6 +1219,7 @@ void TICLDumper::beginJob() {
     hit_tree_->Branch("hit_x", &hit_x);
     hit_tree_->Branch("hit_y", &hit_y);
     hit_tree_->Branch("hit_z", &hit_z);
+    hit_tree_->Branch("hit_t", &hit_t);
     hit_tree_->Branch("hit_cluster_idx", &hit_cluster_idx);
   }
 }
@@ -1442,6 +1444,7 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
     hit_z.push_back(hit_pos.z());
     hit_eta.push_back(hit_pos.eta());
     hit_phi.push_back(hit_pos.phi());
+    hit_t.push_back(hit_iterator->time());
   }
   hit_cluster_idx.resize(hits.size(), -1);
   
@@ -1512,8 +1515,8 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
     associations_dumperHelpers_[i].fillFromEvent(event.get(associations_recoToSim_token_[i]),
                                                  event.get(associations_simToReco_token_[i]));
   }
-  if (!associations_dumperHelpers_.empty())
-    associations_tree_->Fill();
+  //if (!associations_dumperHelpers_.empty())
+  //  associations_tree_->Fill();
 
   //Tracks
   for (size_t i = 0; i < tracks.size(); i++) {
