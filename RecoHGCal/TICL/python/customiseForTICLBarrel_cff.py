@@ -8,6 +8,7 @@ from RecoHGCal.TICL.ticlSeedingRegionProducer_cfi import ticlSeedingRegionProduc
 from RecoHGCal.TICL.ticlLayerTileProducer_cfi import ticlLayerTileProducer as _ticlLayerTileProducer
 from RecoHGCal.TICL.simTrackstersProducer_cfi import simTrackstersProducer as _simTrackstersProducer
 from RecoHGCal.TICL.ticlDumper_cfi import ticlDumper as _ticlDumper
+from RecoHGCal.TICL.tracksterLinksProducer_cfi import tracksterLinksProducer as _tracksterLinksProducer
 
 from SimCalorimetry.HGCalAssociatorProducers.barrelLCToCPAssociatorByEnergyScoreProducer_cfi import barrelLCToCPAssociatorByEnergyScoreProducer as barrelLCToCPAssociatorByEnergyScoreProducer
 from SimCalorimetry.HGCalAssociatorProducers.barrelLCToSCAssociatorByEnergyScoreProducer_cfi import barrelLCToSCAssociatorByEnergyScoreProducer as barrelLCToSCAssociatorByEnergyScoreProducer
@@ -297,13 +298,13 @@ def customiseForTICLBarrel(process, pfComparison=False):
         pluginPatternRecognitionByCLUE3D = dict(
             criticalDensity = cms.vdouble(0.5, 0.5, 0.5),
             criticalSelfDensity = cms.vdouble(0., 0., 0.),
-            criticalEtaPhiDistance = cms.vdouble(7*0.087, 7*0.087, 7*0.087, 7*0.087),
+            criticalEtaPhiDistance = cms.vdouble(3*0.0175, 3*0.087, 3*0.087, 3*0.087),
             densityEtaPhiDistanceSqr = cms.vdouble(0.37, 0.37, 0.37, 0.37),
             nearestHigherOnSameLayer = cms.bool(False),
             densityOnSameLayer = cms.bool(False),
             minNumLayerCluster = cms.vint32(1, 1, 1),
             useAbsoluteProjectiveScale = cms.bool(False),
-            densitySiblingLayers = cms.vint32(4, 4, 4)
+            densitySiblingLayers = cms.vint32(2, 4, 4)
         )
     )
     process.ticlSeedingGlobal = _ticlSeedingRegionProducer.clone()
@@ -324,10 +325,28 @@ def customiseForTICLBarrel(process, pfComparison=False):
                                                 ,process.ticlSeedingGlobal
                                                 ,process.ticlBarrelTracksters)
 
-    process.ticlBarrel = cms.Path(process.barrelLayerClustersTask,process.ticlBarrelTrackstersTask)
+    process.tracksterLinksBarrel = _tracksterLinksProducer.clone(
+        layer_clusters = cms.InputTag("barrelLayerClusters"),
+        layer_clustersTime = cms.InputTag("barrelLayerClusters", "timeLayerCluster"),
+        original_masks = cms.VInputTag("barrelLayerClusters:InitialLayerClustersMask"),
+        tracksters_collections = cms.VInputTag("ticlBarrelTracksters")
+    )
+   
+    process.tracksterLinksBarrel.linkingPSet = cms.PSet(
+        type = cms.string("Barrel"),
+        min_cos_theta = cms.double(0.99)
+    )
+ 
+    process.ticlBarrelTracksterLinksTask= cms.Task(process.tracksterLinksBarrel)
+    process.ticlBarrel = cms.Path(process.barrelLayerClustersTask
+                                  ,process.ticlBarrelTrackstersTask
+                                  ,process.ticlBarrelTracksterLinksTask
+    )
     
-    ticlBarrelTrackstersLabels = ["ticlBarrelTracksters"]
-    ticlBarrelSimTrackstersLabels = ["ticlBarrelSimTrackster"]
+    tracksterCollections = ["ticlBarrelTracksters", 
+                            "tracksterLinksBarrel"
+    ]
+    simTracksterCollections = ["ticlBarrelSimTracksters", "ticlBarrelSimTrackstersfromCPs"]
 
     ## associators
 
@@ -348,6 +367,8 @@ def customiseForTICLBarrel(process, pfComparison=False):
     # TS-STS associations by hits
     process.allHitToBarrelTracksterAssociations = _allHitToBarrelTracksterAssociations.clone()
     process.allBarrelTrackstersToSimTrackstersAssociationsByHits = _allBarrelTrackstersToSimTrackstersAssociationsByHits.clone(
+        tracksterCollections = cms.VInputTag(["ticlBarrelTracksters", "tracksterLinksBarrel"]),
+        simTracksterCollections = cms.VInputTag(["ticlBarrelSimTracksters", "ticlBarrelSimTracksters:fromCPs"]),
         hitToCaloParticleMap = cms.InputTag('barrelHitToSimClusterCaloParticleAssociator', 'hitToCaloParticleMap'),
         hitToSimClusterMap = cms.InputTag('barrelHitToSimClusterCaloParticleAssociator', 'hitToSimClusterMap'),
         hitToTracksterMap = cms.string('allHitToBarrelTracksterAssociations')
@@ -367,8 +388,34 @@ def customiseForTICLBarrel(process, pfComparison=False):
                                        +process.allBarrelTrackstersToSimTrackstersAssociationsByHits
     )
 
+    dumperAssociators = []
+    for simTracksterCollection in simTracksterCollections:
+        for tracksterCollection in tracksterCollections:
+            suffix = "CP" if "fromCPs" in simTracksterCollection else "SC"
+            dumperAssociators.append(
+                cms.PSet(
+                    branchName = cms.string(tracksterCollection),
+                    suffix = cms.string(suffix+"_byLCs"),
+                    associatorRecoToSimInputTag = cms.InputTag(
+                        f"allBarrelTrackstersToSimTrackstersAssociationsByLCs:{tracksterCollection}To{simTracksterCollection}"),
+                    associatorSimToRecoInputTag = cms.InputTag(
+                        f"allBarrelTrackstersToSimTrackstersAssociationsByLCs:{simTracksterCollection}To{tracksterCollection}")
+                )
+            )
+            dumperAssociators.append(
+                cms.PSet(
+                    branchName = cms.string(tracksterCollection),
+                    suffix = cms.string(suffix+"_byHits"),
+                    associatorRecoToSimInputTag = cms.InputTag(
+                        f"allBarrelTrackstersToSimTrackstersAssociationsByHits:{tracksterCollection}To{simTracksterCollection}"),
+                    associatorSimToRecoInputTag = cms.InputTag(
+                        f"allBarrelTrackstersToSimTrackstersAssociationsByHits:{simTracksterCollection}To{tracksterCollection}")
+                )
+            )
+
+
     process.ticlDumper = _ticlDumper.clone(
-        tracksterCollections = [*[cms.PSet(treeName=cms.string(label), inputTag=cms.InputTag(label)) for label in ticlBarrelTrackstersLabels],
+        tracksterCollections = [*[cms.PSet(treeName=cms.string(label), inputTag=cms.InputTag(label)) for label in tracksterCollections],
             cms.PSet(
                 treeName = cms.string("simtrackstersSC"),
                 inputTag = cms.InputTag("ticlBarrelSimTracksters"),
@@ -380,32 +427,23 @@ def customiseForTICLBarrel(process, pfComparison=False):
                 tracksterType = cms.string("SimTracksterCP")
             ),
         ],
-        associators = [
-            cms.PSet(
-                branchName = cms.string("tsToStsByLC"),
-                suffix = cms.string("CP"),
-                associatorRecoToSimInputTag = cms.InputTag("allBarrelTrackstersToSimTrackstersAssociationsByLCs", "ticlBarrelTrackstersToticlBarrelSimTrackstersfromCPs"),
-                associatorSimToRecoInputTag = cms.InputTag("allBarrelTrackstersToSimTrackstersAssociationsByLCs", "ticlBarrelSimTrackstersfromCPsToticlBarrelTracksters")
-            ),
-            cms.PSet(
-                branchName = cms.string("tsToStsByLC"),
-                suffix = cms.string("SC"),
-                associatorRecoToSimInputTag = cms.InputTag("allBarrelTrackstersToSimTrackstersAssociationsByLCs", "ticlBarrelTrackstersToticlBarrelSimTracksters"),
-                associatorSimToRecoInputTag = cms.InputTag("allBarrelTrackstersToSimTrackstersAssociationsByLCs", "ticlBarrelSimTrackstersToticlBarrelTracksters")
-            ),
-             cms.PSet(                                                                                                                                                                
-                 branchName = cms.string("tsToStsByHit"),
-                 suffix = cms.string("CP"),
-                 associatorRecoToSimInputTag = cms.InputTag("allBarrelTrackstersToSimTrackstersAssociationsByHits", "ticlBarrelTrackstersToticlBarrelSimTrackstersfromCPs"),
-                 associatorSimToRecoInputTag = cms.InputTag("allBarrelTrackstersToSimTrackstersAssociationsByHits", "ticlBarrelSimTrackstersfromCPsToticlBarrelTracksters")
-             ),
-             cms.PSet(
-                 branchName = cms.string("tsToStsByHit"),
-                 suffix = cms.string("SC"),
-                 associatorRecoToSimInputTag = cms.InputTag("allBarrelTrackstersToSimTrackstersAssociationsByHits", "ticlBarrelTrackstersToticlBarrelSimTracksters"),
-                 associatorSimToRecoInputTag = cms.InputTag("allBarrelTrackstersToSimTrackstersAssociationsByHits", "ticlBarrelSimTrackstersToticlBarrelTracksters")
-             )
-        ],
+        #associators = [
+        #    cms.PSet(
+        #        branchName = cms.string("tsToStsByLC"),
+        #        suffix = cms.string("CP"),
+        #        associatorRecoToSimInputTag = cms.InputTag("allBarrelTrackstersToSimTrackstersAssociationsByLCs", "ticlBarrelTrackstersToticlBarrelSimTrackstersfromCPs"),
+        #       associatorSimToRecoInputTag = cms.InputTag("allBarrelTrackstersToSimTrackstersAssociationsByLCs", "ticlBarrelSimTrackstersfromCPsToticlBarrelTracksters")
+        #  ),
+        #  cms.PSet(
+        #        branchName = cms.string("tsToStsByLC"),
+        #        suffix = cms.string("SC"),
+        #        associatorRecoToSimInputTag = cms.InputTag("allBarrelTrackstersToSimTrackstersAssociationsByLCs", "ticlBarrelTrackstersToticlBarrelSimTracksters"),
+        #        associatorSimToRecoInputTag = cms.InputTag("allBarrelTrackstersToSimTrackstersAssociationsByLCs", "ticlBarrelSimTrackstersToticlBarrelTracksters")
+        #    ), 
+        #    cms.PSet(
+        #        branchName = cms.string("
+        #],
+        associators = dumperAssociators,
         saveLCs = cms.bool(True),
         layerClusters = cms.InputTag("barrelLayerClusters"),
         layer_clustersTime = cms.InputTag("barrelLayerClusters:timeLayerCluster"),
@@ -419,7 +457,7 @@ def customiseForTICLBarrel(process, pfComparison=False):
         saveSuperclustering = cms.bool(False),
         saveRecoSuperclusters = cms.bool(False),
         saveCaloParticles = cms.bool(True),
-        saveHits = cms.bool(True)
+        saveHits = cms.bool(False)
     )
 
     ticl_v5.toModify(process.ticlDumper, ticlcandidates = cms.InputTag("ticlCandidate"))
@@ -432,7 +470,8 @@ def customiseForTICLBarrel(process, pfComparison=False):
     process.FEVTDEBUGHLToutput.outputCommands.extend(['keep *_barrelLayerClusters_*_*',
                                                       'keep *_barrelLayerCluster*AssociationProducer_*_*',
                                                       'keep *_ticlBarrel*Tracksters_*_*',
-                                                      'keep *_allBarrelTrackstersToSimTrackstersAssociations*_*_*'])
+                                                      'keep *_allBarrelTrackstersToSimTrackstersAssociations*_*_*',
+                                                      'keep *_tracksterLinksBarrel_*_*'])
     
     process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput
                                                   +process.ticlDumper
