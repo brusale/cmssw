@@ -52,5 +52,6 @@ allLayerClusterToTracksterAssociations = AllLayerClusterToTracksterAssociatorsPr
 
 allBarrelLayerClusterToTracksterAssociations = AllLayerClusterToTracksterAssociatorsProducer.clone(
     layer_clusters = cms.InputTag("barrelLayerClusters"),
-    tracksterCollections = cms.VInputTag(cms.InputTag("ticlBarrelTracksters"), cms.InputTag("ticlBarrelSimTracksters"), cms.InputTag("ticlBarrelSimTracksters", "fromCPs"))
+    tracksterCollections = cms.VInputTag(cms.InputTag("ticlBarrelTracksters"), cms.InputTag("tracksterLinksBarrel"), 
+                                         cms.InputTag("ticlBarrelSimTracksters"), cms.InputTag("ticlBarrelSimTracksters", "fromCPs"))
 )

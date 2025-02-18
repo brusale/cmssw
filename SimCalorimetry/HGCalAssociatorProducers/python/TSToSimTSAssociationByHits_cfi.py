@@ -24,7 +24,7 @@ premix_stage2.toModify(allTrackstersToSimTrackstersAssociationsByHits,
 from SimCalorimetry.HGCalAssociatorProducers.AllBarrelTracksterToSimTracksterAssociatorsByHitsProducer_cfi import AllBarrelTracksterToSimTracksterAssociatorsByHitsProducer
 
 allBarrelTrackstersToSimTrackstersAssociationsByHits = AllBarrelTracksterToSimTracksterAssociatorsByHitsProducer.clone(
-    tracksterCollections = cms.VInputTag('ticlBarrelTracksters'),
+    tracksterCollections = cms.VInputTag('ticlBarrelTracksters', 'tracksterLinksBarrel'),
     simTracksterCollections = cms.VInputTag(
         'ticlBarrelSimTracksters',
         'ticlBarrelSimTracksters:fromCPs'

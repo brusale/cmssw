@@ -386,23 +386,32 @@ template <typename HIT>
 void AllTracksterToSimTracksterAssociatorsByHitsProducer<HIT>::fillDescriptions(
     edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
-  desc.add<std::string>("hitToTracksterMap", "allHitToTracksterAssociations");
-  desc.add<std::vector<edm::InputTag>>(
-      "tracksterCollections", {edm::InputTag("ticlTrackstersCLUE3DHigh"), edm::InputTag("ticlTrackstersLinks")});
-  desc.add<std::vector<edm::InputTag>>(
-      "simTracksterCollections", {edm::InputTag("ticlSimTracksters"), edm::InputTag("ticlSimTracksters", "fromCPs")});
-  desc.add<edm::InputTag>("hitToSimClusterMap",
-                          edm::InputTag("hitToSimClusterCaloParticleAssociator", "hitToSimClusterMap"));
-  desc.add<edm::InputTag>("hitToCaloParticleMap",
-                          edm::InputTag("hitToSimClusterCaloParticleAssociator", "hitToCaloParticleMap"));
   desc.add<edm::InputTag>("caloParticles", edm::InputTag("mix", "MergedCaloTruth"));
   if constexpr (std::is_same_v<HIT, HGCRecHit>) {
+    desc.add<std::string>("hitToTracksterMap", "allHitToTracksterAssociations");
+    desc.add<std::vector<edm::InputTag>>(
+        "tracksterCollections", {edm::InputTag("ticlTrackstersCLUE3DHigh"), edm::InputTag("ticlTrackstersLinks")});
+    desc.add<std::vector<edm::InputTag>>(
+        "simTracksterCollections", {edm::InputTag("ticlSimTracksters"), edm::InputTag("ticlSimTracksters", "fromCPs")});
+    desc.add<edm::InputTag>("hitToSimClusterMap",
+                            edm::InputTag("hitToSimClusterCaloParticleAssociator", "hitToSimClusterMap"));
+    desc.add<edm::InputTag>("hitToCaloParticleMap",
+                            edm::InputTag("hitToSimClusterCaloParticleAssociator", "hitToCaloParticleMap"));
     desc.add<std::vector<edm::InputTag>>("hits",
                                          {edm::InputTag("HGCalRecHit", "HGCEERecHits"),
                                           edm::InputTag("HGCalRecHit", "HGCHEFRecHits"),
                                           edm::InputTag("HGCalRecHit", "HGCHEBRecHits")});
     descriptions.add("AllTracksterToSimTracksterAssociatorsByHitsProducer", desc);
   } else if constexpr (std::is_same_v<HIT, reco::PFRecHit>) {
+    desc.add<std::string>("hitToTracksterMap", "allBarrelHitToTracksterAssociations");
+    desc.add<std::vector<edm::InputTag>>(
+        "tracksterCollections", {edm::InputTag("ticlBarrelTracksters")});
+    desc.add<std::vector<edm::InputTag>>(
+        "simTracksterCollections", {edm::InputTag("ticlBarrelSimTracksters"), edm::InputTag("ticlBarrelSimTracksters", "fromCPs")});
+    desc.add<edm::InputTag>("hitToCaloParticleMap", 
+                            edm::InputTag("barrelHitToSimClusterCaloParticleAssociator", "hitToCaloParticleMap"));
+    desc.add<edm::InputTag>("hitToSimClusterMap",
+                            edm::InputTag("barrelHitToSimClusterCaloParticleAssociator", "hitToSimClusterMap"));
     desc.add<std::vector<edm::InputTag>>("hits",
                                          {edm::InputTag("particleFlowRecHitECAL"),
                                           edm::InputTag("particleFlowRecHitHBHE")});
