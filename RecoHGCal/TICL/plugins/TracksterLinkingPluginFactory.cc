@@ -6,6 +6,7 @@
 #include "TracksterLinkingbySkeletons.h"
 #include "TracksterLinkingRecovery.h"
 #include "RecoHGCal/TICL/plugins/TracksterLinkingPluginFactory.h"
+#include "TracksterLinkingBarrel.h"
 
 EDM_REGISTER_VALIDATED_PLUGINFACTORY(TracksterLinkingPluginFactory, "TracksterLinkingPluginFactory");
 DEFINE_EDM_VALIDATED_PLUGIN(TracksterLinkingPluginFactory, ticl::TracksterLinkingbySkeletons, "Skeletons");
@@ -17,3 +18,6 @@ DEFINE_EDM_VALIDATED_PLUGIN(TracksterLinkingPluginFactory,
                             "SuperClusteringMustache");
 DEFINE_EDM_VALIDATED_PLUGIN(TracksterLinkingPluginFactory, ticl::TracksterLinkingbyFastJet, "FastJet");
 DEFINE_EDM_VALIDATED_PLUGIN(TracksterLinkingPluginFactory, ticl::TracksterLinkingRecovery, "Recovery");
+
+// Barrel
+DEFINE_EDM_VALIDATED_PLUGIN(TracksterLinkingPluginFactory, ticl::TracksterLinkingBarrel, "Barrel");
