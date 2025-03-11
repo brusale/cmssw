@@ -8,6 +8,7 @@ from ..modules.l1tTkEmSingle51Filter_cfi import *
 from ..modules.hltEgammaCandidatesUnseeded_cfi import *
 from ..modules.hltEgammaHGCALIDVarsUnseeded_cfi import *
 from ..modules.hltEgammaHoverEUnseeded_cfi import *
+from ..modules.hltParticleFlowRecHitHBHE_cfi import *
 
 from ..sequences.HLTDoFullUnpackingEgammaEcalSequence_cfi import *
 from ..sequences.HLTEGammaDoLocalHcalSequence_cfi import *
@@ -18,6 +19,7 @@ from ..sequences.HLTFastJetForEgammaSequence_cfi import *
 
 HLTPhoton187UnseededSequence = cms.Sequence(HLTL1Sequence
                                             +l1tTkEmSingle51Filter
+                                            +hltParticleFlowRecHitHBHE
                                             +HLTDoFullUnpackingEgammaEcalSequence
                                             +HLTPFClusteringForEgammaUnseededSequence
                                             +HLTHgcalTiclPFClusteringForEgammaUnseededSequence
