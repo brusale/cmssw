@@ -19,7 +19,6 @@ from ..sequences.HLTFastJetForEgammaSequence_cfi import *
 
 HLTPhoton187UnseededSequence = cms.Sequence(HLTL1Sequence
                                             +l1tTkEmSingle51Filter
-                                            +hltParticleFlowRecHitHBHE
                                             +HLTDoFullUnpackingEgammaEcalSequence
                                             +HLTPFClusteringForEgammaUnseededSequence
                                             +HLTHgcalTiclPFClusteringForEgammaUnseededSequence
