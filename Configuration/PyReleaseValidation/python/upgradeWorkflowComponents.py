@@ -881,9 +881,9 @@ upgradeWFs['ticl_barrel'] = UpgradeWorkflow_ticl_barrel(
     suffix = '_ticl_barrel',
     offset = 0.206,
 )
-upgradeWFs['ticl_barrel'].step2 = {'--procModifiers': 'ticl_v5,ticl_barrel'}
-upgradeWFs['ticl_barrel'].step3 = {'--procModifiers': 'ticl_v5,ticl_barrel'}
-upgradeWFs['ticl_barrel'].step4 = {'--procModifiers': 'ticl_v5,ticl_barrel'}
+upgradeWFs['ticl_barrel'].step2 = {'--procModifiers': 'ticl_barrel'}
+upgradeWFs['ticl_barrel'].step3 = {'--procModifiers': 'ticl_barrel'}
+upgradeWFs['ticl_barrel'].step4 = {'--procModifiers': 'ticl_barrel'}
 
 # Improved L2 seeding from L1Tk Muons and L3 Tracker Muon Inside-Out reconstruction first (Phase-2 Muon default)
 class UpgradeWorkflow_phase2L2AndL3Muons(UpgradeWorkflow):
@@ -1798,6 +1798,19 @@ upgradeWFs['HLTTiming75e33AlpakaLST'].step2 = {
     '--eventcontent':'FEVTDEBUGHLT,DQMIO'
 }
 upgradeWFs['HLTTiming75e33AlpakaLST'].step3 = {
+    '-s':'HARVESTING:@hltValidation'
+}
+
+upgradeWFs['HLTTiming75e33TiclBarrel'] = deepcopy(upgradeWFs['HLTTiming75e33'])
+upgradeWFs['HLTTiming75e33TiclBarrel'].suffix = '_HLT75e33TimingTiclBarrel'
+upgradeWFs['HLTTiming75e33TiclBarrel'].offset = 0.756
+upgradeWFs['HLTTiming75e33TiclBarrel'].step2 = {
+    '-s' : 'DIGI:pdigi_valid,L1TrackTrigger,L1,L1P2GT,DIGI2RAW,HLT:75e33_timing,VALIDATION:@hltValidation',
+    '--procModifiers': 'ticl_barrel',
+    '--datatier':'GEN-SIM-DIGI-RAW,DQMIO',
+    '--eventcontent':'FEVTDEBUGHLT,DQMIO'
+}
+upgradeWFs['HLTTiming75e33TiclBarrel'].step3 = {
     '-s':'HARVESTING:@hltValidation'
 }
 
