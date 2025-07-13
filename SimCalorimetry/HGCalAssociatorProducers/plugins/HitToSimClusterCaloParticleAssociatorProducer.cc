@@ -30,9 +30,6 @@ HitToSimClusterCaloParticleAssociatorProducer<HIT>::HitToSimClusterCaloParticleA
 }
 
 template <typename HIT>
-HitToSimClusterCaloParticleAssociatorProducer<HIT>::~HitToSimClusterCaloParticleAssociatorProducer() {}
-
-template <typename HIT>
 void HitToSimClusterCaloParticleAssociatorProducer<HIT>::produce(edm::StreamID,
                                                                  edm::Event &iEvent,
                                                                  const edm::EventSetup &iSetup) const {
@@ -48,14 +45,14 @@ void HitToSimClusterCaloParticleAssociatorProducer<HIT>::produce(edm::StreamID,
   iEvent.getByToken(hitMapToken_, hitMap);
 
   MultiVectorManager<HIT> rechitManager;
-  for (const auto &token : hitsTokens_) {
+  for (size_t i = 0; i < hitsTokens_.size(); ++i) {
     Handle<std::vector<HIT>> hitsHandle;
-    iEvent.getByToken(token, hitsHandle);
+    iEvent.getByToken(hitsTokens_[i], hitsHandle);
 
     // Error handling with tag name
     if (!hitsHandle.isValid()) {
       edm::LogWarning("HitToSimClusterCaloParticleAssociatorProducer")
-          << "Missing HGCRecHitCollection for tag: " << hitsTags_[i].encode();
+          << "Missing hit collection for tag: " << hitsTags_[i].encode();
       continue;
     }
     rechitManager.addVector(*hitsHandle);
@@ -64,7 +61,7 @@ void HitToSimClusterCaloParticleAssociatorProducer<HIT>::produce(edm::StreamID,
   // Check if rechitManager is empty after processing hitsTokens_
   if (rechitManager.size() == 0) {
     edm::LogWarning("HitToSimClusterCaloParticleAssociatorProducer")
-        << "No valid HGCRecHitCollections found. Association maps will be empty.";
+        << "No valid hit collection found. Association maps will be empty.";
     // Store empty maps in the event
     iEvent.put(std::make_unique<ticl::AssociationMap<ticl::mapWithFraction>>(), "hitToSimClusterMap");
     iEvent.put(std::make_unique<ticl::AssociationMap<ticl::mapWithFraction>>(), "hitToCaloParticleMap");
