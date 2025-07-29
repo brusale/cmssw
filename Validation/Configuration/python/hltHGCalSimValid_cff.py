@@ -18,7 +18,6 @@ hltRecHitMapProducer = _recHitMapProducer.clone(
     EEInput = cms.InputTag("hltHGCalRecHit","HGCEERecHits"),
     FHInput = cms.InputTag("hltHGCalRecHit","HGCHEFRecHits"),
     HBInput = cms.InputTag("hltParticleFlowRecHitHBHE"),
-    HOInput = cms.InputTag("hltParticleFlowRecHitHO"),
     hgcalOnly = cms.bool(True),
 )
 
@@ -72,7 +71,7 @@ hltHitToSimClusterCaloParticleAssociator = _hitToSimClusterCaloParticleAssociato
     hits = cms.VInputTag("hltHGCalRecHit:HGCEERecHits", "hltHGCalRecHit:HGCHEFRecHits", "hltHGCalRecHit:HGCHEBRecHits")
 )
 
-from SimCalorimetry.HGCalAssociatorProducers.AllHitToTracksterAssociatorsProducer_cfi import AllHitToTracksterAssociatorsProducer as _AllHitToTracksterAssociatorsProducer
+from SimCalorimetry.HGCalAssociatorProducers.AllHitToHGCalTracksterAssociatorsProducer_cfi import AllHitToHGCalTracksterAssociatorsProducer as _AllHitToTracksterAssociatorsProducer
 
 hltAllHitToTracksterAssociations =  _AllHitToTracksterAssociatorsProducer.clone(
     hitMapTag = cms.InputTag("hltRecHitMapProducer","hgcalRecHitMap"),

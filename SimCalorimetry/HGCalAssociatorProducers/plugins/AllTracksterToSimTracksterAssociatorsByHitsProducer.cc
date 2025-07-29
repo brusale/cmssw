@@ -482,7 +482,7 @@ void AllTracksterToSimTracksterAssociatorsByHitsProducer<HIT>::fillDescriptions(
                                           edm::InputTag("HGCalRecHit", "HGCHEBRecHits")});
     descriptions.add("AllTracksterToSimTracksterAssociatorsByHitsProducer", desc);
   } else if constexpr (std::is_same_v<HIT, reco::PFRecHit>) {
-    desc.add<std::string>("allHitToTSAssoc", "allBarrelHitToTracksterAssociations");
+    desc.add<std::string>("allHitToTSAccoc", "allBarrelHitToTracksterAssociations");
     desc.add<std::vector<edm::InputTag>>(
         "tracksterCollections", {edm::InputTag("ticlBarrelTracksters")});
     desc.add<std::vector<edm::InputTag>>(
