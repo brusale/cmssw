@@ -93,5 +93,7 @@ ticl_barrel.toModify(ticlDumper,
                             tracksterType=cms.string("SimTracksterCP")
                         )
                      ],
+                     ticlcandidates = cms.InputTag("ticlCandidateBarrel"),
+                     simTICLCandidates = cms.InputTag("ticlSimTrackstersBarrel"), 
                      associators=dumperAssociators.copy())
     
