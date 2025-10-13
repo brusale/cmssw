@@ -3,6 +3,8 @@
 #include "RecoHGCal/TICL/interface/TracksterInferenceByDNN.h"
 #include "RecoHGCal/TICL/interface/TracksterInferenceByANN.h"
 #include "RecoHGCal/TICL/interface/TracksterInferenceByCNNv4.h"
+#include "RecoHGCal/TICL/interface/TracksterBarrelPIDbyDNN.h"
+
 #include "FWCore/ParameterSet/interface/ValidatedPluginFactoryMacros.h"
 #include "FWCore/ParameterSet/interface/ValidatedPluginMacros.h"
 
@@ -13,3 +15,4 @@ DEFINE_EDM_VALIDATED_PLUGIN(TracksterInferenceAlgoFactory, ticl::TracksterInfere
 DEFINE_EDM_VALIDATED_PLUGIN(TracksterInferenceAlgoFactory,
                             ticl::TracksterInferenceByCNNv4,
                             "TracksterInferenceByCNNv4");
+DEFINE_EDM_VALIDATED_PLUGIN(TracksterInferenceAlgoFactory, ticl::TracksterBarrelPIDbyDNN, "TracksterBarrelPIDbyDNN");

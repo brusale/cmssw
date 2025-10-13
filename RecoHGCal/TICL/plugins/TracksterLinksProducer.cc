@@ -294,6 +294,11 @@ void TracksterLinksProducer::fillDescriptions(edm::ConfigurationDescriptions &de
       edm::PluginDescription<TracksterInferenceAlgoFactory>("type", "TracksterInferenceByCNNv4", true));
   desc.add<edm::ParameterSetDescription>("pluginInferenceAlgoTracksterInferenceByCNNv4", inferenceDescCNNv4);
 
+  edm::ParameterSetDescription inferenceDescBarrelDNN;
+  inferenceDescBarrelDNN.addNode(
+      edm::PluginDescription<TracksterInferenceAlgoFactory>("type", "TracksterBarrelPIDbyDNN", true));
+  desc.add<edm::ParameterSetDescription>("pluginInferenceAlgoTracksterBarrelPIDbyDNN", inferenceDescBarrelDNN);
+
   desc.add<edm::ParameterSetDescription>("linkingPSet", linkingDesc);
   desc.add<std::vector<edm::InputTag>>("tracksters_collections", {edm::InputTag("ticlTrackstersCLUE3DHigh")});
   desc.add<std::vector<edm::InputTag>>("original_masks",
