@@ -8,6 +8,7 @@
 #include "RecoHGCal/TICL/interface/TICLInterpretationAlgoBase.h"
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/GeometrySurface/interface/BoundDisk.h"
+#include "DataFormats/GeometrySurface/interface/Cylinder.h"
 
 namespace ticl {
 
@@ -25,7 +26,8 @@ namespace ticl {
     void initialize(const HGCalDDDConstants *hgcons,
                     const hgcal::RecHitTools rhtools,
                     const edm::ESHandle<MagneticField> bfieldH,
-                    const edm::ESHandle<Propagator> propH) override;
+                    const edm::ESHandle<Propagator> propH,
+                    const std::string detector) override;
 
     static void fillPSetDescription(edm::ParameterSetDescription &iDesc);
 
@@ -35,11 +37,13 @@ namespace ticl {
     Vector propagateTrackster(const Trackster &t,
                               const unsigned idx,
                               float zVal,
-                              std::array<TICLLayerTile, 2> &tracksterTiles);
+                              std::array<TICLLayerTile, 2> &tracksterTiles,
+                              TICLLayerTileBarrel &tracksterTilesBarrel);
 
     void findTrackstersInWindow(const edm::MultiSpan<Trackster> &tracksters,
                                 const std::vector<std::pair<Vector, unsigned>> &seedingCollection,
                                 const std::array<TICLLayerTile, 2> &tracksterTiles,
+                                const TICLLayerTileBarrel &tracksterTilesBarrel,
                                 const std::vector<Vector> &tracksterPropPoints,
                                 float delta,
                                 unsigned trackstersSize,
@@ -67,10 +71,15 @@ namespace ticl {
     std::unique_ptr<GeomDet> firstDisk_[2];
     std::unique_ptr<GeomDet> interfaceDisk_[2];
 
+    Cylinder::ConstCylinderPointer ecalCylinder_;
+    Cylinder::ConstCylinderPointer hcalCylinder_;
+    
     hgcal::RecHitTools rhtools_;
 
     edm::ESHandle<MagneticField> bfield_;
     edm::ESHandle<Propagator> propagator_;
+
+    std::string detector_;
   };
 
 }  // namespace ticl

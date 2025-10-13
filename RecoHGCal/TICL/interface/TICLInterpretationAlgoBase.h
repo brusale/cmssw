@@ -89,7 +89,8 @@ namespace ticl {
     virtual void initialize(const HGCalDDDConstants* hgcons,
                             const hgcal::RecHitTools rhtools,
                             const edm::ESHandle<MagneticField> bfieldH,
-                            const edm::ESHandle<Propagator> propH) = 0;
+                            const edm::ESHandle<Propagator> propH,
+                            const std::string detector) = 0;
 
     static void fillPSetDescription(edm::ParameterSetDescription& desc) { desc.add<int>("algo_verbosity", 0); };
 

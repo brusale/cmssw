@@ -18,9 +18,11 @@ GeneralInterpretationAlgo::GeneralInterpretationAlgo(const edm::ParameterSet &co
 void GeneralInterpretationAlgo::initialize(const HGCalDDDConstants *hgcons,
                                            const hgcal::RecHitTools rhtools,
                                            const edm::ESHandle<MagneticField> bfieldH,
-                                           const edm::ESHandle<Propagator> propH) {
+                                           const edm::ESHandle<Propagator> propH,
+                                           const std::string detector) {
   hgcons_ = hgcons;
   rhtools_ = rhtools;
+  detector_ = detector;
   buildLayers();
 
   bfield_ = bfieldH;
@@ -30,32 +32,46 @@ void GeneralInterpretationAlgo::initialize(const HGCalDDDConstants *hgcons,
 void GeneralInterpretationAlgo::buildLayers() {
   // build disks at HGCal front & EM-Had interface for track propagation
 
-  float zVal = hgcons_->waferZ(1, true);
-  std::pair<float, float> rMinMax = hgcons_->rangeR(zVal, true);
-
-  float zVal_interface = rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z();
-  std::pair<float, float> rMinMax_interface = hgcons_->rangeR(zVal_interface, true);
-
-  for (int iSide = 0; iSide < 2; ++iSide) {
-    float zSide = (iSide == 0) ? (-1. * zVal) : zVal;
-    firstDisk_[iSide] =
-        std::make_unique<GeomDet>(Disk::build(Disk::PositionType(0, 0, zSide),
-                                              Disk::RotationType(),
-                                              SimpleDiskBounds(rMinMax.first, rMinMax.second, zSide - 0.5, zSide + 0.5))
-                                      .get());
-
-    zSide = (iSide == 0) ? (-1. * zVal_interface) : zVal_interface;
-    interfaceDisk_[iSide] = std::make_unique<GeomDet>(
-        Disk::build(Disk::PositionType(0, 0, zSide),
-                    Disk::RotationType(),
-                    SimpleDiskBounds(rMinMax_interface.first, rMinMax_interface.second, zSide - 0.5, zSide + 0.5))
-            .get());
+  if (detector_ == "HGCAL") {
+    float zVal = hgcons_->waferZ(1, true);
+    std::pair<float, float> rMinMax = hgcons_->rangeR(zVal, true);
+  
+    float zVal_interface = rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z();
+    std::pair<float, float> rMinMax_interface = hgcons_->rangeR(zVal_interface, true);
+  
+    for (int iSide = 0; iSide < 2; ++iSide) {
+      float zSide = (iSide == 0) ? (-1. * zVal) : zVal;
+      firstDisk_[iSide] =
+          std::make_unique<GeomDet>(Disk::build(Disk::PositionType(0, 0, zSide),
+                                                Disk::RotationType(),
+                                                SimpleDiskBounds(rMinMax.first, rMinMax.second, zSide - 0.5, zSide + 0.5))
+                                        .get());
+  
+      zSide = (iSide == 0) ? (-1. * zVal_interface) : zVal_interface;
+      interfaceDisk_[iSide] = std::make_unique<GeomDet>(
+          Disk::build(Disk::PositionType(0, 0, zSide),
+                      Disk::RotationType(),
+                      SimpleDiskBounds(rMinMax_interface.first, rMinMax_interface.second, zSide - 0.5, zSide + 0.5))
+              .get());
+    }
+  } else {
+    GlobalPoint ecalSurface = rhtools_.getPositionLayer(0, false, true);
+    ecalCylinder_ = Cylinder::build(ecalSurface.mag(),
+                                           Surface::PositionType(0., 0., 0.),
+                                           Surface::RotationType());
+    
+    GlobalPoint hcalSurface = rhtools_.getPositionLayer(1, false, true);
+    hcalCylinder_ = Cylinder::build(hcalSurface.mag(),
+                                    Surface::PositionType(0., 0., 0.),
+                                    Surface::RotationType());
   }
 }
+
 Vector GeneralInterpretationAlgo::propagateTrackster(const Trackster &t,
                                                      const unsigned idx,
                                                      float zVal,
-                                                     std::array<TICLLayerTile, 2> &tracksterTiles) {
+                                                     std::array<TICLLayerTile, 2> &tracksterTiles,
+                                                     TICLLayerTileBarrel &tracksterTilesBarrel) {
   // needs only the positive Z co-ordinate of the surface to propagate to
   // the correct sign is calculated inside according to the barycenter of trackster
   Vector const &baryc = t.barycenter();
@@ -69,23 +85,35 @@ Vector GeneralInterpretationAlgo::propagateTrackster(const Trackster &t,
   //FP: disable PCA propagation for the moment and fallback to barycenter position
   // if (t.eigenvalues()[0] / t.eigenvalues()[1] < 20)
   directnv = baryc.unit();
-  zVal *= (baryc.Z() > 0) ? 1 : -1;
-  float par = (zVal - baryc.Z()) / directnv.Z();
-  float xOnSurface = par * directnv.X() + baryc.X();
-  float yOnSurface = par * directnv.Y() + baryc.Y();
-  Vector tPoint(xOnSurface, yOnSurface, zVal);
-  if (tPoint.Eta() > 0) {
-    tracksterTiles[1].fill(tPoint.Eta(), tPoint.Phi(), idx);
-  } else if (tPoint.Eta() < 0) {
-    tracksterTiles[0].fill(tPoint.Eta(), tPoint.Phi(), idx);
-  }
+  if (detector_ == "HGCAL") {
+    zVal *= (baryc.Z() > 0) ? 1 : -1;
+    float par = (zVal - baryc.Z()) / directnv.Z();
+    float xOnSurface = par * directnv.X() + baryc.X();
+    float yOnSurface = par * directnv.Y() + baryc.Y();
+    Vector tPoint(xOnSurface, yOnSurface, zVal);
+    if (tPoint.Eta() > 0) {
+      tracksterTiles[1].fill(tPoint.Eta(), tPoint.Phi(), idx);
+    } else if (tPoint.Eta() < 0) {
+      tracksterTiles[0].fill(tPoint.Eta(), tPoint.Phi(), idx);
+    }
 
-  return tPoint;
+    return tPoint;
+  } else {
+    zVal *= (baryc.Eta() > 0) ? 1 : -1;
+    //float 
+    float par = (zVal - baryc.R()) / directnv.R();
+    float xOnSurface = par * directnv.X() + baryc.X();
+    float yOnSurface = par * directnv.Y() + baryc.Y();
+    Vector tPoint(xOnSurface, yOnSurface, zVal);
+    tracksterTilesBarrel.fill(tPoint.Eta(), tPoint.Phi(), idx);
+    return tPoint;
+  }
 }
 
 void GeneralInterpretationAlgo::findTrackstersInWindow(const edm::MultiSpan<Trackster> &tracksters,
                                                        const std::vector<std::pair<Vector, unsigned>> &seedingCollection,
                                                        const std::array<TICLLayerTile, 2> &tracksterTiles,
+                                                       const TICLLayerTileBarrel &tracksterTilesBarrel,
                                                        const std::vector<Vector> &tracksterPropPoints,
                                                        const float delta,
                                                        unsigned trackstersSize,
@@ -103,28 +131,50 @@ void GeneralInterpretationAlgo::findTrackstersInWindow(const edm::MultiSpan<Trac
     float seed_eta = i.first.Eta();
     float seed_phi = i.first.Phi();
     unsigned seedId = i.second;
-    auto sideZ = seed_eta > 0;  //forward or backward region
-    const TICLLayerTile &tile = tracksterTiles[sideZ];
-    float eta_min = std::max(std::fabs(seed_eta) - delta, (float)TileConstants::minEta);
-    float eta_max = std::min(std::fabs(seed_eta) + delta, (float)TileConstants::maxEta);
-
-    // get range of bins touched by delta
-    std::array<int, 4> search_box = tile.searchBoxEtaPhi(eta_min, eta_max, seed_phi - delta, seed_phi + delta);
-
+    std::array<int, 4> search_box;
     std::vector<unsigned> in_delta;
-    // std::vector<float> distances2;
     std::vector<float> energies;
-    for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
-      for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
-        const auto &in_tile = tile[tile.globalBin(eta_i, (phi_i % TileConstants::nPhiBins))];
-        for (const unsigned &t_i : in_tile) {
-          // calculate actual distances of tracksters to the seed for a more accurate cut
-          auto sep2 = (tracksterPropPoints[t_i].Eta() - seed_eta) * (tracksterPropPoints[t_i].Eta() - seed_eta) +
-                      (tracksterPropPoints[t_i].Phi() - seed_phi) * (tracksterPropPoints[t_i].Phi() - seed_phi);
-          if (sep2 < delta2) {
-            in_delta.push_back(t_i);
-            // distances2.push_back(sep2);
-            energies.push_back(tracksters[t_i].raw_energy());
+    // std::vector<float> distances2;
+    if (detector_ == "HGCAL") {
+      auto sideZ = seed_eta > 0;  //forward or backward region
+      const TICLLayerTile &tile = tracksterTiles[sideZ];
+      float eta_min = std::max(std::fabs(seed_eta) - delta, (float)TileConstants::minEta);
+      float eta_max = std::min(std::fabs(seed_eta) + delta, (float)TileConstants::maxEta);
+      search_box = tile.searchBoxEtaPhi(eta_min, eta_max, seed_phi - delta, seed_phi + delta);
+    
+      for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
+        for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
+          const auto &in_tile = tile[tile.globalBin(eta_i, (phi_i % TileConstants::nPhiBins))];
+          for (const unsigned &t_i : in_tile) {
+            // calculate actual distances of tracksters to the seed for a more accurate cut
+            auto sep2 = (tracksterPropPoints[t_i].Eta() - seed_eta) * (tracksterPropPoints[t_i].Eta() - seed_eta) +
+                        (tracksterPropPoints[t_i].Phi() - seed_phi) * (tracksterPropPoints[t_i].Phi() - seed_phi);
+            if (sep2 < delta2) {
+              in_delta.push_back(t_i);
+              // distances2.push_back(sep2);
+              energies.push_back(tracksters[t_i].raw_energy());
+            }
+          }
+        }
+      }
+    } else {
+      float eta_min = std::max(std::fabs(seed_eta) - delta, (float)TileConstantsBarrel::minEta);
+      float eta_max = std::min(std::fabs(seed_eta) + delta, (float)TileConstantsBarrel::maxEta);
+      search_box = tracksterTilesBarrel.searchBoxEtaPhi(eta_min, eta_max, seed_phi - delta, seed_phi + delta);
+      // get range of bins touched by delta
+
+      for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
+        for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
+          const auto &in_tile = tracksterTilesBarrel[tracksterTilesBarrel.globalBin(eta_i, (phi_i % TileConstants::nPhiBins))];
+          for (const unsigned &t_i : in_tile) {
+            // calculate actual distances of tracksters to the seed for a more accurate cut
+            auto sep2 = (tracksterPropPoints[t_i].Eta() - seed_eta) * (tracksterPropPoints[t_i].Eta() - seed_eta) +
+                        (tracksterPropPoints[t_i].Phi() - seed_phi) * (tracksterPropPoints[t_i].Phi() - seed_phi);
+            if (sep2 < delta2) {
+              in_delta.push_back(t_i);
+              // distances2.push_back(sep2);
+              energies.push_back(tracksters[t_i].raw_energy());
+            }
           }
         }
       }
@@ -144,7 +194,6 @@ void GeneralInterpretationAlgo::findTrackstersInWindow(const edm::MultiSpan<Trac
           mask[t_i] = 1;
       }
     }
-
   }  // seeding collection loop
 }
 
@@ -226,6 +275,8 @@ void GeneralInterpretationAlgo::makeCandidates(const Inputs &input,
 
   std::array<TICLLayerTile, 2> tracksterPropTiles = {};  // all Tracksters, propagated to layer 1
   std::array<TICLLayerTile, 2> tsPropIntTiles = {};      // all Tracksters, propagated to lastLayerEE
+  TICLLayerTileBarrel tracksterPropTilesBarrel;
+  TICLLayerTileBarrel tsPropIntTilesBarrel;
 
   if (TICLInterpretationAlgoBase::algo_verbosity_ > VerbosityLevel::Advanced)
     LogDebug("GeneralInterpretationAlgo") << "------- Geometric Linking ------- \n";
@@ -245,19 +296,34 @@ void GeneralInterpretationAlgo::makeCandidates(const Inputs &input,
 
   for (auto const i : candidateTrackIds) {
     const auto &tk = tracks[i];
-    int iSide = int(tk.eta() > 0);
     const auto &fts = trajectoryStateTransform::outerFreeState((tk), bFieldProd);
-    // to the HGCal front
-    const auto &tsos = prop.propagate(fts, firstDisk_[iSide]->surface());
-    if (tsos.isValid()) {
-      Vector trackP(tsos.globalPosition().x(), tsos.globalPosition().y(), tsos.globalPosition().z());
-      trackPColl.emplace_back(trackP, i);
-    }
-    // to lastLayerEE
-    const auto &tsos_int = prop.propagate(fts, interfaceDisk_[iSide]->surface());
-    if (tsos_int.isValid()) {
-      Vector trackP(tsos_int.globalPosition().x(), tsos_int.globalPosition().y(), tsos_int.globalPosition().z());
-      tkPropIntColl.emplace_back(trackP, i);
+    if (detector_ == "HGCAL") {
+      int iSide = int(tk.eta() > 0);
+      // to the HGCal front
+      const auto &tsos = prop.propagate(fts, firstDisk_[iSide]->surface());
+      if (tsos.isValid()) {
+        Vector trackP(tsos.globalPosition().x(), tsos.globalPosition().y(), tsos.globalPosition().z());
+        trackPColl.emplace_back(trackP, i);
+      }
+      // to lastLayerEE
+      const auto &tsos_int = prop.propagate(fts, interfaceDisk_[iSide]->surface());
+      if (tsos_int.isValid()) {
+        Vector trackP(tsos_int.globalPosition().x(), tsos_int.globalPosition().y(), tsos_int.globalPosition().z());
+        tkPropIntColl.emplace_back(trackP, i);
+      }
+    } else {
+      GlobalPoint barrelSurfacePoint = rhtools_.getPositionLayer(0, false, true);
+      const auto &tsos = prop.propagate(fts, ecalCylinder_->fastTangent(barrelSurfacePoint));
+      if (tsos.isValid()) {
+        Vector trackP(tsos.globalPosition().x(), tsos.globalPosition().y(), tsos.globalPosition().z());
+        trackPColl.emplace_back(trackP, i);
+      }
+      GlobalPoint barrelInterfacePoint = rhtools_.getPositionLayer(1, false, true);
+      const auto &tsos_int = prop.propagate(fts, hcalCylinder_->fastTangent(barrelInterfacePoint));
+      if (tsos_int.isValid()) {
+        Vector trackP(tsos_int.globalPosition().x(), tsos_int.globalPosition().y(), tsos_int.globalPosition().z());
+        trackPColl.emplace_back(trackP, i);
+      }
     }
   }  // Tracks
   tkPropIntColl.shrink_to_fit();
@@ -282,27 +348,36 @@ void GeneralInterpretationAlgo::makeCandidates(const Inputs &input,
           << "trackster " << i << " - eta " << t.barycenter().eta() << " phi " << t.barycenter().phi() << " time "
           << t.time() << " energy " << t.raw_energy() << "\n";
 
-    // to HGCal front
-    float zVal = hgcons_->waferZ(1, true);
-    auto tsP = propagateTrackster(t, i, zVal, tracksterPropTiles);
-    tsAllProp.emplace_back(tsP);
+    if (detector_ == "HGCAL") {
+      // to HGCal front
+      float zVal = hgcons_->waferZ(1, true);
+      auto tsP = propagateTrackster(t, i, zVal, tracksterPropTiles, tracksterPropTilesBarrel);
+      tsAllProp.emplace_back(tsP);
 
-    // to lastLayerEE
-    zVal = rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z();
-    tsP = propagateTrackster(t, i, zVal, tsPropIntTiles);
-    tsAllPropInt.emplace_back(tsP);
+      // to lastLayerEE
+      zVal = rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z();
+      tsP = propagateTrackster(t, i, zVal, tsPropIntTiles, tsPropIntTilesBarrel);
+      tsAllPropInt.emplace_back(tsP);
+    } else {
+      float ecalR = rhtools_.getPositionLayer(0, false, true).mag();
+      auto tsP = propagateTrackster(t, i, ecalR, tracksterPropTiles, tracksterPropTilesBarrel);
+      tsAllProp.emplace_back(tsP);
 
+      float hcalR = rhtools_.getPositionLayer(1, false, true).mag();
+      tsP = propagateTrackster(t, i, hcalR, tsPropIntTiles, tsPropIntTilesBarrel);
+      tsAllPropInt.emplace_back(tsP);
+    }   
   }  // TS
 
   // step 1: tracks -> all tracksters, at firstLayerEE
   std::vector<std::vector<unsigned>> tsNearTk(tracks.size());
   findTrackstersInWindow(
-      tracksters, trackPColl, tracksterPropTiles, tsAllProp, del_tk_ts_layer1_, tracksters.size(), tsNearTk);
+      tracksters, trackPColl, tracksterPropTiles, tracksterPropTilesBarrel, tsAllProp, del_tk_ts_layer1_, tracksters.size(), tsNearTk);
 
   // step 2: tracks -> all tracksters, at lastLayerEE
   std::vector<std::vector<unsigned>> tsNearTkAtInt(tracks.size());
   findTrackstersInWindow(
-      tracksters, tkPropIntColl, tsPropIntTiles, tsAllPropInt, del_tk_ts_int_, tracksters.size(), tsNearTkAtInt);
+      tracksters, tkPropIntColl, tsPropIntTiles, tsPropIntTilesBarrel, tsAllPropInt, del_tk_ts_int_, tracksters.size(), tsNearTkAtInt);
 
   std::vector<unsigned int> chargedHadronsFromTk;
   std::vector<std::vector<unsigned int>> trackstersInTrackIndices;

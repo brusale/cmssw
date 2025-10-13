@@ -22,6 +22,7 @@
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/MuonReco/interface/Muon.h"
 #include "DataFormats/GeometrySurface/interface/BoundDisk.h"
+#include "DataFormats/GeometrySurface/interface/Cylinder.h"
 #include "DataFormats/HGCalReco/interface/TICLCandidate.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
@@ -209,7 +210,7 @@ void TICLCandidateProducer::beginRun(edm::Run const &iEvent, edm::EventSetup con
 
   bfield_ = es.getHandle(bfield_token_);
   propagator_ = es.getHandle(propagator_token_);
-  generalInterpretationAlgo_->initialize(hgcons_, rhtools_, bfield_, propagator_);
+  generalInterpretationAlgo_->initialize(hgcons_, rhtools_, bfield_, propagator_, detector_);
 
   trackingGeometry_ = es.getHandle(trackingGeometry_token_);
 };
@@ -325,12 +326,22 @@ void TICLCandidateProducer::produce(edm::Event &evt, const edm::EventSetup &es) 
 
   generalInterpretationAlgo_->makeCandidates(input, inputTiming_h, *resultTracksters, trackstersInTrackIndices);
 
+  bool isBarrel = (detector_ == "Barrel");
+  double limit_em = rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z();
+  if (isBarrel) {
+    auto x2 = std::pow(rhtools_.getPositionLayer(1,false,true).x(), 2);
+    auto y2 = std::pow(rhtools_.getPositionLayer(1,false,true).y(), 2);
+    limit_em = std::sqrt(x2+y2);
+  }
+
   assignPCAtoTracksters(*resultTracksters,
                         layerClusters,
                         layerClustersTimes,
-                        rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z(),
+                        limit_em,
                         rhtools_,
-                        true);
+                        true,
+                        false,
+                        isBarrel);
   if (regressionAndPid_) {
     // Run inference algorithm
     inferenceAlgo_->inputData(layerClusters, *resultTracksters, rhtools_);
@@ -376,6 +387,7 @@ void TICLCandidateProducer::produce(edm::Event &evt, const edm::EventSetup &es) 
     }
   }
 
+
   auto getPathLength =
       [&](const reco::Track &track, float zVal) {
         const auto &fts_inn = trajectoryStateTransform::innerFreeState(track, bFieldProd);
@@ -388,6 +400,7 @@ void TICLCandidateProducer::produce(edm::Event &evt, const edm::EventSetup &es) 
         FreeTrajectoryState stateAtBeamspot{GlobalPoint(pos), GlobalVector(mom), track.charge(), bFieldProd};
 
         float pathlength = propagator->propagateWithPath(stateAtBeamspot, surf_inn.surface()).second;
+        std::cout << "pathLenght: " << pathlength << std::endl;
 
         if (pathlength) {
           const auto &t_inn_out = propagator->propagateWithPath(fts_inn, surf_out.surface());
@@ -395,21 +408,37 @@ void TICLCandidateProducer::produce(edm::Event &evt, const edm::EventSetup &es) 
           if (t_inn_out.first.isValid()) {
             pathlength += t_inn_out.second;
 
-            std::pair<float, float> rMinMax = hgcons_->rangeR(zVal, true);
+            if (detector_ != "Barrel") {
+              std::pair<float, float> rMinMax = hgcons_->rangeR(zVal, true);
+  
+              int iSide = int(track.eta() > 0);
+              float zSide = (iSide == 0) ? (-1. * zVal) : zVal;
+              const auto &disk = std::make_unique<GeomDet>(
+                  Disk::build(Disk::PositionType(0, 0, zSide),
+                              Disk::RotationType(),
+                              SimpleDiskBounds(rMinMax.first, rMinMax.second, zSide - 0.5, zSide + 0.5))
+                      .get());
+              const auto &tsos = propagator->propagateWithPath(fts_out, disk->surface());
 
-            int iSide = int(track.eta() > 0);
-            float zSide = (iSide == 0) ? (-1. * zVal) : zVal;
-            const auto &disk = std::make_unique<GeomDet>(
-                Disk::build(Disk::PositionType(0, 0, zSide),
-                            Disk::RotationType(),
-                            SimpleDiskBounds(rMinMax.first, rMinMax.second, zSide - 0.5, zSide + 0.5))
-                    .get());
-            const auto &tsos = propagator->propagateWithPath(fts_out, disk->surface());
-
-            if (tsos.first.isValid()) {
-              pathlength += tsos.second;
-              return pathlength;
-            }
+              if (tsos.first.isValid()) {
+                pathlength += tsos.second;
+                return pathlength;
+              }
+            } else {
+              GlobalPoint barrelSurfacePoint = rhtools_.getPositionLayer(0, false, true);
+              //const auto &cylinder = std::make_unique<Cylinder>(barrelSurfacePoint.mag(),
+              //                  Surface::PositionType(0., 0., 0.),
+              //                  Surface::RotationType()).get();
+              Cylinder::ConstCylinderPointer cylinder = Cylinder::build(barrelSurfacePoint.mag(),
+                                                                               Surface::PositionType(0., 0., 0.),
+                                                                               Surface::RotationType());
+              const auto& tsos = propagator->propagateWithPath(fts_out, cylinder->fastTangent(barrelSurfacePoint));
+              
+              if (tsos.first.isValid()) {
+                pathlength += tsos.second;
+                return pathlength;
+              }
+            } 
           }
         }
 #ifdef EDM_ML_DEBUG
