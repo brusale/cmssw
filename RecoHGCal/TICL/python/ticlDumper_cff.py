@@ -53,7 +53,7 @@ ticl_v5.toModify(ticlDumper,
 (ticl_v5 & ticl_superclustering_mustache_pf).toModify(ticlDumper, saveSuperclustering=False, recoSuperClusters_sourceTracksterCollection=cms.InputTag("ticlTrackstersCLUE3DHigh"))
 
 simTrackstersBarrelCollections = ["ticlSimTrackstersBarrel", "ticlSimTrackstersBarrelfromCPs"]
-ticlBarrelIterLabels = ["ticlTrackstersCLUE3DBarrel"]
+ticlBarrelIterLabels = ["ticlTrackstersCLUE3DBarrel", "ticlTrackstersLinksBarrel"]
 dumperAssociatorsBarrel = []
 
 for simTrackstersCollection in simTrackstersBarrelCollections:

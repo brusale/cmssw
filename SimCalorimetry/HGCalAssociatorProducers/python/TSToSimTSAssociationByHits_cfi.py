@@ -27,7 +27,7 @@ allBarrelTrackstersToSimTrackstersAssociationsByHits = AllBarrelTracksterToSimTr
     allHitToTSAccoc = cms.string('allHitToBarrelTracksterAssociations'),
     hitToCaloParticleMap = cms.InputTag("barrelHitToSimClusterCaloParticleAssociator", "hitToCaloParticleMap"),
     hitToSimClusterMap = cms.InputTag("barrelHitToSimClusterCaloParticleAssociator", "hitToSimClusterMap"),
-    tracksterCollections = cms.VInputTag('ticlTrackstersCLUE3DBarrel'),
+    tracksterCollections = cms.VInputTag('ticlTrackstersCLUE3DBarrel', 'ticlTrackstersLinksBarrel'),
     simTracksterCollections = cms.VInputTag(
         'ticlSimTrackstersBarrel',
         'ticlSimTrackstersBarrel:fromCPs'

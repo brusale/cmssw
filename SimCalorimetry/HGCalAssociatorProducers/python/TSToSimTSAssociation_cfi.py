@@ -21,7 +21,7 @@ allTrackstersToSimTrackstersAssociationsByLCs = AllTracksterToSimTracksterAssoci
 ### Barrel associator
 allBarrelTrackstersToSimTrackstersAssociationsByLCs = AllTracksterToSimTracksterAssociatorsByLCsProducer.clone(
     allLCtoTSAccoc = cms.string("allBarrelLayerClusterToTracksterAssociations"),
-    tracksterCollections = cms.VInputTag(['ticlTrackstersCLUE3DBarrel']),
+    tracksterCollections = cms.VInputTag(['ticlTrackstersCLUE3DBarrel', 'ticlTrackstersLinksBarrel']),
     layerClusters = cms.InputTag('hgcalMergeLayerClusters'),
     simTracksterCollections = cms.VInputTag(['ticlSimTrackstersBarrel', 'ticlSimTrackstersBarrel:fromCPs'])
 )

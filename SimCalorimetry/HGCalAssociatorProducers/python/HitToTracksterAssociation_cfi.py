@@ -39,5 +39,5 @@ from SimCalorimetry.HGCalAssociatorProducers.AllHitToBarrelTracksterAssociatorsP
 
 allHitToBarrelTracksterAssociations = AllHitToBarrelTracksterAssociatorsProducer.clone(
     layerClusters = cms.InputTag("hgcalMergeLayerClusters"),
-    tracksterCollections = cms.VInputTag('ticlTrackstersCLUE3DBarrel', 'ticlSimTrackstersBarrel', 'ticlSimTrackstersBarrel:fromCPs')
+    tracksterCollections = cms.VInputTag('ticlTrackstersCLUE3DBarrel', 'ticlTrackstersLinksBarrel', 'ticlSimTrackstersBarrel', 'ticlSimTrackstersBarrel:fromCPs')
 )
