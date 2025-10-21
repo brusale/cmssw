@@ -13,6 +13,7 @@ using namespace ticl;
 
 DEFINE_EDM_PLUGIN(ClusterFilterFactory, ClusterFilterByAlgo, "ClusterFilterByAlgo");
 DEFINE_EDM_PLUGIN(ClusterFilterFactory, ClusterFilterByAlgoAndSize, "ClusterFilterByAlgoAndSize");
+DEFINE_EDM_PLUGIN(ClusterFilterFactory, ClusterFilterByAlgoAndSizeBarrel, "ClusterFilterByAlgoAndSizeBarrel");
 DEFINE_EDM_PLUGIN(ClusterFilterFactory, ClusterFilterBySize, "ClusterFilterBySize");
 DEFINE_EDM_PLUGIN(ClusterFilterFactory,
                   ClusterFilterByAlgoAndSizeAndLayerRange,

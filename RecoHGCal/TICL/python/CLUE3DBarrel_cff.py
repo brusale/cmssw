@@ -11,7 +11,8 @@ from RecoHGCal.TICL.tracksterLinksProducer_cfi import tracksterLinksProducer as 
 from RecoHGCal.TICL.ticlCandidateProducer_cfi import ticlCandidateProducer as _ticlCandidateProducer
 
 filteredLayerClustersCLUE3DBarrel = _filteredLayerClustersProducer.clone(
-    clusterFilter = "ClusterFilterByAlgo",
+    clusterFilter = "ClusterFilterByAlgoAndSizeBarrel",
+    min_cluster_size = 2,
     algo_number = [10, 11],
     iteration_label = "CLUE3DBarrel",
     max_layerId = 5
