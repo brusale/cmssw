@@ -11,7 +11,7 @@ from RecoHGCal.TICL.tracksterLinksProducer_cfi import tracksterLinksProducer as 
 from RecoHGCal.TICL.ticlCandidateProducer_cfi import ticlCandidateProducer as _ticlCandidateProducer
 
 filteredLayerClustersCLUE3DBarrel = _filteredLayerClustersProducer.clone(
-    clusterFilter = "ClusterFilterByAlgoAndSizeBarrel",
+    clusterFilter = "ClusterFilterByAlgo",
     min_cluster_size = 2,
     algo_number = [10, 11],
     iteration_label = "CLUE3DBarrel",
@@ -28,7 +28,7 @@ ticlTrackstersCLUE3DBarrel = _trackstersProducer.clone(
     layer_clusters_barrel_tiles = "ticlLayerTileBarrel:ticlLayerTilesBarrel",
     pluginPatternRecognitionByCLUE3D = dict(
         algo_verbosity = 9999,
-        criticalDensity = [0.5, 0.5, 0.5],
+        criticalDensity = [0.5, 0, 0],
         criticalSelfDensity = [0., 0., 0.],
         criticalEtaPhiDistance = [3 * 0.0175, 3 * 0.087, 3 * 0.087, 3 * 0.087],
         nearestHigherOnSameLayer = False,
@@ -45,7 +45,13 @@ ticlTrackstersLinksBarrel = _tracksterLinksProducer.clone(
     original_masks = ["filteredLayerClustersCLUE3DBarrel:CLUE3DBarrel"],
     tracksters_collections = ["ticlTrackstersCLUE3DBarrel"],
     inferenceAlgo = "TracksterBarrelPIDbyDNN",
-    regressionAndPid = True
+    regressionAndPid = True,
+    linkingPSet = dict(
+        min_cos_theta = 0.9,
+        eta_window = 3,
+        phi_window = 3
+    ),
+    detector = "Barrel"
 )
 
 ticlCandidateBarrel = _ticlCandidateProducer.clone(
