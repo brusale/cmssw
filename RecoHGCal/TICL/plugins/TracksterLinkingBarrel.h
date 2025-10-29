@@ -43,7 +43,8 @@ namespace ticl {
 
       static void fillPSetDescription(edm::ParameterSetDescription& iDesc) {
         iDesc.add<double>("min_cos_theta", 0.95);
-
+        iDesc.add<unsigned int>("eta_window", 3);
+        iDesc.add<unsigned int>("phi_window", 3);
         TracksterLinkingAlgoBase::fillPSetDescription(iDesc);
       }
     private:
@@ -51,10 +52,13 @@ namespace ticl {
       hgcal::RecHitTools rhtools_;
       edm::ESHandle<MagneticField> bfield_;
       edm::ESHandle<Propagator> propagator_;
-      std::array<float, TileConstants::nEtaBins> eta_windows_;
-      std::array<float, TileConstants::nPhiBins> phi_windows_;
+      float eta_width_;
+      float phi_width_;
 
       float min_cos_theta_;
+
+      unsigned int eta_window_;
+      unsigned int phi_window_;
   };
 }
 

@@ -278,7 +278,7 @@ void TracksterLinksProducer::printTrackstersDebug(const std::vector<Trackster> &
 void TracksterLinksProducer::fillDescriptions(edm::ConfigurationDescriptions &descriptions) {
   edm::ParameterSetDescription desc;
   edm::ParameterSetDescription linkingDesc;
-  linkingDesc.addNode(edm::PluginDescription<TracksterLinkingPluginFactory>("type", "Skeletons", true));
+  linkingDesc.addNode(edm::PluginDescription<TracksterLinkingPluginFactory>("type", "Barrel", true));
   // Inference Plugins
   edm::ParameterSetDescription inferenceDesc;
   inferenceDesc.addNode(edm::PluginDescription<TracksterInferenceAlgoFactory>("type", "TracksterInferenceByDNN", true));

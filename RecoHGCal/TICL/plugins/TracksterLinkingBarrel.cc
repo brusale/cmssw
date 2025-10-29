@@ -12,7 +12,9 @@ TracksterLinkingBarrel::TracksterLinkingBarrel(const edm::ParameterSet &conf,
                                                edm::ConsumesCollector iC,
                                                cms::Ort::ONNXRuntime const *onnxRuntime)
   : TracksterLinkingAlgoBase(conf, iC),
-    min_cos_theta_(conf.getParameter<double>("min_cos_theta")) {}
+    min_cos_theta_(conf.getParameter<double>("min_cos_theta")),
+    eta_window_(conf.getParameter<unsigned int>("eta_window")),
+    phi_window_(conf.getParameter<unsigned int>("phi_window")) {}
 
 void TracksterLinkingBarrel::initialize(const HGCalDDDConstants *hgcons,
                                         const hgcal::RecHitTools rhtools,
@@ -23,13 +25,8 @@ void TracksterLinkingBarrel::initialize(const HGCalDDDConstants *hgcons,
   bfield_ = bfield;
   propagator_ = propH;
 
-  float etaWidth = (TileConstantsBarrel::maxEta - TileConstantsBarrel::minEta) / TileConstantsBarrel::nEtaBins;
-  float phiWidth = 2*std::numbers::pi_v<float> / TileConstants::nPhiBins;
- 
-  for (int i = 0; i < TileConstantsBarrel::nEtaBins; ++i) 
-    eta_windows_[i] = TileConstantsBarrel::minEta + i*etaWidth;
-  for (int i = 0; i < TileConstantsBarrel::nPhiBins; ++i)
-    phi_windows_[i] = -std::numbers::pi_v<float> + i*phiWidth;
+  eta_width_ = (TileConstantsBarrel::maxEta - TileConstantsBarrel::minEta) / TileConstantsBarrel::nEtaBins;
+  phi_width_ = 2*std::numbers::pi_v<float> / TileConstantsBarrel::nPhiBins;
 }
 
 void TracksterLinkingBarrel::linkTracksters(
@@ -71,13 +68,10 @@ void TracksterLinkingBarrel::linkTracksters(
     //auto const& barycenter = trackster.barycenter();
     float t_norm = std::sqrt(barycenter.mag2());
 
-    float const eta_window = eta_windows_[tracksterTile.etaBin(barycenter.eta())];
-    float const phi_window = phi_windows_[tracksterTile.etaBin(barycenter.phi())];
-    
-    float eta_min = std::max(abs(barycenter.eta()) - eta_window, TileConstantsBarrel::minEta);
-    float eta_max = std::min(abs(barycenter.eta()) + eta_window, TileConstantsBarrel::maxEta);
-    float phi_min = std::max(abs(barycenter.phi()) - phi_window, -std::numbers::pi_v<float>);
-    float phi_max = std::min(abs(barycenter.phi()) + phi_window, std::numbers::pi_v<float>);
+    float eta_min = std::max(abs(barycenter.eta()) - eta_window_ * eta_width_, TileConstantsBarrel::minEta);
+    float eta_max = std::min(abs(barycenter.eta()) + eta_window_ * eta_width_, TileConstantsBarrel::maxEta);
+    float phi_min = std::max(abs(barycenter.phi()) - phi_window_ * phi_width_, -std::numbers::pi_v<float>);
+    float phi_max = std::min(abs(barycenter.phi()) + phi_window_ * phi_width_, std::numbers::pi_v<float>);
  
     std::array<int, 4> searchBox = tracksterTile.searchBoxEtaPhi(eta_min, eta_max, phi_min, phi_max);
     if (searchBox[2] > searchBox[3]) searchBox[3] += TileConstantsBarrel::nPhiBins; 
@@ -88,10 +82,9 @@ void TracksterLinkingBarrel::linkTracksters(
         for (auto n : neighbours) {
           if (t_idx == n || maskedTracksters[n]) continue;
           auto& other_trackster = tracksters[n];
-          float dot_product = other_trackster.eigenvectors(0).Dot(barycenter);
-          //float dot_product = other_trackster.barycenter().Dot(barycenter);
-          float cos_alpha = dot_product / (t_norm * std::sqrt(other_trackster.eigenvectors(0).mag2()));
-          //float cos_alpha = dot_product / (t_norm * std::sqrt(other_trackster.barycenter().mag2()));
+          auto& other_barycenter = (other_trackster.vertices().size() == 1) ? other_trackster.barycenter() : other_trackster.eigenvectors(0);
+          float dot_product = other_barycenter.Dot(barycenter);
+          float cos_alpha = dot_product / (t_norm * std::sqrt(other_barycenter.mag2()));
           if (abs(cos_alpha) > min_cos_theta_) {
             if (trackster.raw_energy() >= other_trackster.raw_energy()) {
               allNodes[t_idx].addOuterNeighbour(n);
