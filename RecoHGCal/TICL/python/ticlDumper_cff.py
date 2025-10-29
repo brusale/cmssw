@@ -95,5 +95,10 @@ ticl_barrel.toModify(ticlDumper,
                      ],
                      ticlcandidates = cms.InputTag("ticlCandidateBarrel"),
                      simTICLCandidates = cms.InputTag("ticlSimTrackstersBarrel"), 
+                     saveCaloParticles = cms.bool(True),
+                     lcRecoToSimAssociatorCP = cms.InputTag("barrelLayerClusterCaloParticleAssociation"),
+                     lcSimToRecoAssociatorCP = cms.InputTag("barrelLayerClusterCaloParticleAssociation"),
+                     lcRecoToSimAssociatorSC = cms.InputTag("barrelLayerClusterSimClusterAssociation"),
+                     lcSimToRecoAssociatorSC = cms.InputTag("barrelLayerClusterSimClusterAssociation"),
                      associators=dumperAssociators.copy())
     

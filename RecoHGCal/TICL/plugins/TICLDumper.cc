@@ -40,6 +40,7 @@
 #include "SimDataFormats/CaloHit/interface/PCaloHit.h"
 #include "DataFormats/EgammaReco/interface/SuperClusterFwd.h"
 #include "DataFormats/EgammaReco/interface/SuperCluster.h"
+#include "DataFormats/ParticleFlowReco/interface/PFRecHit.h"
 
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 #include "RecoParticleFlow/PFProducer/interface/PFMuonAlgo.h"
@@ -59,6 +60,8 @@
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 
 #include "SimDataFormats/Associations/interface/TICLAssociationMap.h"
+#include "SimDataFormats/Associations/interface/LayerClusterToSimClusterAssociator.h"
+#include "SimDataFormats/Associations/interface/LayerClusterToCaloParticleAssociator.h"
 
 // TFileService
 #include "FWCore/ServiceRegistry/interface/Service.h"
@@ -621,6 +624,12 @@ private:
   edm::ESGetToken<CaloGeometry, CaloGeometryRecord> caloGeometry_token_;
   const edm::EDGetTokenT<std::vector<ticl::Trackster>> simTracksters_SC_token_;  // needed for simticlcandidate
   const edm::EDGetTokenT<std::vector<TICLCandidate>> simTICLCandidate_token_;
+  const edm::EDGetTokenT<ticl::RecoToSimCollectionT<reco::CaloClusterCollection>> lc_recoToSim_CP_token_;
+  const edm::EDGetTokenT<ticl::SimToRecoCollectionT<reco::CaloClusterCollection>> lc_simToReco_CP_token_;
+  const edm::EDGetTokenT<ticl::RecoToSimCollectionWithSimClustersT<reco::CaloClusterCollection>> lc_recoToSim_SC_token_;
+  const edm::EDGetTokenT<ticl::SimToRecoCollectionWithSimClustersT<reco::CaloClusterCollection>> lc_simToReco_SC_token_;
+  const edm::EDGetTokenT<std::vector<reco::PFRecHit>> ecalhits_token_;
+  const edm::EDGetTokenT<std::vector<reco::PFRecHit>> hcalhits_token_;
 
   // associators
   const std::vector<edm::ParameterSet>
@@ -655,8 +664,8 @@ private:
   bool saveTICLCandidate_;
   bool saveSimTICLCandidate_;
   bool saveTracks_;
+  bool saveCaloParticles_;
   bool saveHits_;
-
   // Output tree
   TTree* tree_;
 
@@ -783,6 +792,25 @@ private:
   std::vector<float> simhit_y;
   std::vector<float> simhit_z;
   std::vector<float> simhit_time;
+  // CaloParticles
+  std::vector<float> caloparticle_energy;
+  std::vector<float> caloparticle_et;
+  std::vector<float> caloparticle_pt;
+  std::vector<float> caloparticle_eta;
+  std::vector<float> caloparticle_phi;
+
+  // LC aasocs
+  std::vector<std::vector<uint32_t>> lc_recoToSim_CP;
+  std::vector<std::vector<float>> lc_recoToSim_CP_score;
+  std::vector<std::vector<uint32_t>> lc_simToReco_CP;
+  std::vector<std::vector<float>> lc_simToReco_CP_score;
+  std::vector<std::vector<float>> lc_simToReco_CP_shared;
+  std::vector<std::vector<uint32_t>> lc_recoToSim_SC;
+  std::vector<std::vector<float>> lc_recoToSim_SC_score;
+  std::vector<std::vector<uint32_t>> lc_simToReco_SC;
+  std::vector<std::vector<float>> lc_simToReco_SC_score;
+  std::vector<std::vector<float>> lc_simToReco_SC_shared;
+
 
   TTree* cluster_tree_;
   TTree* candidate_tree_;
@@ -791,6 +819,7 @@ private:
   TTree* simTICLCandidate_tree;
   TTree* rechits_tree_;
   TTree* simhits_tree_;
+  TTree* caloparticle_tree_;
 };
 
 void TICLDumper::clearVariables() {
@@ -915,6 +944,23 @@ void TICLDumper::clearVariables() {
   simhit_y.clear();
   simhit_z.clear();
   simhit_time.clear();
+  caloparticle_energy.clear();
+  caloparticle_et.clear();
+  caloparticle_pt.clear();
+  caloparticle_eta.clear();
+  caloparticle_phi.clear();
+
+  lc_recoToSim_CP.clear();
+  lc_recoToSim_CP_score.clear();
+  lc_simToReco_CP.clear();
+  lc_simToReco_CP_score.clear();
+  lc_simToReco_CP_shared.clear();
+  lc_recoToSim_SC.clear();
+  lc_recoToSim_SC_score.clear();
+  lc_simToReco_SC.clear();
+  lc_simToReco_SC_score.clear();
+  lc_simToReco_SC_shared.clear();
+
 };
 
 TICLDumper::TICLDumper(const edm::ParameterSet& ps)
@@ -950,6 +996,16 @@ TICLDumper::TICLDumper(const edm::ParameterSet& ps)
           consumes<std::vector<ticl::Trackster>>(ps.getParameter<edm::InputTag>("simtrackstersSC"))),
       simTICLCandidate_token_(
           consumes<std::vector<TICLCandidate>>(ps.getParameter<edm::InputTag>("simTICLCandidates"))),
+      lc_recoToSim_CP_token_(
+          consumes<ticl::RecoToSimCollectionT<reco::CaloClusterCollection>>(ps.getParameter<edm::InputTag>("lcRecoToSimAssociatorCP"))),
+      lc_simToReco_CP_token_(
+          consumes<ticl::SimToRecoCollectionT<reco::CaloClusterCollection>>(ps.getParameter<edm::InputTag>("lcSimToRecoAssociatorCP"))),
+      lc_recoToSim_SC_token_(
+          consumes<ticl::RecoToSimCollectionWithSimClustersT<reco::CaloClusterCollection>>(ps.getParameter<edm::InputTag>("lcRecoToSimAssociatorSC"))),
+      lc_simToReco_SC_token_(
+          consumes<ticl::SimToRecoCollectionWithSimClustersT<reco::CaloClusterCollection>>(ps.getParameter<edm::InputTag>("lcSimToRecoAssociatorSC"))),
+      ecalhits_token_(consumes(ps.getParameter<edm::InputTag>("ecalhits"))),
+      hcalhits_token_(consumes(ps.getParameter<edm::InputTag>("hcalhits"))),
       associations_parameterSets_(ps.getParameter<std::vector<edm::ParameterSet>>("associators")),
       // The DumperHelpers should not be moved after construction (needed by TTree branch pointers), so construct them all here
       associations_dumperHelpers_(associations_parameterSets_.size()),
@@ -976,6 +1032,7 @@ TICLDumper::TICLDumper(const edm::ParameterSet& ps)
       saveTICLCandidate_(ps.getParameter<bool>("saveSimTICLCandidate")),
       saveSimTICLCandidate_(ps.getParameter<bool>("saveSimTICLCandidate")),
       saveTracks_(ps.getParameter<bool>("saveTracks")),
+      saveCaloParticles_(ps.getParameter<bool>("saveCaloParticles")),
       saveHits_(ps.getParameter<bool>("saveHits")) {
   if (saveSuperclustering_) {
     superclustering_linkedResultTracksters_token =
@@ -1115,6 +1172,16 @@ void TICLDumper::beginJob() {
   if (!associations_parameterSets_.empty()) {
     associations_tree_ = fs->make<TTree>("associations", "Associations");
     associations_tree_->Branch("event", &eventId_);
+    associations_tree_->Branch("lc_recoToSim_CP", &lc_recoToSim_CP);
+    associations_tree_->Branch("lc_recoToSim_CP_score", &lc_recoToSim_CP_score);
+    associations_tree_->Branch("lc_simToReco_CP", &lc_simToReco_CP);
+    associations_tree_->Branch("lc_simToReco_CP_score", &lc_simToReco_CP_score);
+    associations_tree_->Branch("lc_simToReco_CP_shared", &lc_simToReco_CP_shared);
+    associations_tree_->Branch("lc_recoToSim_SC", &lc_recoToSim_SC);
+    associations_tree_->Branch("lc_recoToSim_SC_score", &lc_recoToSim_SC_score);
+    associations_tree_->Branch("lc_simToReco_SC", &lc_simToReco_SC);
+    associations_tree_->Branch("lc_simToReco_SC_score", &lc_simToReco_SC_score);
+    associations_tree_->Branch("lc_simToReco_SC_shared", &lc_simToReco_SC_shared);
   }
   for (unsigned int i = 0; i < associations_parameterSets_.size(); i++) {
     associations_dumperHelpers_[i].initTree(associations_tree_,
@@ -1171,6 +1238,16 @@ void TICLDumper::beginJob() {
     simTICLCandidate_tree->Branch("simTICLCandidate_charge", &simTICLCandidate_charge);
     simTICLCandidate_tree->Branch("simTICLCandidate_tracks_in_candidate", &simTICLCandidate_tracks_in_candidate);
   }
+  if (saveCaloParticles_) {
+    caloparticle_tree_ = fs->make<TTree>("caloparticles", "CaloParticles");
+    caloparticle_tree_->Branch("event", &eventId_);
+    caloparticle_tree_->Branch("caloparticle_energy", &caloparticle_energy);
+    caloparticle_tree_->Branch("caloparticle_et", &caloparticle_et);
+    caloparticle_tree_->Branch("caloparticle_pt", &caloparticle_pt);
+    caloparticle_tree_->Branch("caloparticle_eta", &caloparticle_eta);
+    caloparticle_tree_->Branch("caloparticle_phi", &caloparticle_phi);
+  }
+
 }
 
 void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) {
@@ -1229,6 +1306,33 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
   event.getByToken(tracks_pos_mtd_token_, trackPosMtd_h);
   const auto& trackPosMtd = *trackPosMtd_h;
 
+  edm::Handle<ticl::RecoToSimCollectionT<reco::CaloClusterCollection>> lcRecoToSimCP_h;
+  event.getByToken(lc_recoToSim_CP_token_, lcRecoToSimCP_h);
+  auto const& lc_recoToSimCPMap = *lcRecoToSimCP_h;
+
+  edm::Handle<ticl::SimToRecoCollectionT<reco::CaloClusterCollection>> lcSimToRecoCP_h;
+  event.getByToken(lc_simToReco_CP_token_, lcSimToRecoCP_h);
+  auto const& lc_simToRecoCPMap = *lcSimToRecoCP_h;
+
+  edm::Handle<ticl::RecoToSimCollectionWithSimClustersT<reco::CaloClusterCollection>> lcRecoToSimSC_h;
+  event.getByToken(lc_recoToSim_SC_token_, lcRecoToSimSC_h);
+  auto const& lc_recoToSimSCMap = *lcRecoToSimSC_h;
+
+  edm::Handle<ticl::SimToRecoCollectionWithSimClustersT<reco::CaloClusterCollection>> lcSimToRecoSC_h;
+  event.getByToken(lc_simToReco_SC_token_, lcSimToRecoSC_h);
+  auto const& lc_simToRecoSCMap = *lcSimToRecoSC_h;  
+
+  std::vector<reco::PFRecHit> hits;
+
+  edm::Handle<std::vector<reco::PFRecHit>> ecalhits_h;
+  event.getByToken(ecalhits_token_, ecalhits_h);
+  const auto& ecalhits = event.get(ecalhits_token_); 
+  hits.insert(hits.end(), ecalhits.begin(), ecalhits.end());
+
+  edm::Handle<std::vector<reco::PFRecHit>> hcalhits_h;
+  event.getByToken(hcalhits_token_, hcalhits_h);
+  const auto& hcalhits = event.get(hcalhits_token_);
+  hits.insert(hits.end(), hcalhits.begin(), hcalhits.end());
   // superclustering
   if (saveSuperclustering_)  // To support running with Mustache
     superclustering_linkedResultTracksters = event.get(superclustering_linkedResultTracksters_token);
@@ -1285,8 +1389,10 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
 
   edm::Handle<std::vector<CaloParticle>> caloparticles_h;
   event.getByToken(caloparticles_token_, caloparticles_h);
+  const auto& caloparticles = *caloparticles_h;
 
   auto simclusters_h = event.getHandle(simclusters_token_);
+  const auto& simclusters = *simclusters_h;
 
   nclusters_ = clusters.size();
 
@@ -1437,6 +1543,7 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
     }
   }
 
+
   int c_id = 0;
 
   for (auto cluster_iterator = clusters.begin(); cluster_iterator != clusters.end(); ++cluster_iterator) {
@@ -1510,8 +1617,8 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
     associations_dumperHelpers_[i].fillFromEvent(event.get(associations_recoToSim_token_[i]),
                                                  event.get(associations_simToReco_token_[i]));
   }
-  if (!associations_dumperHelpers_.empty())
-    associations_tree_->Fill();
+  //if (!associations_dumperHelpers_.empty())
+  //  associations_tree_->Fill();
 
   //Tracks
   for (size_t i = 0; i < tracks.size(); i++) {
@@ -1560,6 +1667,88 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
     }
   }
 
+ for (auto cp_iterator = caloparticles.begin(); cp_iterator != caloparticles.end(); cp_iterator++) {
+    caloparticle_energy.push_back(cp_iterator->energy());
+    caloparticle_et.push_back(cp_iterator->et());
+    caloparticle_pt.push_back(cp_iterator->pt());
+    caloparticle_eta.push_back(cp_iterator->eta());
+    caloparticle_phi.push_back(cp_iterator->phi());
+  }
+
+  //LC->CP association
+  lc_recoToSim_CP.resize(nclusters_); 
+  lc_recoToSim_CP_score.resize(nclusters_); 
+  for (size_t i = 0; i < nclusters_; ++i) {
+    const edm::Ref<std::vector<reco::CaloCluster>> lcRef(layer_clusters_h, i);
+
+    const auto cp_iter = lc_recoToSimCPMap.find(lcRef);
+    if (cp_iter != lc_recoToSimCPMap.end()) {
+      const auto& cpAssociated = cp_iter->val;
+      for (auto& cp : cpAssociated) {
+        auto cp_idx = (cp.first).get() - (edm::Ref<std::vector<CaloParticle>>(caloparticles_h, 0)).get();
+        lc_recoToSim_CP[i].push_back(cp_idx);
+        lc_recoToSim_CP_score[i].push_back(cp.second);
+      }
+    }
+  }
+
+  //CP->LC association
+  auto ncaloparticles = caloparticles.size();
+  lc_simToReco_CP.resize(ncaloparticles); 
+  lc_simToReco_CP_score.resize(ncaloparticles);
+  lc_simToReco_CP_shared.resize(ncaloparticles);
+  for (size_t i = 0; i < ncaloparticles; ++i) {
+    const edm::Ref<std::vector<CaloParticle>> cpRef(caloparticles_h, i);
+
+    const auto lc_iter = lc_simToRecoCPMap.find(cpRef);
+    if (lc_iter != lc_simToRecoCPMap.end()) {
+      const auto& lcAssociated = lc_iter->val;
+      for (auto& lc : lcAssociated) {
+        auto lc_idx = (lc.first).get() - (edm::Ref<std::vector<reco::CaloCluster>>(layer_clusters_h, 0)).get();
+        lc_simToReco_CP[i].push_back(lc_idx);
+        lc_simToReco_CP_score[i].push_back(lc.second.second);
+        lc_simToReco_CP_shared[i].push_back(lc.second.first);
+      }
+    }
+  }
+
+  lc_recoToSim_SC.resize(nclusters_); 
+  lc_recoToSim_SC_score.resize(nclusters_); 
+  for (size_t i = 0; i < nclusters_; ++i) {
+    const edm::Ref<std::vector<reco::CaloCluster>> lcRef(layer_clusters_h, i);
+
+    const auto sc_iter = lc_recoToSimSCMap.find(lcRef);
+    if (sc_iter != lc_recoToSimSCMap.end()) {
+      const auto& scAssociated = sc_iter->val;
+      for (auto& sc : scAssociated) {
+        auto sc_idx = (sc.first).get() - (edm::Ref<std::vector<SimCluster>>(simclusters_h, 0)).get();
+        lc_recoToSim_SC[i].push_back(sc_idx);
+        lc_recoToSim_SC_score[i].push_back(sc.second);
+      }
+    }
+  }
+
+  //CP->LC association
+  auto nsimclusters = simclusters.size();
+  lc_simToReco_SC.resize(nsimclusters); 
+  lc_simToReco_SC_score.resize(nsimclusters);
+  lc_simToReco_SC_shared.resize(nsimclusters);
+  for (size_t i = 0; i < nsimclusters; ++i) {
+    const edm::Ref<std::vector<SimCluster>> scRef(simclusters_h, i);
+
+    const auto lc_iter = lc_simToRecoSCMap.find(scRef);
+    if (lc_iter != lc_simToRecoSCMap.end()) {
+      const auto& lcAssociated = lc_iter->val;
+      for (auto& lc : lcAssociated) {
+        auto lc_idx = (lc.first).get() - (edm::Ref<std::vector<reco::CaloCluster>>(layer_clusters_h, 0)).get();
+        lc_simToReco_SC[i].push_back(lc_idx);
+        lc_simToReco_SC_score[i].push_back(lc.second.second);
+        lc_simToReco_SC_shared[i].push_back(lc.second.first);
+      }
+    }
+  }
+
+
   if (saveLCs_)
     cluster_tree_->Fill();
   if (saveTICLCandidate_)
@@ -1574,6 +1763,10 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
     rechits_tree_->Fill();
     simhits_tree_->Fill();
   }
+  if (saveCaloParticles_)
+    caloparticle_tree_->Fill();
+  if (associations_dumperHelpers_.size() > 0)
+    associations_tree_->Fill();
 }
 
 void TICLDumper::endJob() {}
@@ -1633,6 +1826,11 @@ void TICLDumper::fillDescriptions(edm::ConfigurationDescriptions& descriptions) 
                                         edm::InputTag("g4SimHits", "HGCHitsHEback")});
   desc.add<edm::InputTag>("hitMapTag", edm::InputTag("recHitMapProducer", "hgcalRecHitMap"));
 
+  desc.add<edm::InputTag>("lcRecoToSimAssociatorCP", edm::InputTag("layerClusterCaloParticleAssociationProducer"));
+  desc.add<edm::InputTag>("lcSimToRecoAssociatorCP", edm::InputTag("layerClusterCaloParticleAssociationProducer"));
+  desc.add<edm::InputTag>("lcRecoToSimAssociatorSC", edm::InputTag("layerClusterSimClusterAssociationProducer"));
+  desc.add<edm::InputTag>("lcSimToRecoAssociatorSC", edm::InputTag("layerClusterSimClusterAssociationProducer"));
+
   // Settings for dumping trackster associators (recoToSim & simToReco)
   edm::ParameterSetDescription associatorDescValidator;
   associatorDescValidator.add<std::string>("branchName")->setComment("Name of the output branches in the tree");
@@ -1642,6 +1840,9 @@ void TICLDumper::fillDescriptions(edm::ConfigurationDescriptions& descriptions) 
   associatorDescValidator.add<edm::InputTag>("associatorSimToRecoInputTag")
       ->setComment("Input tag for the SimToReco associator to dump");
   desc.addVPSet("associators", associatorDescValidator)->setComment("Tracksters to SimTracksters associators to dump");
+
+  desc.add<edm::InputTag>("ecalhits", edm::InputTag("particleFlowRecHitECAL"));
+  desc.add<edm::InputTag>("hcalhits", edm::InputTag("particleFlowRecHitHBHE"));
 
   desc.add<edm::InputTag>("simclusters", edm::InputTag("mix", "MergedCaloTruth"));
   desc.add<edm::InputTag>("caloparticles", edm::InputTag("mix", "MergedCaloTruth"));
@@ -1655,6 +1856,7 @@ void TICLDumper::fillDescriptions(edm::ConfigurationDescriptions& descriptions) 
   desc.add<bool>("saveSuperclustering", true);
   desc.add<bool>("saveRecoSuperclusters", true)
       ->setComment("Save superclustering Egamma collections (as reco::SuperCluster)");
+  desc.add<bool>("saveCaloParticles", false);
   desc.add<bool>("saveHits", false);
   descriptions.add("ticlDumper", desc);
 }

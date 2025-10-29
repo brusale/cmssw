@@ -17,7 +17,8 @@ namespace ticl {
   }
 
   void TracksterBarrelPIDbyDNN::inputData(const std::vector<reco::CaloCluster>& layerClusters,
-                                          std::vector<Trackster>& tracksters) {
+                                          std::vector<Trackster>& tracksters, 
+                                          const hgcal::RecHitTools& rhtools) {
     // process input data
     batchSize_ = static_cast<int>(tracksters.size());
     if (batchSize_ == 0)
