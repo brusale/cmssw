@@ -12,6 +12,12 @@ barrelLayerClusterSimClusterAssociation = cms.EDProducer("LCToSCAssociatorEDProd
     label_lcl = cms.InputTag("hgcalMergeLayerClusters")
 )
 
+pfClusterSimClusterAssociation = cms.EDProducer("LCToSCAssociatorEDProducer",
+    associator = cms.InputTag('barrelLCToSCAssociatorByEnergyScoreProducer'),
+    label_scl = cms.InputTag("mix", "MergedCaloTruth"),
+    label_lcl = cms.InputTag("lcFromPFClusterProducer")
+)
+
 from Configuration.ProcessModifiers.premix_stage2_cff import premix_stage2
 premix_stage2.toModify(layerClusterSimClusterAssociation,
     label_scl = "mixData:MergedCaloTruth"
