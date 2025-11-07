@@ -60,11 +60,28 @@ void TracksterLinkingBarrel::linkTracksters(
     allNodes.emplace_back(it);
   }
 
+
+  auto getTracksterSpan = [&](const auto& trackster) {
+    std::vector<int> verticesLayerId;
+    for (size_t lcId : trackster.vertices()) {
+      const auto& layerCluster = layerClusters[lcId];
+      auto firstHitDetId = layerCluster.hitsAndFractions()[0].first;
+      auto layerId = rhtools_.getLayerWithOffset(firstHitDetId);
+      verticesLayerId.push_back(layerId);
+    }
+    int maxLayer = *std::max_element(verticesLayerId.begin(), verticesLayerId.end());
+    int minLayer = *std::min_element(verticesLayerId.begin(), verticesLayerId.end());
+    return (maxLayer - minLayer);
+  };
+
   for (auto const &t_idx : sortedTracksters) {
     //if (maskedTracksters[t_idx]) continue;
     linkedResultTracksters.reserve(t_idx);
     auto const& trackster = tracksters[t_idx];
-    auto const& barycenter = (trackster.vertices().size() == 1) ? trackster.barycenter() : trackster.eigenvectors(0);
+    auto trackster_span = getTracksterSpan(trackster);
+    // if trackster spans only one layer use barycenter
+    // otherwise use PCA axis
+    auto const& barycenter = (trackster_span == 0) ? trackster.barycenter() : trackster.eigenvectors(0);
     //auto const& barycenter = trackster.barycenter();
     float t_norm = std::sqrt(barycenter.mag2());
 
@@ -82,7 +99,8 @@ void TracksterLinkingBarrel::linkTracksters(
         for (auto n : neighbours) {
           if (t_idx == n || maskedTracksters[n]) continue;
           auto& other_trackster = tracksters[n];
-          auto& other_barycenter = (other_trackster.vertices().size() == 1) ? other_trackster.barycenter() : other_trackster.eigenvectors(0);
+          auto other_trackster_span = getTracksterSpan(other_trackster);
+          auto& other_barycenter = (other_trackster_span == 0) ? other_trackster.barycenter() : other_trackster.eigenvectors(0);
           float dot_product = other_barycenter.Dot(barycenter);
           float cos_alpha = dot_product / (t_norm * std::sqrt(other_barycenter.mag2()));
           if (abs(cos_alpha) > min_cos_theta_) {
