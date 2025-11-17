@@ -162,6 +162,9 @@ public:
     trackster_tree_->Branch("sigmaPCA1", &trackster_sigmaPCA1);
     trackster_tree_->Branch("sigmaPCA2", &trackster_sigmaPCA2);
     trackster_tree_->Branch("sigmaPCA3", &trackster_sigmaPCA3);
+    trackster_tree_->Branch("span", &trackster_span);
+    trackster_tree_->Branch("min_layer", &trackster_min_layer);
+    trackster_tree_->Branch("max_layer", &trackster_max_layer);
     if (tracksterType_ != TracksterType::Trackster) {
       trackster_tree_->Branch("regressed_pt", &simtrackster_regressed_pt);
       trackster_tree_->Branch("pdgID", &simtrackster_pdgID);
@@ -219,6 +222,9 @@ public:
     trackster_sigmaPCA1.clear();
     trackster_sigmaPCA2.clear();
     trackster_sigmaPCA3.clear();
+    trackster_span.clear();
+    trackster_min_layer.clear();
+    trackster_max_layer.clear();
 
     simtrackster_regressed_pt.clear();
     simtrackster_pdgID.clear();
@@ -409,6 +415,7 @@ public:
       std::vector<float> vertices_energy;
       std::vector<float> vertices_correctedEnergy;
       std::vector<float> vertices_correctedEnergyUncertainty;
+      std::vector<int> layers;
       for (auto idx : trackster_iterator->vertices()) {
         vertices_indexes.push_back(idx);
         const auto& associated_cluster = clusters[idx];
@@ -420,7 +427,15 @@ public:
         vertices_correctedEnergyUncertainty.push_back(associated_cluster.correctedEnergyUncertainty());
         vertices_time.push_back(layerClustersTimes.get(idx).first);
         vertices_timeErr.push_back(layerClustersTimes.get(idx).second);
+        auto haf = associated_cluster.hitsAndFractions();
+        auto layer = detectorTools.rhtools.getLayerWithOffset(haf[0].first);
+        layers.push_back(layer);
       }
+      int min_layer = *std::min_element(layers.begin(), layers.end());
+      int max_layer = *std::max_element(layers.begin(), layers.end()); 
+      trackster_min_layer.push_back(min_layer);
+      trackster_max_layer.push_back(max_layer);
+      trackster_span.push_back(max_layer - min_layer);
       trackster_vertices_indexes.push_back(vertices_indexes);
       trackster_vertices_x.push_back(vertices_x);
       trackster_vertices_y.push_back(vertices_y);
@@ -466,6 +481,9 @@ private:
   std::vector<float> trackster_sigmaPCA3;
   std::vector<float> trackster_barycenter_eta;
   std::vector<float> trackster_barycenter_phi;
+  std::vector<int> trackster_span;
+  std::vector<int> trackster_min_layer;
+  std::vector<int> trackster_max_layer;
 
   // for simtrackster
   std::vector<float> simtrackster_regressed_pt;
