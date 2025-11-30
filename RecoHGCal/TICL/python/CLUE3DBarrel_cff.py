@@ -25,6 +25,7 @@ ticlTrackstersCLUE3DBarrel = _trackstersProducer.clone(
     itername = "CLUE3DBarrel",
     detector = "Barrel",
     patternRecognitionBy = "CLUE3D",
+    inferenceAlgo = "TracksterBarrelPIDbyDNN",
     layer_clusters_barrel_tiles = "ticlLayerTileBarrel:ticlLayerTilesBarrel",
     pluginPatternRecognitionByCLUE3D = dict(
         algo_verbosity = 9999,
@@ -35,7 +36,9 @@ ticlTrackstersCLUE3DBarrel = _trackstersProducer.clone(
         densityOnSameLayer = False,
         minNumLayerCluster = [1, 1, 1],
         useAbsoluteProjectiveScale = False,
-        densitySiblingLayers = [2, 4, 4]
+        densitySiblingLayers = [2, 4, 4],
+        doPidCut = True,
+        cutHadProb = 0.3
     )
 )
 
@@ -47,7 +50,7 @@ ticlTrackstersLinksBarrel = _tracksterLinksProducer.clone(
     inferenceAlgo = "TracksterBarrelPIDbyDNN",
     regressionAndPid = True,
     linkingPSet = dict(
-        min_cos_theta = 0.9,
+        min_cos_theta = 0.95,
         eta_window = 3,
         phi_window = 3
     ),

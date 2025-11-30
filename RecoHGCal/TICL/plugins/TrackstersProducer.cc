@@ -183,6 +183,11 @@ void TrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descri
       edm::PluginDescription<TracksterInferenceAlgoFactory>("type", "TracksterInferenceByCNNv4", true));
   desc.add<edm::ParameterSetDescription>("pluginInferenceAlgoTracksterInferenceByCNNv4", inferenceDescCNNv4);
 
+  edm::ParameterSetDescription inferenceDescDNNBarrel;
+  inferenceDescDNNBarrel.addNode(
+      edm::PluginDescription<TracksterInferenceAlgoFactory>("type", "TracksterBarrelPIDbyDNN", true));
+  desc.add<edm::ParameterSetDescription>("pluginInferenceAlgoTracksterBarrelPIDbyDNN", inferenceDescDNNBarrel);
+
   descriptions.add("trackstersProducer", desc);
 }
 
@@ -221,7 +226,10 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
       const auto& layer_clusters_barrel_tiles = evt.get(layer_clusters_tiles_barrel_token_);
       const typename PatternRecognitionAlgoBaseT<TICLLayerTilesBarrel>::Inputs inputBarrel(
           evt, es, layerClusters, inputClusterMask, layerClustersTimes, layer_clusters_barrel_tiles, seeding_regions);
-      myAlgoBarrel_->makeTracksters(inputBarrel, *result, seedToTrackstersAssociation);
+      myAlgoBarrel_->makeTracksters(inputBarrel, *initialResult, seedToTrackstersAssociation);
+      inferenceAlgo_->inputData(layerClusters, *initialResult, rhtools_);
+      inferenceAlgo_->runInference(*initialResult);
+      myAlgoBarrel_->filter(*result, *initialResult, inputBarrel, seedToTrackstersAssociation);
     } else {
       const auto& layer_clusters_tiles = evt.get(layer_clusters_tiles_token_);
       const typename PatternRecognitionAlgoBaseT<TICLLayerTiles>::Inputs input(
