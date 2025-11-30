@@ -14,7 +14,8 @@ TracksterLinkingBarrel::TracksterLinkingBarrel(const edm::ParameterSet &conf,
   : TracksterLinkingAlgoBase(conf, iC),
     min_cos_theta_(conf.getParameter<double>("min_cos_theta")),
     eta_window_(conf.getParameter<unsigned int>("eta_window")),
-    phi_window_(conf.getParameter<unsigned int>("phi_window")) {}
+    phi_window_(conf.getParameter<unsigned int>("phi_window")),
+    min_span_(conf.getParameter<unsigned int>("min_span")) {}
 
 void TracksterLinkingBarrel::initialize(const HGCalDDDConstants *hgcons,
                                         const hgcal::RecHitTools rhtools,
@@ -71,17 +72,18 @@ void TracksterLinkingBarrel::linkTracksters(
     }
     int maxLayer = *std::max_element(verticesLayerId.begin(), verticesLayerId.end());
     int minLayer = *std::min_element(verticesLayerId.begin(), verticesLayerId.end());
-    return (maxLayer - minLayer);
+    return (maxLayer - minLayer) + 1;
   };
 
   for (auto const &t_idx : sortedTracksters) {
     //if (maskedTracksters[t_idx]) continue;
     linkedResultTracksters.reserve(t_idx);
     auto const& trackster = tracksters[t_idx];
-    auto trackster_span = getTracksterSpan(trackster);
+    unsigned int trackster_span = getTracksterSpan(trackster);
+    if (trackster_span < min_span_) continue;
     // if trackster spans only one layer use barycenter
     // otherwise use PCA axis
-    auto const& barycenter = (trackster_span == 0) ? trackster.barycenter() : trackster.eigenvectors(0);
+    auto const& barycenter = (trackster_span == 1) ? trackster.barycenter() : trackster.eigenvectors(0);
     //auto const& barycenter = trackster.barycenter();
     float t_norm = std::sqrt(barycenter.mag2());
 

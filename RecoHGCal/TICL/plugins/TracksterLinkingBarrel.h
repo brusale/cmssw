@@ -45,6 +45,7 @@ namespace ticl {
         iDesc.add<double>("min_cos_theta", 0.95);
         iDesc.add<unsigned int>("eta_window", 3);
         iDesc.add<unsigned int>("phi_window", 3);
+        iDesc.add<unsigned int>("min_span", 2);
         TracksterLinkingAlgoBase::fillPSetDescription(iDesc);
       }
     private:
@@ -59,6 +60,7 @@ namespace ticl {
 
       unsigned int eta_window_;
       unsigned int phi_window_;
+      unsigned int min_span_;
   };
 }
 
