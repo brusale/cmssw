@@ -144,7 +144,8 @@ void ticl::assignPCAtoTracksters(std::vector<Trackster> &tracksters,
                               << std::endl;
     LogDebug("TrackstersPCA") << "Time:          " << trackster.time() << " +/- " << trackster.timeError() << std::endl;
 
-    if (N > 2) {
+    size_t minN = (isBarrel) ? 0 : 2;
+    if (N > minN) {
       Eigen::Vector3f sigmas;
       sigmas << 0., 0., 0.;
       Eigen::Vector3f sigmasEigen;
