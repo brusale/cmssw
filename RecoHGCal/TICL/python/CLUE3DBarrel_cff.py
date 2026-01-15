@@ -68,7 +68,7 @@ ticlCandidateBarrel = _ticlCandidateProducer.clone(
         algo_verbosity = cms.int32(0),
         cutTk = cms.string('0 < abs(eta) < 1.48 && pt > 1. && quality("highPurity") && hitPattern().numberOfLostHits("MISSING_OUTER_HITS") < 5'),
         delta_tk_ts_interface = cms.double(3*0.087),
-        delta_tk_ts_layer1 = cms.double(3*0.0175),
+        delta_tk_ts_layer1 = cms.double(3*0.087),
         timing_quality_threshold = cms.double(0.5),
         type = cms.string('General'),
     ),
@@ -80,6 +80,7 @@ ticlCandidateBarrel = _ticlCandidateProducer.clone(
     timingQualityThreshold = 0.5,
     timingSoA = "mtdSoA",
     tracks = "generalTracks",
+    regressionAndPid = False,
     useMTDTiming = False,
     useTimingAverage = False
 )

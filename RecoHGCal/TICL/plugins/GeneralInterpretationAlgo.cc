@@ -105,6 +105,13 @@ Vector GeneralInterpretationAlgo::propagateTrackster(const Trackster &t,
     float xOnSurface = par * directnv.X() + baryc.X();
     float yOnSurface = par * directnv.Y() + baryc.Y();
     Vector tPoint(xOnSurface, yOnSurface, zVal);
+    std::cout << __FILE__ << " " << __LINE__ << std::endl;
+    std::cout << "xOnSurface: " << xOnSurface << std::endl;
+    std::cout << "yOnSurface: " << yOnSurface << std::endl;
+    std::cout << "zVal: " << zVal << std::endl;
+    std::cout << "tPoint.Eta(): " << tPoint.Eta() << std::endl;
+    std::cout << "tPoint.Phi(): " << tPoint.Phi() << std::endl;
+    std::cout << "idx: " << idx << std::endl;
     tracksterTilesBarrel.fill(tPoint.Eta(), tPoint.Phi(), idx);
     return tPoint;
   }
@@ -127,7 +134,11 @@ void GeneralInterpretationAlgo::findTrackstersInWindow(const edm::MultiSpan<Trac
   std::vector<int> mask(trackstersSize, 0);
   const float delta2 = delta * delta;
 
+  std::cout << __FILE__ << " " << __LINE__ << std::endl;
+  std::cout << "seedingCollection.size(): " << seedingCollection.size() << std::endl;
+  std::cout << "detector: " << detector_ << std::endl;
   for (auto &i : seedingCollection) {
+    std::cout << __FILE__ << " " << __LINE__ << std::endl;
     float seed_eta = i.first.Eta();
     float seed_phi = i.first.Phi();
     unsigned seedId = i.second;
@@ -158,14 +169,23 @@ void GeneralInterpretationAlgo::findTrackstersInWindow(const edm::MultiSpan<Trac
         }
       }
     } else {
+      std::cout << __FILE__ << " " << __LINE__ << std::endl;
       float eta_min = std::max(std::fabs(seed_eta) - delta, (float)TileConstantsBarrel::minEta);
       float eta_max = std::min(std::fabs(seed_eta) + delta, (float)TileConstantsBarrel::maxEta);
+      std::cout << "eta_min: " << eta_min << std::endl;
+      std::cout << "eta_max: " << eta_max << std::endl;
       search_box = tracksterTilesBarrel.searchBoxEtaPhi(eta_min, eta_max, seed_phi - delta, seed_phi + delta);
       // get range of bins touched by delta
-
+      
       for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
         for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
-          const auto &in_tile = tracksterTilesBarrel[tracksterTilesBarrel.globalBin(eta_i, (phi_i % TileConstants::nPhiBins))];
+          const auto &in_tile = tracksterTilesBarrel[tracksterTilesBarrel.globalBin(eta_i, (phi_i % TileConstantsBarrel::nPhiBins))];
+          std::cout << "seed_phi: " << seed_phi << std::endl;
+          std::cout << "delta: " << delta <<  std::endl;
+          std::cout << "eta_i: " << eta_i << std::endl;
+          std::cout << "phi_i: " << phi_i << std::endl;
+          std::cout << "globalBin: " << tracksterTilesBarrel.globalBin(eta_i, (phi_i % TileConstantsBarrel::nPhiBins)) << std::endl;
+          std::cout << "t_i: " << in_tile.size() << std::endl;
           for (const unsigned &t_i : in_tile) {
             // calculate actual distances of tracksters to the seed for a more accurate cut
             auto sep2 = (tracksterPropPoints[t_i].Eta() - seed_eta) * (tracksterPropPoints[t_i].Eta() - seed_eta) +
@@ -180,6 +200,7 @@ void GeneralInterpretationAlgo::findTrackstersInWindow(const edm::MultiSpan<Trac
       }
     }
 
+    std::cout << __FILE__ << " " << __LINE__ << std::endl;
     // sort tracksters found in ascending order of their distances from the seed
     std::vector<unsigned> indices(in_delta.size());
     std::iota(indices.begin(), indices.end(), 0);
@@ -315,6 +336,7 @@ void GeneralInterpretationAlgo::makeCandidates(const Inputs &input,
       GlobalPoint barrelSurfacePoint = rhtools_.getPositionLayer(0, false, true);
       const auto &tsos = prop.propagate(fts, ecalCylinder_->fastTangent(barrelSurfacePoint));
       if (tsos.isValid()) {
+        std::cout << __FILE__ << " " << __LINE__ << std::endl;
         Vector trackP(tsos.globalPosition().x(), tsos.globalPosition().y(), tsos.globalPosition().z());
         trackPColl.emplace_back(trackP, i);
       }
@@ -322,8 +344,11 @@ void GeneralInterpretationAlgo::makeCandidates(const Inputs &input,
       const auto &tsos_int = prop.propagate(fts, hcalCylinder_->fastTangent(barrelInterfacePoint));
       if (tsos_int.isValid()) {
         Vector trackP(tsos_int.globalPosition().x(), tsos_int.globalPosition().y(), tsos_int.globalPosition().z());
-        trackPColl.emplace_back(trackP, i);
+        tkPropIntColl.emplace_back(trackP, i);
       }
+      std::cout << __FILE__ << " " << __LINE__ << std::endl;
+      std::cout << "trackPColl: " << trackPColl.size() << std::endl;
+      std::cout << "tkPropIntColl: " << trackPColl.size() << std::endl;
     }
   }  // Tracks
   tkPropIntColl.shrink_to_fit();
@@ -341,6 +366,11 @@ void GeneralInterpretationAlgo::makeCandidates(const Inputs &input,
   tsAllPropInt.reserve(tracksters.size());
   // Propagate tracksters
 
+  if (detector_ == "Barrel") {
+    std::cout << __FILE__ << " " << __LINE__ << std::endl;
+    std::cout << "nTracksters: " << tracksters.size() << std::endl;
+    std::cout << "nCandidateTracks: " << candidateTrackIds.size() << std::endl;
+  }
   for (unsigned i = 0; i < tracksters.size(); ++i) {
     const auto &t = tracksters[i];
     if (TICLInterpretationAlgoBase::algo_verbosity_ > VerbosityLevel::Advanced)
@@ -383,12 +413,16 @@ void GeneralInterpretationAlgo::makeCandidates(const Inputs &input,
   std::vector<std::vector<unsigned int>> trackstersInTrackIndices;
   trackstersInTrackIndices.resize(tracks.size());
 
+  std::cout << __FILE__ << " " << __LINE__ << std::endl;
   std::vector<bool> chargedMask(tracksters.size(), true);
   for (unsigned &i : candidateTrackIds) {
+    std::cout << "tsNearTk[i].size(): " << tsNearTk[i].size() << std::endl;
+    std::cout << "tsNearTkAtInt[i].size(): " << tsNearTkAtInt[i].size() << std::endl;
     if (tsNearTk[i].empty() && tsNearTkAtInt[i].empty()) {  // nothing linked to track, make charged hadrons
       continue;
     }
 
+    std::cout << __FILE__ << " " << __LINE__ << std::endl;
     std::vector<unsigned int> chargedCandidate;
     float total_raw_energy = 0.f;
 
@@ -407,8 +441,11 @@ void GeneralInterpretationAlgo::makeCandidates(const Inputs &input,
           inputTimingView.posInMTD_x()[i], inputTimingView.posInMTD_y()[i], inputTimingView.posInMTD_z()[i]};
     }
 
+    std::cout << __FILE__ << " " << __LINE__ << std::endl;
     for (auto const tsIdx : tsNearTk[i]) {
-      if (chargedMask[tsIdx] && timeAndEnergyCompatible(total_raw_energy,
+      std::cout << "tsIdx: " << tsIdx << std::endl;
+      std::cout << "chargedMask[tsIdx]: " << chargedMask[tsIdx] << std::endl;
+      bool isCompatible = (chargedMask[tsIdx] && timeAndEnergyCompatible(total_raw_energy,
                                                         tracks[i],
                                                         tracksters[tsIdx],
                                                         track_time,
@@ -416,12 +453,15 @@ void GeneralInterpretationAlgo::makeCandidates(const Inputs &input,
                                                         track_quality,
                                                         track_beta,
                                                         track_MtdPos,
-                                                        useMTDTiming)) {
+                                                        useMTDTiming));
+        if (chargedMask[tsIdx]) {
+        std::cout << __FILE__ << " " << __LINE__ << std::endl;
         chargedCandidate.push_back(tsIdx);
         chargedMask[tsIdx] = false;
         total_raw_energy += tracksters[tsIdx].raw_energy();
       }
     }
+    std::cout << __FILE__ << " " << __LINE__ << std::endl;
     for (const unsigned tsIdx : tsNearTkAtInt[i]) {  // do the same for tk -> ts links at the interface
       if (chargedMask[tsIdx] && timeAndEnergyCompatible(total_raw_energy,
                                                         tracks[i],
@@ -432,6 +472,7 @@ void GeneralInterpretationAlgo::makeCandidates(const Inputs &input,
                                                         track_beta,
                                                         track_MtdPos,
                                                         useMTDTiming)) {
+        std::cout << __FILE__ << " " << __LINE__ << std::endl;
         chargedCandidate.push_back(tsIdx);
         chargedMask[tsIdx] = false;
         total_raw_energy += tracksters[tsIdx].raw_energy();

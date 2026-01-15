@@ -352,20 +352,34 @@ void TICLCandidateProducer::produce(edm::Event &evt, const edm::EventSetup &es) 
   std::vector<bool> maskTracksters(resultTracksters->size(), true);
   edm::OrphanHandle<std::vector<Trackster>> resultTracksters_h = evt.put(std::move(resultTracksters));
   //create ChargedCandidates
+  std::cout << __FILE__ << " " << __LINE__ << std::endl;
+  std::cout << "isBarrel: " << (detector_ == "Barrel") << std::endl;
+  std::cout << "nTracks: " << tracks.size() << std::endl;
   for (size_t iTrack = 0; iTrack < tracks.size(); iTrack++) {
     if (maskTracks[iTrack]) {
+      std::cout << "Looking for charged candidate" << std::endl;
       auto const tracksterId = trackstersInTrackIndices[iTrack];
       auto trackPtr = edm::Ptr<reco::Track>(tracks_h, iTrack);
+      std::cout << "tracksterId: " << tracksterId << std::endl;
       if (tracksterId != -1 and !maskTracksters.empty()) {
+        std::cout << __FILE__ << " " << __LINE__ << std::endl;
         auto tracksterPtr = edm::Ptr<Trackster>(resultTracksters_h, tracksterId);
+        std::cout << __FILE__ << " " << __LINE__ << std::endl;
         TICLCandidate chargedCandidate(trackPtr, tracksterPtr);
+        std::cout << __FILE__ << " " << __LINE__ << std::endl;
         resultCandidates->push_back(chargedCandidate);
+        std::cout << __FILE__ << " " << __LINE__ << std::endl;
         maskTracksters[tracksterId] = false;
+        std::cout << __FILE__ << " " << __LINE__ << std::endl;
       } else {
         //charged candidates track only
+        std::cout << __FILE__ << " " << __LINE__ << std::endl;
         auto trackRef = edm::Ref<reco::TrackCollection>(tracks_h, iTrack);
+        std::cout << __FILE__ << " " << __LINE__ << std::endl;
         const int muId = PFMuonAlgo::muAssocToTrack(trackRef, *muons_h);
+        std::cout << __FILE__ << " " << __LINE__ << std::endl;
         const reco::MuonRef muonRef = reco::MuonRef(muons_h, muId);
+        std::cout << __FILE__ << " " << __LINE__ << std::endl;
         if (muonRef.isNonnull() and muonRef->isGlobalMuon()) {
           // create muon candidate
           edm::Ptr<Trackster> tracksterPtr;
@@ -373,6 +387,7 @@ void TICLCandidateProducer::produce(edm::Event &evt, const edm::EventSetup &es) 
           chargedCandidate.setPdgId(13 * trackPtr.get()->charge());
           resultCandidates->push_back(chargedCandidate);
         }
+        std::cout << __FILE__ << " " << __LINE__ << std::endl;
       }
     }
   }
@@ -387,8 +402,9 @@ void TICLCandidateProducer::produce(edm::Event &evt, const edm::EventSetup &es) 
     }
   }
 
+  std::cout << __FILE__ << " " << __LINE__ << std::endl;
 
-  auto getPathLength =
+  /*auto getPathLength =
       [&](const reco::Track &track, float zVal) {
         const auto &fts_inn = trajectoryStateTransform::innerFreeState(track, bFieldProd);
         const auto &fts_out = trajectoryStateTransform::outerFreeState(track, bFieldProd);
@@ -400,7 +416,6 @@ void TICLCandidateProducer::produce(edm::Event &evt, const edm::EventSetup &es) 
         FreeTrajectoryState stateAtBeamspot{GlobalPoint(pos), GlobalVector(mom), track.charge(), bFieldProd};
 
         float pathlength = propagator->propagateWithPath(stateAtBeamspot, surf_inn.surface()).second;
-        std::cout << "pathLenght: " << pathlength << std::endl;
 
         if (pathlength) {
           const auto &t_inn_out = propagator->propagateWithPath(fts_inn, surf_out.surface());
@@ -426,14 +441,11 @@ void TICLCandidateProducer::produce(edm::Event &evt, const edm::EventSetup &es) 
               }
             } else {
               GlobalPoint barrelSurfacePoint = rhtools_.getPositionLayer(0, false, true);
-              //const auto &cylinder = std::make_unique<Cylinder>(barrelSurfacePoint.mag(),
-              //                  Surface::PositionType(0., 0., 0.),
-              //                  Surface::RotationType()).get();
               Cylinder::ConstCylinderPointer cylinder = Cylinder::build(barrelSurfacePoint.mag(),
                                                                                Surface::PositionType(0., 0., 0.),
                                                                                Surface::RotationType());
               const auto& tsos = propagator->propagateWithPath(fts_out, cylinder->fastTangent(barrelSurfacePoint));
-              
+             
               if (tsos.first.isValid()) {
                 pathlength += tsos.second;
                 return pathlength;
@@ -446,9 +458,11 @@ void TICLCandidateProducer::produce(edm::Event &evt, const edm::EventSetup &es) 
             << "Not able to use the track to compute the path length. A straight line will be used instead.";
 #endif
         return 0.f;
-      };
+      };*/
 
-  assignTimeToCandidates(*resultCandidates, tracks_h, inputTimingView, getPathLength);
+  std::cout << __FILE__ << " " << __LINE__ << std::endl;
+  //assignTimeToCandidates(*resultCandidates, tracks_h, inputTimingView, getPathLength);
+  std::cout << __FILE__ << " " << __LINE__ << std::endl;
 
   evt.put(std::move(resultCandidates));
 }

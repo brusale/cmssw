@@ -248,7 +248,7 @@ ticlLayerTileBarrelTask = cms.Task(filteredLayerClustersCLUE3DBarrel
 iterBarrelTICLTask = cms.Task(ticlLayerTileBarrel
     ,ticlCLUE3DBarrelTask
     ,ticlTrackstersLinksBarrelTask
-#    ,ticlCandidateBarrelTask
+    ,ticlCandidateBarrelTask
 )
 
 ticl_barrel.toModify(mergeTICLTask, func=lambda x : x.add(ticlLayerTileBarrelTask, iterBarrelTICLTask))

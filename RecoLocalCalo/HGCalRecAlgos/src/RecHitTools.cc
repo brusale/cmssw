@@ -144,7 +144,7 @@ void RecHitTools::setGeometry(const CaloGeometry& geom) {
 }
 
 const CaloSubdetectorGeometry* RecHitTools::getSubdetectorGeometry(const DetId& id) const {
-  checkGeometry();
+  //checkGeometry();
   DetId::Detector det = id.det();
   int subdet = (det == DetId::HGCalEE || det == DetId::HGCalHSi || det == DetId::HGCalHSc)
                    ? ForwardSubdetector::ForwardEmpty
@@ -155,7 +155,7 @@ const CaloSubdetectorGeometry* RecHitTools::getSubdetectorGeometry(const DetId& 
 }
 
 GlobalPoint RecHitTools::getPosition(const DetId& id) const {
-  checkGeometry();
+  //checkGeometry();
   auto geom = getSubdetectorGeometry(id);
   GlobalPoint position;
   if (id.det() == DetId::Hcal || id.det() == DetId::Ecal) {
@@ -168,7 +168,7 @@ GlobalPoint RecHitTools::getPosition(const DetId& id) const {
 }
 
 GlobalPoint RecHitTools::getPositionLayer(int layer, bool nose, bool barrel) const {
-  checkGeometry();
+  //checkGeometry();
   unsigned int lay = std::abs(layer);
   double x(0), y(0), z(0);
   if (nose) {
@@ -275,7 +275,7 @@ std::pair<float, float> RecHitTools::getScintDEtaDPhi(const DetId& id) const {
 }
 
 std::float_t RecHitTools::getRadiusToSide(const DetId& id) const {
-  checkGeometry();
+  //checkGeometry();
   auto geom = getSubdetectorGeometry(id);
   std::float_t size(std::numeric_limits<std::float_t>::max());
   if (id.det() == DetId::HGCalEE || id.det() == DetId::HGCalHSi) {
@@ -298,7 +298,7 @@ std::float_t RecHitTools::getRadiusToSide(const DetId& id) const {
 }
 
 unsigned int RecHitTools::getLayer(const ForwardSubdetector type) const {
-  checkGeometry();
+  //checkGeometry();
   int layer(0);
   switch (type) {
     case (ForwardSubdetector::HGCEE): {
@@ -412,7 +412,7 @@ unsigned int RecHitTools::getLayer(const DetId& id) const {
 }
 
 unsigned int RecHitTools::getLayerWithOffset(const DetId& id) const {
-  checkGeometry();
+  //checkGeometry();
   unsigned int layer = getLayer(id);
   if (id.det() == DetId::Forward && id.subdetId() == HGCHEF) {
     layer += fhOffset_;
@@ -463,7 +463,7 @@ std::pair<int, int> RecHitTools::getCell(const DetId& id) const {
 }
 
 bool RecHitTools::isHalfCell(const DetId& id) const {
-  checkGeometry();
+  //checkGeometry();
   bool ishalf = false;
   if (id.det() == DetId::Forward) {
     HGCalDetId hid(id);
@@ -477,7 +477,7 @@ bool RecHitTools::isHalfCell(const DetId& id) const {
 }
 
 int RecHitTools::getCellType(const DetId& id) const {
-  checkGeometry();
+  //checkGeometry();
   auto layer_number = getLayerWithOffset(id);
   auto thickness = getSiThickIndex(id);
   auto geomNose =
