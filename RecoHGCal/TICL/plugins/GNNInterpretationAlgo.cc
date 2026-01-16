@@ -30,7 +30,8 @@ GNNInterpretationAlgo::GNNInterpretationAlgo(const edm::ParameterSet& conf, edm:
 void GNNInterpretationAlgo::initialize(const HGCalDDDConstants* hgcons,
                                        const hgcal::RecHitTools rhtools,
                                        const edm::ESHandle<MagneticField> bfieldH,
-                                       const edm::ESHandle<Propagator> propH) {
+                                       const edm::ESHandle<Propagator> propH,
+                                       const std::string detector) {
   hgcons_ = hgcons;
   rhtools_ = rhtools;
   bfield_ = bfieldH;

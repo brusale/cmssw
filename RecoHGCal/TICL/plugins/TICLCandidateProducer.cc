@@ -352,34 +352,20 @@ void TICLCandidateProducer::produce(edm::Event &evt, const edm::EventSetup &es) 
   std::vector<bool> maskTracksters(resultTracksters->size(), true);
   edm::OrphanHandle<std::vector<Trackster>> resultTracksters_h = evt.put(std::move(resultTracksters));
   //create ChargedCandidates
-  std::cout << __FILE__ << " " << __LINE__ << std::endl;
-  std::cout << "isBarrel: " << (detector_ == "Barrel") << std::endl;
-  std::cout << "nTracks: " << tracks.size() << std::endl;
   for (size_t iTrack = 0; iTrack < tracks.size(); iTrack++) {
     if (maskTracks[iTrack]) {
-      std::cout << "Looking for charged candidate" << std::endl;
       auto const tracksterId = trackstersInTrackIndices[iTrack];
       auto trackPtr = edm::Ptr<reco::Track>(tracks_h, iTrack);
-      std::cout << "tracksterId: " << tracksterId << std::endl;
       if (tracksterId != -1 and !maskTracksters.empty()) {
-        std::cout << __FILE__ << " " << __LINE__ << std::endl;
         auto tracksterPtr = edm::Ptr<Trackster>(resultTracksters_h, tracksterId);
-        std::cout << __FILE__ << " " << __LINE__ << std::endl;
         TICLCandidate chargedCandidate(trackPtr, tracksterPtr);
-        std::cout << __FILE__ << " " << __LINE__ << std::endl;
         resultCandidates->push_back(chargedCandidate);
-        std::cout << __FILE__ << " " << __LINE__ << std::endl;
         maskTracksters[tracksterId] = false;
-        std::cout << __FILE__ << " " << __LINE__ << std::endl;
       } else {
         //charged candidates track only
-        std::cout << __FILE__ << " " << __LINE__ << std::endl;
         auto trackRef = edm::Ref<reco::TrackCollection>(tracks_h, iTrack);
-        std::cout << __FILE__ << " " << __LINE__ << std::endl;
         const int muId = PFMuonAlgo::muAssocToTrack(trackRef, *muons_h);
-        std::cout << __FILE__ << " " << __LINE__ << std::endl;
         const reco::MuonRef muonRef = reco::MuonRef(muons_h, muId);
-        std::cout << __FILE__ << " " << __LINE__ << std::endl;
         if (muonRef.isNonnull() and muonRef->isGlobalMuon()) {
           // create muon candidate
           edm::Ptr<Trackster> tracksterPtr;
@@ -387,7 +373,6 @@ void TICLCandidateProducer::produce(edm::Event &evt, const edm::EventSetup &es) 
           chargedCandidate.setPdgId(13 * trackPtr.get()->charge());
           resultCandidates->push_back(chargedCandidate);
         }
-        std::cout << __FILE__ << " " << __LINE__ << std::endl;
       }
     }
   }
@@ -402,7 +387,6 @@ void TICLCandidateProducer::produce(edm::Event &evt, const edm::EventSetup &es) 
     }
   }
 
-  std::cout << __FILE__ << " " << __LINE__ << std::endl;
 
   /*auto getPathLength =
       [&](const reco::Track &track, float zVal) {
@@ -460,9 +444,7 @@ void TICLCandidateProducer::produce(edm::Event &evt, const edm::EventSetup &es) 
         return 0.f;
       };*/
 
-  std::cout << __FILE__ << " " << __LINE__ << std::endl;
   //assignTimeToCandidates(*resultCandidates, tracks_h, inputTimingView, getPathLength);
-  std::cout << __FILE__ << " " << __LINE__ << std::endl;
 
   evt.put(std::move(resultCandidates));
 }

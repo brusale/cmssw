@@ -48,7 +48,8 @@ namespace ticl {
     void initialize(const HGCalDDDConstants *hgcons,
                     const hgcal::RecHitTools rhtools,
                     const edm::ESHandle<MagneticField> bfieldH,
-                    const edm::ESHandle<Propagator> propH) override;
+                    const edm::ESHandle<Propagator> propH,
+                    const std::string detector = "HGCAL") override;
 
     static void fillPSetDescription(edm::ParameterSetDescription &iDesc);
 
