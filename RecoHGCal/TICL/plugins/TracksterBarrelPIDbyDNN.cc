@@ -11,9 +11,13 @@ namespace ticl {
     : TracksterInferenceAlgoBase(conf),
       onnxPIDRuntimeInstance_(std::make_unique<cms::Ort::ONNXRuntime>(
         conf.getParameter<edm::FileInPath>("onnxPIDModelPath").fullPath().c_str())),
+      onnxEnergyRuntimeInstance_(std::make_unique<cms::Ort::ONNXRuntime>(
+        conf.getParameter<edm::FileInPath>("energyModelPath").fullPath().c_str())),
       inputNames_(conf.getParameter<std::vector<std::string>>("inputNames")),
-      output_id_(conf.getParameter<std::vector<std::string>>("output_id")) {
+      output_id_(conf.getParameter<std::vector<std::string>>("output_id")),
+      output_energy_(conf.getParameter<std::vector<std::string>>("output_energy")) {
     onnxPIDSession_ = onnxPIDRuntimeInstance_.get();
+    onnxEnergySession_ = onnxEnergyRuntimeInstance_.get();
   }
 
   void TracksterBarrelPIDbyDNN::inputData(const std::vector<reco::CaloCluster>& layerClusters,
@@ -65,12 +69,23 @@ namespace ticl {
         tracksters[i].setIdProbability(Trackster::ParticleType::photon, probs[i]);
       }
     }
+
+    auto energyOutput = onnxEnergySession_->run(inputNames_, input_Data_, input_shapes_, output_energy_, batchSize_);
+    auto energyOutputTensor = energyOutput[0];
+    float *energies = energyOutputTensor.data();
+    if (!output_energy_.empty()) {
+      for (int i = 0; i < batchSize_; i++) {
+        tracksters[i].setRegressedEnergy(energies[i]);
+      }
+    }
   }
 
   void TracksterBarrelPIDbyDNN::fillPSetDescription(edm::ParameterSetDescription& iDesc) {
     iDesc.add<int>("algo_verbosity", 0);
-    iDesc.add<edm::FileInPath>("onnxPIDModelPath", edm::FileInPath("model.onnx"));
+    iDesc.add<edm::FileInPath>("onnxPIDModelPath", edm::FileInPath("model_pid.onnx"));
+    iDesc.add<edm::FileInPath>("energyModelPath", edm::FileInPath("model_energy.onnx"));
     iDesc.add<std::vector<std::string>>("inputNames", {"input"});
-    iDesc.add<std::vector<std::string>>("output_id", {"output"});
+    iDesc.add<std::vector<std::string>>("output_id", {"output_id"});
+    iDesc.add<std::vector<std::string>>("output_energy", {"output_energy"});
   }
 }

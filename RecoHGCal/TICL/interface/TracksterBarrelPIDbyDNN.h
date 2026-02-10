@@ -17,8 +17,11 @@ namespace ticl {
       const std::unique_ptr<cms::Ort::ONNXRuntime> onnxPIDRuntimeInstance_;
       const cms::Ort::ONNXRuntime* onnxPIDSession_;
 
+      const std::unique_ptr<cms::Ort::ONNXRuntime> onnxEnergyRuntimeInstance_;
+      const cms::Ort::ONNXRuntime* onnxEnergySession_;
+
       const std::vector<std::string> inputNames_;
-      const std::vector<std::string> output_id_;
+      const std::vector<std::string> output_id_, output_energy_;
       static constexpr int eidNFeatures_ = 8; 
       hgcal::RecHitTools rhtools_;
       std::vector<std::vector<int64_t>> input_shapes_;
