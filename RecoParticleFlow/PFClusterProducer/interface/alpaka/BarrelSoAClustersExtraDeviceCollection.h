@@ -1,0 +1,14 @@
+#ifndef DataFormats_PortableTestObjects_interface_alpaka_BarrelSoAClustersExtraDeviceCollection_h
+#define DataFormats_PortableTestObjects_interface_alpaka_BarrelSoAClustersExtraDeviceCollection_h
+
+#include "DataFormats/Portable/interface/alpaka/PortableCollection.h"
+#include "RecoParticleFlow/PFClusterProducer/interface/BarrelSoAClustersExtra.h"
+#include "HeterogeneousCore/AlpakaInterface/interface/config.h"
+
+namespace ALPAKA_ACCELERATOR_NAMESPACE {
+
+  using BarrelSoAClustersExtraDeviceCollection = PortableCollection<BarrelSoAClustersExtra>;
+
+}  // namespace ALPAKA_ACCELERATOR_NAMESPACE
+
+#endif  // DataFormats_PortableTestObjects_interface_alpaka_BarrelSoAClustersExtraDeviceCollection_h

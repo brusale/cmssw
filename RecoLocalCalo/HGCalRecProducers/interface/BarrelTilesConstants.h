@@ -9,7 +9,7 @@
 #include <array>
 
 struct EBTilesConstants {
-  static constexpr float cellWidthEta = 0.0175f;
+  static constexpr float cellWidthEta = 3*0.0175f;
   static constexpr float cellWidthPhi = cellWidthEta;
   static constexpr float tileSizeEtaPhi = cellWidthEta;
   static constexpr float minDim1 = -1.5f;
@@ -20,6 +20,10 @@ struct EBTilesConstants {
   static constexpr int nRows = reco::ceil(2. * M_PI / tileSizeEtaPhi);
   static constexpr int nTiles = nColumns * nRows;
   static constexpr float showerSigma = 0.5f;  // in unit of xtals
+  static constexpr int maxTileDepth = 64;
+  static constexpr float invDim1BinSize = nColumns / (maxDim1 - minDim1);
+  static constexpr float invDim2BinSize = nRows / (maxDim2 - minDim2);
+  static constexpr bool phi = true;
 };
 
 struct HBTilesConstants {
@@ -34,6 +38,7 @@ struct HBTilesConstants {
   static constexpr int nRows = reco::ceil(2. * M_PI / tileSizeEtaPhi);
   static constexpr int nTiles = nColumns * nRows;
   static constexpr float showerSigma = 0.5f;  // in unit of xtals
+  static constexpr bool phi = true;
 };
 
 #endif

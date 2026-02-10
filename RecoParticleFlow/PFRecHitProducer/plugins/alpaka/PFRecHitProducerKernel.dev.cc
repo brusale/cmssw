@@ -31,8 +31,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         // This is achieved using the alpaka::hierarchy::Blocks argument.
         const uint32_t j = alpaka::atomicInc(acc, num_pfRecHits, 0xffffffff, alpaka::hierarchy::Blocks{});
 
+        //printf("Number of expected pfRecHits: %i\n", *num_pfRecHits);
         // Construct PFRecHit from CAL recHit (specialised for HCAL/ECAL)
-        constructPFRecHit(pfRecHits[j], recHits[i]);
+        if constexpr (std::is_same_v<CAL, ECAL>) 
+          constructPFRecHit(pfRecHits[j], params, recHits[i]);
+        else
+          constructPFRecHit(pfRecHits[j], recHits[i]);
 
         // Fill denseId -> pfRecHit index map
         denseId2pfRecHit[CAL::detId2denseId(pfRecHits.detId(j))] = j;
@@ -46,6 +50,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     ALPAKA_FN_ACC static void constructPFRecHit(
         reco::PFRecHitDeviceCollection::View::element pfrh,
         const typename CAL::CaloRecHitSoATypeDevice::ConstView::const_element rh);
+
+    ALPAKA_FN_ACC static void constructPFRecHit(
+        reco::PFRecHitDeviceCollection::View::element pfrh,
+        const typename CAL::ParameterType::ConstView params,
+        const typename CAL::CaloRecHitSoATypeDevice::ConstView::const_element rh);
+
   };
 
   template <>
@@ -90,13 +100,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       const ECAL::ParameterType::ConstView params,
       const ECAL::TopologyTypeDevice::ConstView topology) {
     // Reject ECAL recHits below energy threshold
-    if (rh.energy() < params.energyThresholds()[ECAL::detId2denseId(rh.detId())])
+    if (rh.energy() < params.energyThresholds()[ECAL::detId2denseId(rh.id())])
       return false;
 
     // Reject ECAL recHits of bad quality
-    if ((ECAL::checkFlag(rh.flags(), ECAL::Flags::kOutOfTime) && rh.energy() > params.cleaningThreshold()) ||
-        ECAL::checkFlag(rh.flags(), ECAL::Flags::kTowerRecovered) || ECAL::checkFlag(rh.flags(), ECAL::Flags::kWeird) ||
-        ECAL::checkFlag(rh.flags(), ECAL::Flags::kDiWeird))
+    if ((ECAL::checkFlag(rh.flagBits(), ECAL::Flags::kOutOfTime) && rh.energy() > params.cleaningThreshold()) ||
+        ECAL::checkFlag(rh.flagBits(), ECAL::Flags::kTowerRecovered) || ECAL::checkFlag(rh.flagBits(), ECAL::Flags::kWeird) ||
+        ECAL::checkFlag(rh.flagBits(), ECAL::Flags::kDiWeird))
       return false;
 
     return true;
@@ -124,11 +134,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   ALPAKA_FN_ACC void PFRecHitProducerKernelConstruct<ECAL>::constructPFRecHit(
       reco::PFRecHitDeviceCollection::View::element pfrh,
       const ECAL::CaloRecHitSoATypeDevice::ConstView::const_element rh) {
-    pfrh.detId() = rh.detId();
-    pfrh.denseId() = ECAL::detId2denseId(rh.detId());
+
+    pfrh.detId() = rh.id();
+    pfrh.denseId() = ECAL::detId2denseId(rh.id());
     pfrh.energy() = rh.energy();
     pfrh.time() = rh.time();
-    pfrh.depth() = 1;
+    pfrh.depth() = ECAL::getDepth();
     const uint32_t subdet = getSubdet(pfrh.detId());
     if (subdet == EcalBarrel)
       pfrh.layer() = PFLayer::ECAL_BARREL;
@@ -136,6 +147,28 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       pfrh.layer() = PFLayer::ECAL_ENDCAP;
     else
       pfrh.layer() = PFLayer::NONE;
+  }
+
+  template <>
+  ALPAKA_FN_ACC void PFRecHitProducerKernelConstruct<ECAL>::constructPFRecHit(
+      reco::PFRecHitDeviceCollection::View::element pfrh,
+      const ECAL::ParameterType::ConstView params,
+      const ECAL::CaloRecHitSoATypeDevice::ConstView::const_element rh) {
+    if (rh.energy() > params.energyThresholds()[ECAL::detId2denseId(rh.id())]) {
+      pfrh.detId() = rh.id();
+      pfrh.denseId() = ECAL::detId2denseId(rh.id());
+      pfrh.energy() = rh.energy();
+      pfrh.time() = rh.time();
+      pfrh.depth() = 0;
+      pfrh.sigmaNoise() = params.energyThresholds()[ECAL::detId2denseId(rh.id())];
+      const uint32_t subdet = getSubdet(pfrh.detId());
+      if (subdet == EcalBarrel)
+        pfrh.layer() = PFLayer::ECAL_BARREL;
+      else if (subdet == EcalEndcap)
+        pfrh.layer() = PFLayer::ECAL_ENDCAP;
+      else
+        pfrh.layer() = PFLayer::NONE;
+    } 
   }
 
   // Kernel to associate topology information of PFRecHits
@@ -157,6 +190,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         pfRecHits.x(i) = topology.positionX(denseId);
         pfRecHits.y(i) = topology.positionY(denseId);
         pfRecHits.z(i) = topology.positionZ(denseId);
+        pfRecHits.eta(i) = topology.positionEta(denseId);
+        pfRecHits.phi(i) = topology.positionPhi(denseId);
 
         for (uint32_t n = 0; n < 8; n++) {
           pfRecHits.neighbours(i)(n) = -1;

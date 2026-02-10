@@ -1,5 +1,5 @@
-#ifndef DataFormats_ParticleFlowReco_interface_alpaka_PFRecHitDeviceCollection_h
-#define DataFormats_ParticleFlowReco_interface_alpaka_PFRecHitDeviceCollection_h
+#ifndef DataFormats_PortableTestObjects_interface_alpaka_PFRecHitDeviceCollection_h
+#define DataFormats_PortableTestObjects_interface_alpaka_PFRecHitDeviceCollection_h
 
 #include "DataFormats/ParticleFlowReco/interface/PFRecHitHostCollection.h"
 #include "DataFormats/ParticleFlowReco/interface/PFRecHitSoA.h"

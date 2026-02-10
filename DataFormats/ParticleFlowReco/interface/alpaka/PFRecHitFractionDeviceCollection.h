@@ -4,6 +4,7 @@
 #include "DataFormats/Portable/interface/alpaka/PortableCollection.h"
 #include "DataFormats/ParticleFlowReco/interface/PFRecHitFractionSoA.h"
 #include "DataFormats/ParticleFlowReco/interface/PFRecHitFractionHostCollection.h"
+#include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE::reco {
 

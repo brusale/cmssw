@@ -1,0 +1,9 @@
+#ifndef DataFormats_ParticleFlowReco_interface_BarrelSoAClustersHostCollection_h
+#define DataFormats_ParticleFlowReco_interface_BarrelSoAClustersHostCollection_h
+
+#include "DataFormats/Portable/interface/PortableHostCollection.h"
+#include "DataFormats/ParticleFlowReco/interface/BarrelSoAClusters.h"
+
+using BarrelSoAClustersHostCollection = PortableHostCollection<BarrelSoAClusters>;
+
+#endif  // DataFormats_ParticleFlowReco_interface_BarrelSoAClustersHostCollection_h

@@ -7,6 +7,7 @@
   <use name="DataFormats/EcalRecHit"/>
   <use name="DataFormats/HcalDetId"/>
   <use name="DataFormats/HcalRecHit"/>
+  <use name="DataFormats/HGCalReco"/>
   <use name="DataFormats/Math"/>
   <use name="DataFormats/ParticleFlowReco"/>
   <use name="FWCore/Framework"/>
@@ -47,6 +48,7 @@
 <library name="RecoParticleFlowPFClusterProducersPluginsPortable" file="alpaka/*.cc">
   <use name="alpaka"/>
   <use name="DataFormats/ParticleFlowReco"/>
+  <use name="DataFormats/HGCalReco"/>
   <use name="FWCore/Framework"/>
   <use name="FWCore/MessageLogger"/>
   <use name="FWCore/ParameterSet"/>
@@ -59,6 +61,7 @@
   <use name="HeterogeneousCore/CUDACore"/>
   <use name="RecoParticleFlow/PFClusterProducer"/>
   <use name="RecoParticleFlow/PFRecHitProducer"/>
+  <!--use name="clue/clueLib"/-->
   <flags ALPAKA_BACKENDS="1"/>
   <flags EDM_PLUGIN="1"/>
 </library>

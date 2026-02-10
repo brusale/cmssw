@@ -1,0 +1,161 @@
+#include "FWCore/Framework/interface/stream/EDProducer.h"
+
+#include "Geometry/HGCalGeometry/interface/HGCalGeometry.h"
+
+#include "FWCore/Framework/interface/ConsumesCollector.h"
+#include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
+#include "FWCore/ParameterSet/interface/allowedValues.h"
+#include "FWCore/Utilities/interface/InputTag.h"
+#include "FWCore/Utilities/interface/EDGetToken.h"
+
+#include "DataFormats/Common/interface/ValueMap.h"
+#include "DataFormats/Math/interface/Point3D.h"
+#include "DataFormats/EgammaReco/interface/BasicClusterFwd.h"
+#include "DataFormats/ParticleFlowReco/interface/BarrelSoAClustersHostCollection.h"
+#include "DataFormats/ParticleFlowReco/interface/PFRecHitExtraHostCollection.h"
+#include "DataFormats/ParticleFlowReco/interface/PFRecHitHostCollection.h"
+
+#include "RecoLocalCalo/HGCalRecProducers/interface/ComputeClusterTime.h"
+
+#define DEBUG_CLUSTERS_ALPAKA 0
+
+#if DEBUG_CLUSTERS_ALPAKA
+#include "RecoLocalCalo/HGCalRecProducers/interface/DumpClustersDetails.h"
+#endif
+
+class BarrelLayerClustersFromSoAProducer : public edm::stream::EDProducer<> {
+public:
+  BarrelLayerClustersFromSoAProducer(edm::ParameterSet const& config)
+      : getTokenSoAClusters_(consumes(config.getParameter<edm::InputTag>("src"))),
+        getTokenSoACells_(consumes(config.getParameter<edm::InputTag>("pfRecHitsSoA"))),
+        getTokenSoARecHitsExtra_(consumes(config.getParameter<edm::InputTag>("barrelRecHitsLayerClustersSoA"))),
+        hitsTime_(config.getParameter<unsigned int>("nHitsTime")),
+        timeClname_(config.getParameter<std::string>("timeClname")) {
+#if DEBUG_CLUSTERS_ALPAKA
+    moduleLabel_ = config.getParameter<std::string>("@module_label");
+#endif
+      algoId_ = reco::CaloCluster::barrel_em;
+
+    produces<std::vector<float>>("InitialLayerClustersMask");
+    produces<std::vector<reco::BasicCluster>>();
+    produces<edm::ValueMap<std::pair<float, float>>>(timeClname_);
+  }
+
+  ~BarrelLayerClustersFromSoAProducer() override = default;
+
+  void produce(edm::Event& iEvent, edm::EventSetup const& iSetup) override {
+    auto const& deviceData = iEvent.get(getTokenSoAClusters_);
+
+    auto const& deviceSoARecHitsExtra = iEvent.get(getTokenSoARecHitsExtra_);
+    auto const soaRecHitsExtra_v = deviceSoARecHitsExtra.view();
+
+    auto const& deviceSoACells = iEvent.get(getTokenSoACells_);
+    auto const soaCells_v = deviceSoACells.view();
+
+    auto const deviceView = deviceData.view();
+
+    std::unique_ptr<std::vector<reco::BasicCluster>> clusters(new std::vector<reco::BasicCluster>);
+    clusters->reserve(deviceData->metadata().size());
+
+    // Create a vector of <clusters> locations, where each location holds a
+    // vector of <nCells> floats. These vectors are used to compute the time for
+    // each cluster.
+    std::vector<std::vector<float>> times(deviceData->metadata().size());
+    std::vector<std::vector<float>> timeErrors(deviceData->metadata().size());
+
+    for (int i = 0; i < deviceData->metadata().size(); ++i) {
+      std::vector<std::pair<DetId, float>> thisCluster;
+      thisCluster.reserve(deviceView.cells(i));
+      clusters->emplace_back(deviceView.energy(i),
+                             math::XYZPoint(deviceView.x(i), deviceView.y(i), deviceView.z(i)),
+                             reco::CaloID::DET_ECAL_BARREL,
+                             std::move(thisCluster),
+                             algoId_);
+      std::cout << __FILE__ << " " << __LINE__ << std::endl;
+      std::cout << "eta: " << clusters->back().position().eta() << std::endl;
+      clusters->back().setSeed(deviceView.seed(i));
+      //times[i].reserve(deviceView.cells(i));
+      //timeErrors[i].reserve(deviceView.cells(i));
+    }
+
+    // Populate hits and fractions required to compute the cluster's time.
+    // This procedure is complex and involves two SoAs: the original RecHits
+    // SoA and the clustering algorithm's output SoA. Both SoAs have the same
+    // cardinality, and crucially, the output SoA includes the cluster index.
+    for (size_t i = 0; i < soaCells_v.size(); ++i) {
+      if (soaRecHitsExtra_v[i].clusterIndex() == -1) {
+        continue;
+      }
+      assert(soaRecHitsExtra_v[i].clusterIndex() < (int)clusters->size());
+      (*clusters)[soaRecHitsExtra_v[i].clusterIndex()].addHitAndFraction(soaCells_v[i].detId(), 1.f);
+      //if (soaCells_v[i].timeError() < 0.f) {
+      //  continue;
+      //}
+      //times[soaRecHitsExtra_v[i].clusterIndex()].push_back(soaCells_v[i].time());
+      //timeErrors[soaRecHitsExtra_v[i].clusterIndex()].push_back(
+      //    1.f / (soaCells_v[i].timeError() * soaCells_v[i].timeError()));
+    }
+
+    // Finally, compute and assign the time to each cluster.
+    std::vector<std::pair<float, float>> cluster_times;
+    cluster_times.reserve(clusters->size());
+    hgcalsimclustertime::ComputeClusterTime timeEstimator;
+    for (unsigned i = 0; i < clusters->size(); ++i) {
+        cluster_times.push_back(std::pair<float, float>(-99.f, -1.f));
+    }
+
+#if DEBUG_CLUSTERS_ALPAKA
+    auto runNumber = iEvent.eventAuxiliary().run();
+    auto lumiNumber = iEvent.eventAuxiliary().luminosityBlock();
+    auto evtNumber = iEvent.eventAuxiliary().id().event();
+
+    hgcalUtils::DumpCellsSoA dumperCellsSoA;
+    dumperCellsSoA.dumpInfos(deviceSoACells, moduleLabel_, runNumber, lumiNumber, evtNumber);
+
+    hgcalUtils::DumpClusters dumper;
+    dumper.dumpInfos(*clusters, moduleLabel_, runNumber, lumiNumber, evtNumber, true);
+
+    hgcalUtils::DumpClustersSoA dumperSoA;
+    dumperSoA.dumpInfos(deviceSoARecHitsExtra, moduleLabel_, runNumber, lumiNumber, evtNumber);
+#endif
+
+    auto clusterHandle = iEvent.put(std::move(clusters));
+
+    auto timeCl = std::make_unique<edm::ValueMap<std::pair<float, float>>>();
+    edm::ValueMap<std::pair<float, float>>::Filler filler(*timeCl);
+    filler.insert(clusterHandle, cluster_times.begin(), cluster_times.end());
+    filler.fill();
+    iEvent.put(std::move(timeCl), timeClname_);
+
+    // The layerClusterMask for the HGCAL detector is created at a later
+    // stage, when the layer clusters from the different components of HGCAL
+    // are merged together into a unique collection. For the case of HFNose,
+    // since there is no further merging step needed, we create the
+    // layerClustersMask directly here.
+  }
+
+  static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+    edm::ParameterSetDescription desc;
+    desc.add<edm::InputTag>("src", edm::InputTag("barrelSoALayerClustersProducer"));
+    desc.add<edm::InputTag>("barrelRecHitsLayerClustersSoA", edm::InputTag("barrelSoARecHitsLayerClustersProducer"));
+    desc.add<edm::InputTag>("pfRecHitsSoA", edm::InputTag("pfRecHitsSoAProducerEB"));
+    desc.add<unsigned int>("nHitsTime", 3);
+    desc.add<std::string>("timeClname", "timeLayerCluster");
+    descriptions.addWithDefaultLabel(desc);
+  }
+
+private:
+  edm::EDGetTokenT<BarrelSoAClustersHostCollection> const getTokenSoAClusters_;
+  edm::EDGetTokenT<reco::PFRecHitHostCollection> const getTokenSoACells_;
+  edm::EDGetTokenT<reco::PFRecHitExtraHostCollection> const getTokenSoARecHitsExtra_;
+  unsigned int hitsTime_;
+  std::string timeClname_;
+  reco::CaloCluster::AlgoId algoId_;
+#if DEBUG_CLUSTERS_ALPAKA
+  std::string moduleLabel_;
+#endif
+};
+#include "FWCore/Framework/interface/MakerMacros.h"
+DEFINE_FWK_MODULE(BarrelLayerClustersFromSoAProducer);

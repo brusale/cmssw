@@ -90,6 +90,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           view.positionX(denseId) = pos.x();
           view.positionY(denseId) = pos.y();
           view.positionZ(denseId) = pos.z();
+          view.positionEta(denseId) = pos.eta();
+          view.positionPhi(denseId) = pos.phi();
 
           for (uint32_t n = 0; n < 8; n++) {
             uint32_t neighDetId = getNeighbourDetId(detId, n, *topo);

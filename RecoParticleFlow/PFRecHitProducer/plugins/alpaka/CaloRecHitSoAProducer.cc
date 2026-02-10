@@ -37,17 +37,23 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       if (DEBUG)
         printf("Found %d recHits\n", num_recHits);
 
-      hcal::RecHitHostCollection hostProduct{num_recHits, event.queue()};
+      typename CAL::CaloRecHitSoATypeHost hostProduct{num_recHits, event.queue()};
+      //hcal::RecHitHostCollection hostProduct{num_recHits, event.queue()};
       auto& view = hostProduct.view();
 
       for (int i = 0; i < num_recHits; i++) {
         convertRecHit(view[i], recHits[i]);
 
-        if (DEBUG && i < 10)
-          printf("recHit %4d %u %f %f\n", i, view.detId(i), view.energy(i), view.timeM0(i));
+        if (DEBUG && i < 10) {
+          if constexpr (std::is_same_v<CAL, HCAL>)
+            printf("recHit %4d %u %f %f\n", i, view.detId(i), view.energy(i), view.timeM0(i));
+          else
+            printf("recHit %4d %u %f %f\n", i, view.id(i), view.energy(i), view.time(i));
+        }
       }
 
-      hcal::RecHitDeviceCollection deviceProduct{num_recHits, event.queue()};
+      //hcal::RecHitDeviceCollection deviceProduct{num_recHits, event.queue()};
+      typename CAL::CaloRecHitSoATypeDevice deviceProduct{num_recHits, event.queue()};
       alpaka::memcpy(event.queue(), deviceProduct.buffer(), hostProduct.buffer());
       if (synchronise_)
         alpaka::wait(event.queue());
@@ -64,10 +70,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   private:
     const edm::EDGetTokenT<edm::SortedCollection<typename CAL::CaloRecHitType>> recHitsToken_;
-    const device::EDPutToken<hcal::RecHitDeviceCollection> deviceToken_;
+    const device::EDPutToken<typename CAL::CaloRecHitSoATypeDevice> deviceToken_;
+    //const device::EDPutToken<hcal::RecHitDeviceCollection> deviceToken_;
     const bool synchronise_;
 
     static void convertRecHit(hcal::RecHitHostCollection::View::element to, const typename CAL::CaloRecHitType& from);
+    static void convertRecHit(EcalRecHitHostCollection::View::element to, const typename CAL::CaloRecHitType& from);
   };
 
   template <>
@@ -87,24 +95,24 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   we can switch to using just the ECAL RecHit SoA.
   */
 
-  /*
+  
   template <>
-  void CaloRecHitSoAProducer<ECAL>::convertRecHit(reco::CaloRecHitHostCollection::View::element to,
+  void CaloRecHitSoAProducer<ECAL>::convertRecHit(EcalRecHitHostCollection::View::element to,
                                                   const ECAL::CaloRecHitType& from) {
     // Fill SoA from ECAL rec hit
-    to.detId() = from.id().rawId();
+    to.id() = from.id().rawId();
     to.energy() = from.energy();
     to.time() = from.time();
-    to.flags() = from.flagsBits();
+    to.flagBits() = from.flagsBits();
   }
-  */
+  
 
   using HCALRecHitSoAProducer = CaloRecHitSoAProducer<HCAL>;
 
   // Purposely commented out; see above.
-  //using ECALRecHitSoAProducer = CaloRecHitSoAProducer<ECAL>;
+  using ECALRecHitSoAProducer = CaloRecHitSoAProducer<ECAL>;
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/MakerMacros.h"
 DEFINE_FWK_ALPAKA_MODULE(HCALRecHitSoAProducer);
-//DEFINE_FWK_ALPAKA_MODULE(ECALRecHitSoAProducer);
+DEFINE_FWK_ALPAKA_MODULE(ECALRecHitSoAProducer);

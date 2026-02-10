@@ -11,3 +11,4 @@
 #include "DataFormats/ParticleFlowReco/interface/alpaka/PFRecHitDeviceCollection.h"
 #include "DataFormats/ParticleFlowReco/interface/alpaka/PFClusterDeviceCollection.h"
 #include "DataFormats/ParticleFlowReco/interface/alpaka/PFRecHitFractionDeviceCollection.h"
+#include "DataFormats/ParticleFlowReco/interface/alpaka/BarrelSoAClustersDeviceCollection.h"

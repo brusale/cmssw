@@ -14,6 +14,8 @@ namespace reco {
                       SOA_COLUMN(float, positionX),
                       SOA_COLUMN(float, positionY),
                       SOA_COLUMN(float, positionZ),
+                      SOA_COLUMN(float, positionEta),
+                      SOA_COLUMN(float, positionPhi),
                       SOA_COLUMN(float, noiseThreshold),
                       SOA_COLUMN(float, seedThreshold),
                       SOA_SCALAR(bool, cutsFromDB),
@@ -22,6 +24,8 @@ namespace reco {
                       SOA_COLUMN(float, positionX),
                       SOA_COLUMN(float, positionY),
                       SOA_COLUMN(float, positionZ),
+                      SOA_COLUMN(float, positionEta),
+                      SOA_COLUMN(float, positionPhi),
                       SOA_EIGEN_COLUMN(PFRecHitsTopologyNeighbours, neighbours))
 
   using PFRecHitHCALTopologySoA = PFRecHitHCALTopologySoALayout<>;

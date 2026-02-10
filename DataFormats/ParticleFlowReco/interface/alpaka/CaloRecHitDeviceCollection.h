@@ -1,6 +1,7 @@
-#ifndef DataFormats_ParticleFlowReco_interface_alpaka_CaloRecHitDeviceCollection_h
-#define DataFormats_ParticleFlowReco_interface_alpaka_CaloRecHitDeviceCollection_h
+#ifndef DataFormats_PortableTestObjects_interface_alpaka_CaloRecHitDeviceCollection_h
+#define DataFormats_PortableTestObjects_interface_alpaka_CaloRecHitDeviceCollection_h
 
+#include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 #include "DataFormats/ParticleFlowReco/interface/CaloRecHitHostCollection.h"
 #include "DataFormats/ParticleFlowReco/interface/CaloRecHitSoA.h"
 #include "DataFormats/Portable/interface/alpaka/PortableCollection.h"

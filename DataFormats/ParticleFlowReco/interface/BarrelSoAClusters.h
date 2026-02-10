@@ -1,12 +1,12 @@
-#ifndef DataFormats_HGCalReco_interface_HGCalSoAClusters_h
-#define DataFormats_HGCalReco_interface_HGCalSoAClusters_h
+#ifndef DataFormats_ParticleFlowReco_interface_BarrelSoAClusters_h
+#define DataFormats_ParticleFlowReco_interface_BarrelSoAClusters_h
 
 #include <Eigen/Core>
 
 #include "DataFormats/SoATemplate/interface/SoACommon.h"
 #include "DataFormats/SoATemplate/interface/SoALayout.h"
 
-GENERATE_SOA_LAYOUT(HGCalSoAClustersLayout,
+GENERATE_SOA_LAYOUT(BarrelSoAClustersLayout,
                     // columns: one value per element
                     SOA_COLUMN(float, x),
                     SOA_COLUMN(float, y),
@@ -16,6 +16,6 @@ GENERATE_SOA_LAYOUT(HGCalSoAClustersLayout,
                     SOA_COLUMN(int, seed)    // This is the index of the seed of each cluster inside the RecHit SoA
 )
 
-using HGCalSoAClusters = HGCalSoAClustersLayout<>;
+using BarrelSoAClusters = BarrelSoAClustersLayout<>;
 
 #endif

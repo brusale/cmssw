@@ -23,6 +23,9 @@ namespace reco {
                       SOA_COLUMN(float, x),
                       SOA_COLUMN(float, y),
                       SOA_COLUMN(float, z),
+                      SOA_COLUMN(float, eta),
+                      SOA_COLUMN(float, phi),
+                      SOA_COLUMN(float, sigmaNoise),
                       SOA_SCALAR(uint32_t, size)  // Number of PFRecHits in SoA
   )
 

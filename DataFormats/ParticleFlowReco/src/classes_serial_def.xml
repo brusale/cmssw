@@ -1,4 +1,11 @@
 <lcgdict>
+  <class name="BarrelSoAClustersHostCollection"/>
+  <!-- reco::CaloRecHitHostCollection::Layout must be listed before the aliased-to type -->
+  <class name="BarrelSoAClustersHostCollection::Layout"/>
+  <class name="BarrelSoAClusters"/>
+  <class name="BarrelSoAClusters::View"/>
+  <class name="edm::Wrapper<BarrelSoAClustersHostCollection>" splitLevel="0"/>
+
   <class name="reco::CaloRecHitHostCollection"/>
   <!-- reco::CaloRecHitHostCollection::Layout must be listed before the aliased-to type -->
   <class name="reco::CaloRecHitHostCollection::Layout"/>
@@ -26,4 +33,12 @@
   <class name="reco::PFRecHitFractionSoA"/>
   <class name="reco::PFRecHitFractionSoA::View"/>
   <class name="edm::Wrapper<reco::PFRecHitFractionHostCollection>" splitLevel="0"/>
+
+   <class name="reco::PFRecHitExtraHostCollection"/>
+   <!-- reco::PFRecHitExtraHostCollection::Layout must be listed before the aliased-to type -->
+   <class name="reco::PFRecHitExtraHostCollection::Layout"/>
+   <class name="reco::PFRecHitExtra"/>
+   <class name="reco::PFRecHitExtra::View"/>
+   <class name="edm::Wrapper<reco::PFRecHitExtraHostCollection>" splitLevel="0"/>
+ 
 </lcgdict>

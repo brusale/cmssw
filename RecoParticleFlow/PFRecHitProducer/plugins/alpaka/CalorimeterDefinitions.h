@@ -9,6 +9,8 @@
 #include "DataFormats/DetId/interface/DetId.h"
 #include "DataFormats/EcalDetId/interface/EcalSubdetector.h"
 #include "DataFormats/EcalRecHit/interface/EcalRecHit.h"
+#include "DataFormats/EcalRecHit/interface/EcalRecHitHostCollection.h"
+#include "DataFormats/EcalRecHit/interface/alpaka/EcalRecHitDeviceCollection.h"
 #include "DataFormats/HcalDetId/interface/HcalDetId.h"
 #include "DataFormats/HcalDetId/interface/HcalSubdetector.h"
 #include "DataFormats/HcalRecHit/interface/HBHERecHit.h"
@@ -120,8 +122,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::particleFlowRecHitProducer {
 
   struct ECAL {
     using CaloRecHitType = EcalRecHit;
-    using CaloRecHitSoATypeHost = reco::CaloRecHitHostCollection;
-    using CaloRecHitSoATypeDevice = reco::CaloRecHitDeviceCollection;
+    using CaloRecHitSoATypeHost = EcalRecHitHostCollection;
+    using CaloRecHitSoATypeDevice = EcalRecHitDeviceCollection;
     using ParameterType = reco::PFRecHitECALParamsDeviceCollection;
     using ParameterRecordType = EcalPFRecHitThresholdsRcd;
     using TopologyTypeHost = reco::PFRecHitECALTopologyHostCollection;
@@ -147,6 +149,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::particleFlowRecHitProducer {
         return (kMaxIEta + (positiveZ(detId) ? ietaAbs(detId) - 1 : -ietaAbs(detId))) * kMaxIPhi + iphi(detId) - 1;
       }
     };
+    
+    static constexpr uint32_t getDepth() { return 0; }
 
     // https://cmssdt.cern.ch/lxr/source/DataFormats/EcalDetId/interface/EEDetId.h
     struct Endcap {

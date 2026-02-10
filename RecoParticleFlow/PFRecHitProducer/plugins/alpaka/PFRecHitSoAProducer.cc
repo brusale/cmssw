@@ -52,6 +52,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           kernel.processRecHits(
               event.queue(), event.get(token.first), setup.getData(token.second), topology, *pfRecHits_);
         kernel.associateTopologyInfo(event.queue(), topology, *pfRecHits_);
+        std::cout << __FILE__ << " " << __LINE__ << std::endl;
+        std::cout << "pfRecHits_->view().size(): " << pfRecHits_->view().size() << std::endl;
+        std::cout << "pfRecHits_->metadata().size(): " << pfRecHits_->view().metadata().size() << std::endl;
         auto size_d = cms::alpakatools::make_device_view<uint32_t>(event.queue(), pfRecHits_->view().size());
         alpaka::memcpy(event.queue(), size_, size_d);
       }
